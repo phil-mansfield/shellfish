@@ -1,0 +1,36 @@
+% This patch fixes the behavior of the hyperref package to 
+% produce ApJ style citations, namely to only highlight the
+% year in citecolor = blue rather than the entire citation.
+
+\usepackage{etoolbox}
+\makeatletter
+% Patch case where name and year have no delimiter
+\patchcmd{\NAT@citex}
+  {\@citea\NAT@hyper@{\NAT@nmfmt{\NAT@nm}\NAT@date}}
+  {\@citea\NAT@nmfmt{\NAT@nm}\NAT@hyper@{\NAT@date}}
+  {}% Do nothing if patch works
+  {}% Do nothing if patch fails
+% Patch case where name and year have basic delimiter
+\patchcmd{\NAT@citex}
+  {\@citea\NAT@hyper@{%
+     \NAT@nmfmt{\NAT@nm}%
+     \hyper@natlinkbreak{\NAT@aysep\NAT@spacechar}{\@citeb\@extra@b@citeb}%
+     \NAT@date}}
+  {\@citea\NAT@nmfmt{\NAT@nm}%
+   \NAT@aysep\NAT@spacechar%
+   \NAT@hyper@{\NAT@date}}
+  {}% Do nothing if patch works
+  {}% Do nothing if patch fails
+% Patch case where name and year are separated by a prenote
+\patchcmd{\NAT@citex}
+  {\@citea\NAT@hyper@{%
+     \NAT@nmfmt{\NAT@nm}%
+     \hyper@natlinkbreak{\NAT@spacechar\NAT@@open\if*#1*\else#1\NAT@spacechar\fi}%
+       {\@citeb\@extra@b@citeb}%
+     \NAT@date}}
+  {\@citea\NAT@nmfmt{\NAT@nm}%
+   \NAT@spacechar\NAT@@open\if*#1*\else#1\NAT@spacechar\fi%
+   \NAT@hyper@{\NAT@date}}
+  {}% Do nothing if patch works
+  {}% Do nothing if patch fails
+\makeatother

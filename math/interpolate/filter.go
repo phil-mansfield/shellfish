@@ -2,7 +2,7 @@ package interpolate
 
 import (
 	"math"
-	"github.com/phil-mansfield/gotetra/math/mat"
+	"github.com/phil-mansfield/shellfish/math/mat"
 )
 
 // Kernel is a 1D smoothing kernel corresponding to some smoothing strategy

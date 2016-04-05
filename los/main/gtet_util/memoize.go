@@ -7,8 +7,8 @@ import (
 	"path"
 	"sort"
 	
-	"github.com/phil-mansfield/gotetra/render/halo"
-	"github.com/phil-mansfield/gotetra/render/io"
+	"github.com/phil-mansfield/shellfish/render/halo"
+	"github.com/phil-mansfield/shellfish/render/io"
 )
 
 const (

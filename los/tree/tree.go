@@ -6,8 +6,6 @@ import (
 	ct "github.com/phil-mansfield/consistent_trees"
 )
 
-const SCALE_FACTOR_MUL = 100000
-
 // HaloHistories takes a slice of Rockstar halo tree file names, a slice of
 // the root halo IDs, and the "snapshot offset." The snapshot offset is the
 // difference between the number of snpashots which contain a nonzero number

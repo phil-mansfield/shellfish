@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/phil-mansfield/gotetra/los/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 func TestInRange(t *testing.T) {

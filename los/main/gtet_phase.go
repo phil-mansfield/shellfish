@@ -6,11 +6,11 @@ import (
 	"math"
 	"runtime"
 	
-	"github.com/phil-mansfield/gotetra/render/io"
-	"github.com/phil-mansfield/gotetra/los/geom"
-	util "github.com/phil-mansfield/gotetra/los/main/gtet_util"
-	rgeom "github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/render/halo"
+	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/los/geom"
+	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
+	rgeom "github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/render/halo"
 )
 
 func main() {

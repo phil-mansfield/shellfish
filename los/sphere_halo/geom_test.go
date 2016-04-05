@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/phil-mansfield/gotetra/los/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 func almostEq(x, y float64) bool {

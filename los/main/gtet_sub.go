@@ -4,7 +4,7 @@ import (
 	"flag"
 	"log"
 
-	util "github.com/phil-mansfield/gotetra/los/main/gtet_util"
+	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
 )
 
 type Params struct {

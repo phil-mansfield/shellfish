@@ -1,8 +1,8 @@
 package los
 
 import (
-	"github.com/phil-mansfield/gotetra/render/io"
-	"github.com/phil-mansfield/gotetra/los/geom"
+	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 // Halo is a _very leaky_ abstraction around the different types of halos.

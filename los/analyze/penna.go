@@ -3,8 +3,8 @@ package analyze
 import (
 	"math"
 	
-	"github.com/phil-mansfield/gotetra/math/mat"
-	"github.com/phil-mansfield/gotetra/los"
+	"github.com/phil-mansfield/shellfish/math/mat"
+	"github.com/phil-mansfield/shellfish/los"
 
 	"github.com/gonum/matrix/mat64"
 )

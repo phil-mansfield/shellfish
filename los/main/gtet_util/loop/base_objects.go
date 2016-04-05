@@ -1,7 +1,7 @@
 package loop
 
 import (
-	rgeom "github.com/phil-mansfield/gotetra/render/geom"
+	rgeom "github.com/phil-mansfield/shellfish/render/geom"
 )
 
 // Sphere is a struct that can be used as an embedded struct in structs which

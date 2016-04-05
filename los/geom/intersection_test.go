@@ -5,8 +5,8 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/phil-mansfield/gotetra/render/io"
-	rGeom "github.com/phil-mansfield/gotetra/render/geom"
+	"github.com/phil-mansfield/shellfish/render/io"
+	rGeom "github.com/phil-mansfield/shellfish/render/geom"
 )
 
 var (

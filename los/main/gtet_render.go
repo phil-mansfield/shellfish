@@ -7,13 +7,13 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/phil-mansfield/gotetra/render/halo"
-	"github.com/phil-mansfield/gotetra/render/density"
-	"github.com/phil-mansfield/gotetra/render/io"
+	"github.com/phil-mansfield/shellfish/render/halo"
+	"github.com/phil-mansfield/shellfish/render/density"
+	"github.com/phil-mansfield/shellfish/render/io"
 
-	obj "github.com/phil-mansfield/gotetra/los/main/loop_objects"
-	util "github.com/phil-mansfield/gotetra/los/main/gtet_util"
-	"github.com/phil-mansfield/gotetra/los/main/gtet_util/loop"
+	obj "github.com/phil-mansfield/shellfish/los/main/loop_objects"
+	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
+	"github.com/phil-mansfield/shellfish/los/main/gtet_util/loop"
 )
 
 func main() {

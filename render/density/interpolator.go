@@ -1,8 +1,8 @@
 package density
 
 import (	
-	"github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/math/rand"
+	"github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/math/rand"
 )
 
 type Interpolator interface {

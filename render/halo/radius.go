@@ -4,8 +4,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/phil-mansfield/gotetra/render/io"
-	"github.com/phil-mansfield/gotetra/cosmo"
+	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/cosmo"
 )
 
 type Radius int

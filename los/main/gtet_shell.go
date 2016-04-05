@@ -9,15 +9,15 @@ import (
 	"sort"
 	"strings"
 	
-	"github.com/phil-mansfield/gotetra/los"
-	sph "github.com/phil-mansfield/gotetra/los/sphere_halo"
-	"github.com/phil-mansfield/gotetra/los/geom"
-	rgeom "github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/los/analyze"
-	util "github.com/phil-mansfield/gotetra/los/main/gtet_util"
-	"github.com/phil-mansfield/gotetra/render/io"
-	"github.com/phil-mansfield/gotetra/render/halo"
-	"github.com/phil-mansfield/gotetra/math/rand"
+	"github.com/phil-mansfield/shellfish/los"
+	sph "github.com/phil-mansfield/shellfish/los/sphere_halo"
+	"github.com/phil-mansfield/shellfish/los/geom"
+	rgeom "github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/los/analyze"
+	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
+	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/render/halo"
+	"github.com/phil-mansfield/shellfish/math/rand"
 )
 
 // TODO: Someone needs to come in and restructure this monstrosity.

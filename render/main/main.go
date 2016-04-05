@@ -15,10 +15,10 @@ import (
 
 	"code.google.com/p/gcfg"
 
-	ren "github.com/phil-mansfield/gotetra/render"
-	"github.com/phil-mansfield/gotetra/render/density"
-	"github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/render/io"
+	ren "github.com/phil-mansfield/shellfish/render"
+	"github.com/phil-mansfield/shellfish/render/density"
+	"github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/render/io"
 
 	"unsafe"
 )

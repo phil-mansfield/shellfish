@@ -7,10 +7,10 @@ import (
 	"math"
 	"runtime"
 
-	"github.com/phil-mansfield/gotetra/render/halo"
-	obj "github.com/phil-mansfield/gotetra/los/main/loop_objects"
-	util "github.com/phil-mansfield/gotetra/los/main/gtet_util"
-	"github.com/phil-mansfield/gotetra/los/main/gtet_util/loop"
+	"github.com/phil-mansfield/shellfish/render/halo"
+	obj "github.com/phil-mansfield/shellfish/los/main/loop_objects"
+	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
+	"github.com/phil-mansfield/shellfish/los/main/gtet_util/loop"
 )
 
 func main() {

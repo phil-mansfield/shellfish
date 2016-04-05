@@ -3,7 +3,7 @@ package gtet_util
 import (
 	"fmt"
 	
-	"github.com/phil-mansfield/gotetra/render/halo"
+	"github.com/phil-mansfield/shellfish/render/halo"
 )
 
 var (

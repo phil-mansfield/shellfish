@@ -35,12 +35,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/phil-mansfield/gotetra/render/io"
-	"github.com/phil-mansfield/gotetra/los"
-	"github.com/phil-mansfield/gotetra/math/mat"
-	"github.com/phil-mansfield/gotetra/math/sort"
-	rgeom "github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/los/geom"
+	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/los"
+	"github.com/phil-mansfield/shellfish/math/mat"
+	"github.com/phil-mansfield/shellfish/math/sort"
+	rgeom "github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 // Type SphereHalo represents a halo which can have spheres inserted into it.

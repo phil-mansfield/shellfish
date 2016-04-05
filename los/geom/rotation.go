@@ -3,7 +3,7 @@ package geom
 import (
 	"math"
 
-	"github.com/phil-mansfield/gotetra/math/mat"
+	"github.com/phil-mansfield/shellfish/math/mat"
 )
 
 // EulerMatrix creates a 3D rotation matrix based off the Euler angles phi,

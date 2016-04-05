@@ -4,8 +4,8 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/phil-mansfield/gotetra/math/sort"
-	"github.com/phil-mansfield/gotetra/los"
+	"github.com/phil-mansfield/shellfish/math/sort"
+	"github.com/phil-mansfield/shellfish/los"
 )
 
 type Shell func(phi, theta float64) float64

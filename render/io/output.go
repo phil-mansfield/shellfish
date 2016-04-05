@@ -7,8 +7,8 @@ import (
 	"math"
 	"os"
 
-	"github.com/phil-mansfield/gotetra/cosmo"
-	"github.com/phil-mansfield/gotetra/render/density"
+	"github.com/phil-mansfield/shellfish/cosmo"
+	"github.com/phil-mansfield/shellfish/render/density"
 
 	"unsafe"
 )

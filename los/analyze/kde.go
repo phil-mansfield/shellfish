@@ -4,7 +4,7 @@ import (
 	"math"
 
 	plt "github.com/phil-mansfield/pyplot"
-	intr "github.com/phil-mansfield/gotetra/math/interpolate"
+	intr "github.com/phil-mansfield/shellfish/math/interpolate"
 )
 
 func GaussianKDE(xs []float64, h, low, high float64, n int) *intr.Spline {

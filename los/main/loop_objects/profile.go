@@ -3,10 +3,10 @@ package loop_objects
 import (
 	"math"
 
-	"github.com/phil-mansfield/gotetra/math/rand"
-	"github.com/phil-mansfield/gotetra/los/geom"
-	rgeom "github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/los/main/gtet_util/loop"
+	"github.com/phil-mansfield/shellfish/math/rand"
+	"github.com/phil-mansfield/shellfish/los/geom"
+	rgeom "github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/los/main/gtet_util/loop"
 )
 
 type Profile struct {

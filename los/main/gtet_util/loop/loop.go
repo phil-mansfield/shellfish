@@ -3,11 +3,11 @@ package loop
 import (
 	"runtime"
 
-	"github.com/phil-mansfield/gotetra/render/io"
-	rgeom "github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/los/geom"
-	intr "github.com/phil-mansfield/gotetra/math/interpolate"
-	util "github.com/phil-mansfield/gotetra/los/main/gtet_util"
+	"github.com/phil-mansfield/shellfish/render/io"
+	rgeom "github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
+	intr "github.com/phil-mansfield/shellfish/math/interpolate"
+	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
 )
 
 // InterpolatorType is the type of interpolation used during the iteration.

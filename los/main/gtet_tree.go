@@ -8,8 +8,8 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/phil-mansfield/gotetra/los/tree"
-	util "github.com/phil-mansfield/gotetra/los/main/gtet_util"
+	"github.com/phil-mansfield/shellfish/los/tree"
+	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
 )
 
 var usage = "gtet_tree halo_id_1 [halo]  or  gtet_ids ... | gtet_tree"

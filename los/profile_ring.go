@@ -5,7 +5,7 @@ package los
 import (
 	"math"
 
-	"github.com/phil-mansfield/gotetra/los/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 // ProfileRing is a ring of uniformly spaced profiles. The reported profiles are

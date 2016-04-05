@@ -7,7 +7,7 @@ import (
 	"math"
 	"log"
 
-	"github.com/phil-mansfield/gotetra/math/rand"
+	"github.com/phil-mansfield/shellfish/math/rand"
 )
 
 // Tetra is a tetrahedron with points inside a box with periodic boundary

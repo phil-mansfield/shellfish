@@ -3,7 +3,7 @@ package analyze
 import (
 	"math"
 
-	intr "github.com/phil-mansfield/gotetra/math/interpolate"
+	intr "github.com/phil-mansfield/shellfish/math/interpolate"
 )
 
 var (

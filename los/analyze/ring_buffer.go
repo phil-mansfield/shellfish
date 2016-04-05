@@ -3,8 +3,8 @@ package analyze
 import (
 	"math"
 
-	"github.com/phil-mansfield/gotetra/los"
-	"github.com/phil-mansfield/gotetra/los/geom"
+	"github.com/phil-mansfield/shellfish/los"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 type RingBuffer struct {

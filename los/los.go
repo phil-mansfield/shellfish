@@ -4,9 +4,9 @@ import (
 	"math"
 	"runtime"
 
-	"github.com/phil-mansfield/gotetra/render/io"
-	rGeom "github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/los/geom"
+	"github.com/phil-mansfield/shellfish/render/io"
+	rGeom "github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 type Buffers struct {

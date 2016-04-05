@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/phil-mansfield/gotetra/los/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 func BenchmarkHalfAngularWidth(b *testing.B) {

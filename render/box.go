@@ -1,11 +1,11 @@
-package gotetra
+package render
 
 import (
 	"math"
 
-	"github.com/phil-mansfield/gotetra/render/density"
-	"github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/render/io"
+	"github.com/phil-mansfield/shellfish/render/density"
+	"github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/render/io"
 )
 
 ////////////////

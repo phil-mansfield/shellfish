@@ -7,13 +7,13 @@ import (
 	"runtime"
 	"sort"
 
-	"github.com/phil-mansfield/gotetra/cosmo"
-	"github.com/phil-mansfield/gotetra/render/io"
-	"github.com/phil-mansfield/gotetra/render/halo"
-	rgeom "github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/los/geom"
-	"github.com/phil-mansfield/gotetra/los/analyze"
-	util "github.com/phil-mansfield/gotetra/los/main/gtet_util"
+	"github.com/phil-mansfield/shellfish/cosmo"
+	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/render/halo"
+	rgeom "github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
+	"github.com/phil-mansfield/shellfish/los/analyze"
+	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
 	
 )
 

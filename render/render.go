@@ -1,14 +1,14 @@
-package gotetra
+package render
 
 import (
 	"log"
 	"path"
 	"runtime"
 	
-	"github.com/phil-mansfield/gotetra/render/density"
-	"github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/render/io"
-	"github.com/phil-mansfield/gotetra/math/rand"
+	"github.com/phil-mansfield/shellfish/render/density"
+	"github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/math/rand"
 )
 
 const (

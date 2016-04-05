@@ -6,10 +6,10 @@ import (
 	"math/rand"
 	"runtime"
 
-	"github.com/phil-mansfield/gotetra/render/io"
-	"github.com/phil-mansfield/gotetra/los/geom"
-	"github.com/phil-mansfield/gotetra/math/mat"
-	"github.com/phil-mansfield/gotetra/math/sort"
+	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/los/geom"
+	"github.com/phil-mansfield/shellfish/math/mat"
+	"github.com/phil-mansfield/shellfish/math/sort"
 )
 
 type haloRing struct {

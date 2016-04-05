@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"testing"
 
-	rgeom "github.com/phil-mansfield/gotetra/render/geom"
-	"github.com/phil-mansfield/gotetra/los/geom"
+	rgeom "github.com/phil-mansfield/shellfish/render/geom"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 func BenchmarkTransform10000000(b *testing.B) {

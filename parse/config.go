@@ -192,6 +192,10 @@ func (vars *ConfigVars) Bools(ptr *[]bool, name string) {
 //////////////////
 
 func ReadConfig(fname string, vars *ConfigVars) error {
+	for i := range vars.varNames {
+		vars.varNames[i] = strings.ToLower(vars.varNames[i])
+	}
+
 	bs, err := ioutil.ReadFile(fname)
 	if err != nil { return err }
 	lines := strings.Split(string(bs), "\n")

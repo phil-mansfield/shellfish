@@ -50,7 +50,6 @@ var _ Mode = &GlobalConfig{}
 
 // ReadConfig reads a config file and returns an error, if applicable.
 func (config *GlobalConfig) ReadConfig(fname string) error {
-	config.version = version.SourceVersion
 
 	vars := parse.NewConfigVars("config")
 	vars.String(&config.version, "Version", version.SourceVersion)
@@ -190,6 +189,8 @@ func (config *GlobalConfig) ExampleConfig() string {
 # Target version of shellfish. This option merely allows Shellfish to notice
 # when its source an configuration files are not from the same version. It will
 # not allow previous versions to be run from earlier versions.
+#
+# This variable defaults to the source version if not included.
 Version = %s
 
 # These variables describe the formats used by the files which Shellfish reads.
@@ -225,6 +226,7 @@ TreeType = consistent-trees
 SnapshotFormat = path/to/snapshots/snap%%03d/file%%d_%%d.dat
 FormatRanges = 2, 3
 SnapshotFormatIndex = 0
+# SnapshotFormatIndex defaults to 0 if not set.
 
 # Directory containing halo catalogs.
 HaloDir = path/to/halos/dir/

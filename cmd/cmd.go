@@ -4,6 +4,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/version"
@@ -33,7 +35,7 @@ type GlobalConfig struct {
 	haloDir, haloType string
 	treeDir, treeType string
 	memoDir string
-	formatRange []int64
+	formatRanges []int64
 	snapshotFormatIndex int64
 }
 
@@ -48,15 +50,115 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.String(&config.snapshotFormat, "SnapshotFormat")
 	vars.String(&config.snapshotType, "SnapshotType")
 	vars.String(&config.haloDir, "HaloDir")
-	vars.String(&config.haloDir, "HaloType")
+	vars.String(&config.haloType, "HaloType")
 	vars.String(&config.treeDir, "TreeDir")
-	vars.String(&config.snapshotType, "TreeType")
+	vars.String(&config.treeType, "TreeType")
 	vars.String(&config.memoDir, "MemoDir")
-	vars.Ints(&config.formatRange, "FormatRange")
+	vars.Ints(&config.formatRanges, "FormatRanges")
 	vars.Int(&config.snapshotFormatIndex, "SnapshotFormatIndex")
 
 	err := parse.ReadConfig(fname, vars)
 	if err != nil { return err }
+
+	if err = config.validate(); err != nil { return err }
+
+	return nil
+}
+
+// validate checks that all the user-generated fields of GlobalConfig are
+// properly set.
+func (config *GlobalConfig) validate() error {
+	major, minor, patch, err := version.Parse(config.version)
+	if err != nil {
+		return fmt.Errorf("I couldn't parse the 'Version' variable: %s",
+			err.Error())
+	}
+	smajor, sminor, spatch, _ := version.Parse(version.SourceVersion)
+	if major != smajor || minor != sminor || patch != spatch {
+		return fmt.Errorf("The 'Version' variable is set to %s, but the " +
+			"version of the source is %s",
+			config.version, version.SourceVersion)
+	}
+
+	switch config.snapshotType {
+	case "LGadget-2":
+	default:
+		return fmt.Errorf("The 'SnapshotType' variable is set to '%s', " +
+			"which I don't recognize.", config.snapshotType)
+	}
+
+	switch config.haloType {
+	case "Rockstar":
+	default:
+		return fmt.Errorf("The 'HaloType' variable is set to '%s', " +
+		"which I don't recognize.", config.haloType)
+	}
+
+	switch config.treeType {
+	case "consistent-trees":
+	default:
+		return fmt.Errorf("The 'TreeType' variable is set to '%s', " +
+		"which I don't recognize.", config.treeType)
+	}
+
+	if err = validateDir(config.haloDir); err != nil {
+		return fmt.Errorf("The 'HaloDir' variable is set to '%s', but %s",
+			err.Error())
+	}
+	if err = validateDir(config.treeDir); err != nil {
+		return fmt.Errorf("The 'TreeDir' variable is set to '%s', but %s",
+			err.Error())
+	}
+	if err = validateDir(config.memoDir); err != nil {
+		return fmt.Errorf("The 'MemoDir' variable is set to '%s', but %s",
+			err.Error())
+	}
+
+	if err = validateFormat(config.snapshotFormat, config.formatRanges,
+		config.snapshotFormatIndex); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateDir returns an error if there are any problems with the given
+// directory.
+func validateDir(name string) error {
+	if info, err := os.Stat(name); err != nil {
+		return fmt.Errorf("%s does not exist", name)
+	} else if !info.IsDir() {
+		return fmt.Errorf("%s is not a directory", name)
+	}
+
+	return nil
+}
+
+// validateFormat returns an error if there are any problems with the
+// given format variables.
+func validateFormat(format string, ranges []int64, snapIndex int64) error {
+	// TODO: This doesn't validate correctly.
+	if snapIndex < -1 {
+		return fmt.Errorf("'SnapshotFormatIndex' set to the negative " +
+			"value %d.", snapIndex)
+	}
+
+	// This is wrong because of "%%" specifiers.
+	specifiers := strings.Count(format, "%")
+	if snapIndex >= int64(specifiers) {
+		return fmt.Errorf("'SnapshotFormatIndex' set to %d, but there are " +
+			"only %d '%%' specifiers in the format string '%s'.", snapIndex,
+			specifiers, format)
+	}
+
+	if len(ranges) + 1 != specifiers {
+		return fmt.Errorf("The length of 'FormatRanges' is %d, but there " +
+			"are %d '%%' specifiers in the format string '%s'.",
+			len(ranges), specifiers, format,
+		)
+	}
+
+	// This is wrong because it doesn't check that the properly formatted
 
 	return nil
 }
@@ -100,7 +202,7 @@ TreeType = consistent-trees
 #         ...
 # It could be specified with the following values:
 SnapshotFormat = path/to/snapshots/snap%%03d/file%%d_%%d.dat
-FormatRange = 2, 3
+FormatRanges = 2, 3
 SnapshotFormatIndex = 0
 
 # Directory containing halo catalogs.

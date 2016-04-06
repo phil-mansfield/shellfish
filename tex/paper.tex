@@ -59,12 +59,40 @@ snapshot.
 \section{Introduction}
 \label{sec:introduction}
 
-Placeholder text.
+Dark matter halos are diffuse making a boundary definition non-trivial. The
+overwhelmingly most common approach is spherical overdensities. Arbitrary.
+Psuedo-evolution
+
+Problems have motivated recent interest in $R_{\rm sp}$. Apocenters of particles
+on first orbit. Good things: physically-motivated, does not psuedo-evolve,
+encloses all subhalos which have interacted with host: good for identifying
+subhalos, connection with accretion rate.
+
+Recent measurements. More+16 unambiguously measured it, although Loeb and his
+student found hints of it in earlier observations. Current observations indicate
+a tension between measured and simulated splashback radii, which makes it
+even more important to understand this.
+
+Current analysis is done thorugh stacking spherically averaged profiles. This
+is bad because shells are very non-spherical, removes ability to study
+individual halos, it's not clear how informaiton is distorted in the stacking
+process. Individual allows for the creation of things like halo catalogs, you
+can exclude subhalos inside the shell of a host, can study asphericity, etc.
+(Talk about mas vs. volume averaging?)
+
+``In this paper we present...''
+
+Summary of paper. \emph{Key result is fig *foo* and example shells are shown in
+fig *bar*.}
 
 \section{Methods}
 \label{sec:methods}
 
-Placeholder text.
+\subsection{Simulations}
+
+Describe the L63 - L500 simulations used here.
+
+\subsection{Algorithm Description}
 
 \begin{figure}
    \centering
@@ -84,6 +112,48 @@ Placeholder text.
    \label{fig:shell_finder_algo}
 \end{figure}
 
+``The human eye is pretty good at this''
+Motivate use of lines of sight. Explain subselection of solid angles that show
+clear splashback feature.
+
+We could use a grid, but we use the method in Appendix A. Performance. Move
+eqn A1 up from the appendix.
+
+Filaments and subhalos put false points of steepest slope. Motivate recursive
+splitting of angular range.
+
+Describe use of KDEs. All the uses of $\eta$.
+
+\subsection{Tests}
+
+\begin{figure*}
+   \centering
+   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex1.png}
+   \hspace{0.4cm}
+   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex2.png}\\
+   \vspace{0.5cm}
+   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex3.png}
+   \hspace{0.4cm}
+   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex4.png}\\
+   \vspace{0.5cm}
+   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex5.png}
+   \hspace{0.4cm}
+   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex6.png}
+   \caption{Density slices of six randomly selected halos compared to the
+      shells measured by Shellfish. The shape of the shell within this slice
+      is shown by the white curve and the a sphere with the same
+      volume as the shell is shown in black. The six halos were picked uniformly
+      from the $\log{M_{\rm 200m}}-\log{\Gamma}$ plane in out \texttt{L0063}
+      simulation box and are each plotted out to $2.5 R_{\rm 200m}$.}
+      \label{fig:pass_ex}
+\end{figure*}
+
+Visual inspection of random halos. Explain selection.
+
+Discuss profile. Convergence of $R_{\rm sp}$ and $R_{\rm min}$ and
+$R_{\rm max}$.  Note that $R_{\rm k}$
+is quite large. Percolation. Reference convergence test.
+
 \begin{figure}
    \centering
    \includegraphics[width=\columnwidth]{rk_convergence_prof.pdf}
@@ -98,8 +168,39 @@ Placeholder text.
       in Appendix \ref{sec:visual}. For this halo, $R_{\rm sp}$ is converged
       for kernel radii above $0.15R_{\rm k}$
    }
-        \label{fig:rk_convergence_prof}
+    \label{fig:rk_convergence_prof}
 \end{figure}
+
+Visual identification fo splashback range. Independently of shell finder.
+Reference to Appendix B. Summary: remove profiles with significant sh presnece
+near $R_{\rm sp}$.
+
+Describe bulk comparison of visual range to shell finder range.
+(in \~ 99\% of all cases, the shell finder puts $R_{\rm sp}$ inside the visual
+range.)
+
+Parameter convergence tests were striaghtforward for everything but $\eta$.
+
+$\eta$ convergence tests. First tested by eye, 
+
+Visual inspection of ``bad cases''. Predominantly in thick filaments, but not
+always. volume-averaged $R_{\rm sp}$ is still reasonable sometimes. Selection
+criteria. Estimate fraction of ``base cases''.
+
+\subsection{Convergence Tests}
+
+Particle limit determined by comparing subsampled halos to fully sampled halos.
+$R_{\rm sp}$ converges at 50,000 particles. Expected because of similar
+densities + perclation requirement.
+
+Can only be done strictly for second-lowest resolution sim, need to provide
+arugment to extend to L63 sim. Percolation should be the limiting factor
+for both $N_{\rm 200m}$ and $R_{\rm k}$ reductions, so we would expect
+deviations of a target sclae in one method to correspond to some other
+characteristic change in the other. We see this: 5\% deviation in
+\emph{undersampled} $R_{\rm k}$ corresponds to 2\% in 
+
+(Mass convergence, maybe?)
 
 \begin{figure}
    \centering
@@ -127,49 +228,6 @@ Placeholder text.
         \label{fig:m200_rsp_convergence}
 \end{figure}
 
-\begin{figure*}
-   \centering
-   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex1.png}
-   \hspace{0.4cm}
-   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex2.png}\\
-   \vspace{0.5cm}
-   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex3.png}
-   \hspace{0.4cm}
-   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex4.png}\\
-   \vspace{0.5cm}
-   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex5.png}
-   \hspace{0.4cm}
-   \includegraphics[width=0.7\columnwidth]{example_halos/pass_ex6.png}
-   \caption{Density slices of six randomly selected halos compared to the
-      shells measured by Shellfish. The shape of the shell within this slice
-      is shown by the white curve and the a sphere with the same
-      volume as the shell is shown in black. The six halos were picked uniformly
-      from the $\log{M_{\rm 200m}}-\log{\Gamma}$ plane in out \texttt{L0063}
-      simulation box and are each plotted out to $2.5 R_{\rm 200m}$.}
-      \label{fig:pass_ex}
-\end{figure*}
-
-\begin{figure*}
-   \centering
-   \includegraphics[width=0.7\columnwidth]{example_halos/fail_ex1.png}
-   \hspace{0.4cm}
-   \includegraphics[width=0.7\columnwidth]{example_halos/fail_ex2.png}
-   \caption{Examples of halos for which Shellfish produces poor shells. These
-        halos were chosen by randomly selecting halos from the population of
-        halos which fail the cut described in Appendix \label{sec:visual} until
-        two were found which did not appear to be
-        good fits by eye. The left panel is typical these types of halos: they
-        often inhabit strong filaments and do not contain a visually apparent 
-        splashback shell in their dentity fields, although, as demonstrated in
-        the right panel, there are some halos with visually apparent splashback
-        fields which Shellfish measures incorrectly, too. The right panel also
-        demonstrates that even in cases where the full shell is incorrect, the
-        volume-equivalent radius can be relatively well-behaved. We estimate
-        that Shellfish generates these types of shells for roughly 5\% of the
-        halos in our sample.}
-        \label{fig:fail_ex}
-\end{figure*}
-
 \section{Results}
 \label{sec:results}
 
@@ -191,17 +249,35 @@ Placeholder text.
         \label{fig:z_fit}
 \end{figure*}
 
-Placeholder text.
+Primary result is the $\Gamma$ vs. $R_{\rm sp}/R_{\rm 200m}$. Describe cross-box
+sampling proceudre
 
-\section{Discussion}
-\label{sec:discussion}
+Describe fitting procedure. Report parameters.
 
-Placeholder text.
+Discuss amplitude difference. Difference in definition. Note that this is the
+same simulation suite. Visual inspection of high $\Gamma$ halos confirms that
+
+Note that when visually confirmed profiles are smoothed, they don't really
+agree with either, but are close enough to the averaged definition. Discuss
+problems with just using these profiles.
  
+\section{Discussion}
+
+Emphasizes importance of care when observing individual halos.
+
+We do not solve the discrepancy found in More+16.
+
 \section{Summary and conclusions}
 \label{sec:summary}
 
-Placeholder text.
+We have a robust code that can find the shells of individual halos containing
+more than 50,000 particles. Produces inaccurate shells for roughly
+\emph{foo}\% of halos and most of these are basically impossible to get right
+anyway.
+
+We find a different $\Gamma$ vs. $R_{\rm sp}/R_{\rm 200m}$ relation than
+More+15. This is because of a definition difference. Highlights importance of
+tailoring definition to what the analysis calls for.
 
 \acknowledgments
 

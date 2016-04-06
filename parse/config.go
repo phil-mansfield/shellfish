@@ -139,49 +139,57 @@ func NewConfigVars(name string) *ConfigVars {
 	return &ConfigVars{name: name}
 }
 
-func (vars *ConfigVars) Int(ptr *int64, name string) {
+func (vars *ConfigVars) Int(ptr *int64, name string, value int64) {
+	*ptr = value
 	vars.varNames = append(vars.varNames, name)
 	vars.conversionFuncs = append(vars.conversionFuncs, intConv(ptr))
 	vars.varTypes = append(vars.varTypes, intVar)
 }
 
-func (vars *ConfigVars) Float(ptr *float64, name string) {
+func (vars *ConfigVars) Float(ptr *float64, name string, value float64) {
+	*ptr = value
 	vars.varNames = append(vars.varNames, name)
 	vars.conversionFuncs = append(vars.conversionFuncs, floatConv(ptr))
 	vars.varTypes = append(vars.varTypes, floatVar)
 }
 
-func (vars *ConfigVars) String(ptr *string, name string) {
+func (vars *ConfigVars) String(ptr *string, name string, value string) {
+	*ptr = value
 	vars.varNames = append(vars.varNames, name)
 	vars.conversionFuncs = append(vars.conversionFuncs, stringConv(ptr))
 	vars.varTypes = append(vars.varTypes, stringVar)
 }
 
-func (vars *ConfigVars) Bool(ptr *bool, name string) {
+func (vars *ConfigVars) Bool(ptr *bool, name string, value bool) {
+	*ptr = value
 	vars.varNames = append(vars.varNames, name)
 	vars.conversionFuncs = append(vars.conversionFuncs, boolConv(ptr))
 	vars.varTypes = append(vars.varTypes, boolVar)
 }
 
-func (vars *ConfigVars) Ints(ptr *[]int64, name string) {
+func (vars *ConfigVars) Ints(ptr *[]int64, name string, value []int64) {
+	*ptr = value
 	vars.varNames = append(vars.varNames, name)
 	vars.conversionFuncs = append(vars.conversionFuncs, intsConv(ptr))
 	vars.varTypes = append(vars.varTypes, intsVar)
 }
 
-func (vars *ConfigVars) Floats(ptr *[]float64, name string) {
+func (vars *ConfigVars) Floats(ptr *[]float64, name string, value []float64) {
+	*ptr = value
 	vars.varNames = append(vars.varNames, name)
 	vars.conversionFuncs = append(vars.conversionFuncs, floatsConv(ptr))
 	vars.varTypes = append(vars.varTypes, floatsVar)
 }
 
-func (vars *ConfigVars) Strings(ptr *[]string, name string) {
+func (vars *ConfigVars) Strings(ptr *[]string, name string, value []string) {
+	*ptr = value
 	vars.varNames = append(vars.varNames, name)
 	vars.conversionFuncs = append(vars.conversionFuncs, stringsConv(ptr))
 	vars.varTypes = append(vars.varTypes, stringsVar)
 }
 
-func (vars *ConfigVars) Bools(ptr *[]bool, name string) {
+func (vars *ConfigVars) Bools(ptr *[]bool, name string, value []bool) {
+	*ptr = value
 	vars.varNames = append(vars.varNames, name)
 	vars.conversionFuncs = append(vars.conversionFuncs, boolsConv(ptr))
 	vars.varTypes = append(vars.varTypes, boolsVar)

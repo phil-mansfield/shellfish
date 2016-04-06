@@ -53,16 +53,16 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	config.version = version.SourceVersion
 
 	vars := parse.NewConfigVars("config")
-	vars.String(&config.version, "Version")
-	vars.String(&config.snapshotFormat, "SnapshotFormat")
-	vars.String(&config.snapshotType, "SnapshotType")
-	vars.String(&config.haloDir, "HaloDir")
-	vars.String(&config.haloType, "HaloType")
-	vars.String(&config.treeDir, "TreeDir")
-	vars.String(&config.treeType, "TreeType")
-	vars.String(&config.memoDir, "MemoDir")
-	vars.Ints(&config.formatRanges, "FormatRanges")
-	vars.Int(&config.snapshotFormatIndex, "SnapshotFormatIndex")
+	vars.String(&config.version, "Version", version.SourceVersion)
+	vars.String(&config.snapshotFormat, "SnapshotFormat", "")
+	vars.String(&config.snapshotType, "SnapshotType", "")
+	vars.String(&config.haloDir, "HaloDir", "")
+	vars.String(&config.haloType, "HaloType", "")
+	vars.String(&config.treeDir, "TreeDir", "")
+	vars.String(&config.treeType, "TreeType", "")
+	vars.String(&config.memoDir, "MemoDir", "")
+	vars.Ints(&config.formatRanges, "FormatRanges", []int64{})
+	vars.Int(&config.snapshotFormatIndex, "SnapshotFormatIndex", 0)
 
 	err := parse.ReadConfig(fname, vars)
 	if err != nil { return err }
@@ -118,21 +118,21 @@ func (config *GlobalConfig) validate() error {
 		return fmt.Errorf("The 'HaloDir' variable isn't set.")
 	} else if err = validateDir(config.haloDir); err != nil {
 		return fmt.Errorf("The 'HaloDir' variable is set to '%s', but %s",
-			err.Error())
+			config.haloDir, err.Error())
 	}
 
 	if config.treeDir == "" {
 		return fmt.Errorf("The 'TreeDir' variable isn't set.")
 	} else if err = validateDir(config.treeDir); err != nil {
 		return fmt.Errorf("The 'TreeDir' variable is set to '%s', but %s",
-			err.Error())
+			config.treeDir, err.Error())
 	}
 
 	if config.memoDir == "" {
 		return fmt.Errorf("The 'MemoDir' variable isn't set.")
 	} else if err = validateDir(config.memoDir); err != nil {
 		return fmt.Errorf("The 'MemoDir' variable is set to '%s', but %s",
-			err.Error())
+			config.memoDir, err.Error())
 	}
 
 	if err = validateFormat(config.snapshotFormat, config.formatRanges,

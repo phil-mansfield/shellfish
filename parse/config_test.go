@@ -206,7 +206,7 @@ func TestConvertAssoc(t *testing.T) {
 
 	config := struct { x int64 }{}
 	vars := NewConfigVars("meow")
-	vars.Int(&config.x, "a")
+	vars.Int(&config.x, "a", 0)
 
 	for j := range table {
 		config.x = 0
@@ -267,14 +267,14 @@ type testConfig struct {
 func makeTestConfig() (*testConfig, *ConfigVars) {
 	config := &testConfig{}
 	vars := NewConfigVars("config")
-	vars.Int(&config.num, "num")
-	vars.Ints(&config.nums, "nums")
-	vars.Float(&config.float, "float")
-	vars.Floats(&config.floats, "floats")
-	vars.Bool(&config.okay, "okay")
-	vars.Bools(&config.okays, "okays")
-	vars.String(&config.word, "word")
-	vars.Strings(&config.words, "words")
+	vars.Int(&config.num, "num", 0)
+	vars.Ints(&config.nums, "nums", []int64{})
+	vars.Float(&config.float, "float", 0)
+	vars.Floats(&config.floats, "floats", []float64{})
+	vars.Bool(&config.okay, "okay", false)
+	vars.Bools(&config.okays, "okays", []bool{})
+	vars.String(&config.word, "word", "")
+	vars.Strings(&config.words, "words", []string{})
 
 	return config, vars
 }

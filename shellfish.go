@@ -4,6 +4,7 @@ package main
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"fmt"
 	"strings"
@@ -61,20 +62,20 @@ func main() {
 
 	flags := getFlags(args)
 	gConfig, err := getGlobalConfig(args)
-	if err != nil { fmt.Fprintf(os.Stderr, err.Error()) }
+	if err != nil {
+		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+	}
 	config, ok := getConfig(args)
 
 	if ok {
 		if err = mode.ReadConfig(config); err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(1)
+			log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 		}
 	}
 
 	out, err := mode.Run(flags, gConfig, lines)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
+		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 	}
 
 	for i := range out { fmt.Println(out[i]) }

@@ -11,6 +11,13 @@ import (
 	"github.com/phil-mansfield/shellfish/version"
 )
 
+var ModeNames map[string]Mode = map[string]Mode{
+	"id": &IDConfig{},
+	"tree": &TreeConfig{},
+	"shell": &ShellConfig{},
+	"stats": &StatsConfig{},
+}
+
 // Mode represents the interface used by the main binary when interacting with
 // a given command line mode.
 type Mode interface {

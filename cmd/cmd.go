@@ -82,6 +82,8 @@ func (config *GlobalConfig) validate() error {
 
 	switch config.snapshotType {
 	case "LGadget-2":
+	case "":
+		return fmt.Errorf("The 'SnapshotType variable isn't set.'")
 	default:
 		return fmt.Errorf("The 'SnapshotType' variable is set to '%s', " +
 			"which I don't recognize.", config.snapshotType)
@@ -89,6 +91,8 @@ func (config *GlobalConfig) validate() error {
 
 	switch config.haloType {
 	case "Rockstar":
+	case "":
+		return fmt.Errorf("The 'HaloType variable isn't set.'")
 	default:
 		return fmt.Errorf("The 'HaloType' variable is set to '%s', " +
 		"which I don't recognize.", config.haloType)
@@ -96,20 +100,30 @@ func (config *GlobalConfig) validate() error {
 
 	switch config.treeType {
 	case "consistent-trees":
+	case "":
+		return fmt.Errorf("The 'TreeType variable isn't set.'")
 	default:
 		return fmt.Errorf("The 'TreeType' variable is set to '%s', " +
 		"which I don't recognize.", config.treeType)
 	}
 
-	if err = validateDir(config.haloDir); err != nil {
+	if config.haloDir == "" {
+		return fmt.Errorf("The 'HaloDir' variable isn't set.")
+	} else if err = validateDir(config.haloDir); err != nil {
 		return fmt.Errorf("The 'HaloDir' variable is set to '%s', but %s",
 			err.Error())
 	}
-	if err = validateDir(config.treeDir); err != nil {
+
+	if config.treeDir == "" {
+		return fmt.Errorf("The 'TreeDir' variable isn't set.")
+	} else if err = validateDir(config.treeDir); err != nil {
 		return fmt.Errorf("The 'TreeDir' variable is set to '%s', but %s",
 			err.Error())
 	}
-	if err = validateDir(config.memoDir); err != nil {
+
+	if config.memoDir == "" {
+		return fmt.Errorf("The 'MemoDir' variable isn't set.")
+	} else if err = validateDir(config.memoDir); err != nil {
 		return fmt.Errorf("The 'MemoDir' variable is set to '%s', but %s",
 			err.Error())
 	}
@@ -126,9 +140,9 @@ func (config *GlobalConfig) validate() error {
 // directory.
 func validateDir(name string) error {
 	if info, err := os.Stat(name); err != nil {
-		return fmt.Errorf("%s does not exist", name)
+		return fmt.Errorf("%s does not exist.", name)
 	} else if !info.IsDir() {
-		return fmt.Errorf("%s is not a directory", name)
+		return fmt.Errorf("%s is not a directory.", name)
 	}
 
 	return nil

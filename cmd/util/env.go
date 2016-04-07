@@ -1,4 +1,4 @@
-package gtet_util
+package util
 
 import (
 	"path"

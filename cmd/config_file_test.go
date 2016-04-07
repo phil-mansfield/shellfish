@@ -11,6 +11,7 @@ func TestExampleFiles(t *testing.T) {
 		&GlobalConfig{},
 		&IDConfig{},
 		&TreeConfig{},
+		&ShellConfig{},
 	}
 
 	for i := range tests {

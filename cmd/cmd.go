@@ -42,8 +42,9 @@ type GlobalConfig struct {
 	haloDir, haloType string
 	treeDir, treeType string
 	memoDir string
-	formatRanges []int64
-	snapshotFormatIndex int64
+
+	formatMins, formatMaxes []int64
+	snapMin, snapMax int64
 }
 
 var _ Mode = &GlobalConfig{}
@@ -60,8 +61,10 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.String(&config.treeDir, "TreeDir", "")
 	vars.String(&config.treeType, "TreeType", "")
 	vars.String(&config.memoDir, "MemoDir", "")
-	vars.Ints(&config.formatRanges, "FormatRanges", []int64{})
-	vars.Int(&config.snapshotFormatIndex, "SnapshotFormatIndex", 0)
+	vars.Ints(&config.formatMins, "FormatMins", []int64{})
+	vars.Ints(&config.formatMaxes, "FormatMaxes", []int64{})
+	vars.Int(&config.snapMin, "SnapMin", -1)
+	vars.Int(&config.snapMax, "SnapMax", -1)
 
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
 	return config.validate()
@@ -130,8 +133,7 @@ func (config *GlobalConfig) validate() error {
 			config.memoDir, err.Error())
 	}
 
-	if err = validateFormat(config.snapshotFormat, config.formatRanges,
-		config.snapshotFormatIndex); err != nil {
+	if err = validateFormat(config); err != nil {
 		return err
 	}
 
@@ -152,28 +154,34 @@ func validateDir(name string) error {
 
 // validateFormat returns an error if there are any problems with the
 // given format variables.
-func validateFormat(format string, ranges []int64, snapIndex int64) error {
+func validateFormat(config *GlobalConfig) error {
 	// TODO: This doesn't validate correctly.
-	if snapIndex < -1 {
-		return fmt.Errorf("'SnapshotFormatIndex' set to the negative " +
-			"value %d.", snapIndex)
-	}
 
 	// This is wrong because of "%%" specifiers.
-	specifiers := strings.Count(format, "%")
-	if snapIndex >= int64(specifiers) {
-		return fmt.Errorf("'SnapshotFormatIndex' set to %d, but there are " +
-			"only %d '%%' specifiers in the format string '%s'.", snapIndex,
-			specifiers, format)
+	specifiers := strings.Count(config.snapshotFormat, "%")
+
+	if len(config.formatMins) != len(config.formatMaxes) {
+		return fmt.Errorf("The lengths of the variables 'FormatMins' and" +
+			"'FormatMaxes' are not equal")
 	}
 
-	if len(ranges) + 1 != specifiers {
-		return fmt.Errorf("The length of 'FormatRanges' is %d, but there " +
-			"are %d '%%' specifiers in the format string '%s'.",
-			len(ranges), specifiers, format,
+	switch {
+	case config.snapMin == -1:
+		return fmt.Errorf("The variable 'SnapMin' wasn't set.")
+	case config.snapMax == -1:
+		return fmt.Errorf("The variable 'SnapMax' wasn't set.")
+	}
+
+	if config.snapMin > config.snapMax {
+		return fmt.Errorf("'SnapMin' is larger than 'SnapMax'")
+	}
+
+	if len(config.formatMins) + 1 != specifiers {
+		return fmt.Errorf("The length of 'FormatMins' is %d, but there " +
+		"are %d '%%' specifiers in the format string '%s'.",
+			len(config.formatMins), specifiers, config.snapshotFormat,
 		)
 	}
-
 	// This is wrong because it doesn't check that the properly formatted
 
 	return nil
@@ -201,28 +209,33 @@ SnapshotType = LGadget-2
 HaloType = Rockstar
 TreeType = consistent-trees
 
-# These next three variables are neccessary evil due to the fact that there are
+# These next five variables are neccessary evil due to the fact that there are
 # a wide range of directory structures used in different simulations. They will
 # be sufficient to specify the location of snapshots in the vast majority of
 # cases.
 # SnapshotFormat is a format string (a la printf()) which can be passed a
 # snapshot index and an arbitrary number of block IDs. For example, if your
 # directory structure was
+#
 # path/to/snapshots/
 #     snap000/
-#         file0_0.dat
 #         file0_1.dat
 #         file0_2.dat
-#         file1_0.dat
+#         file0_3.dat
 #         file1_1.dat
 #         file1_2.dat
+#         file1_3.dat
 #     snap001/
 #         ...
+#     snap250/
+#         ...
+#
 # It could be specified with the following values:
 SnapshotFormat = path/to/snapshots/snap%%03d/file%%d_%%d.dat
-FormatRanges = 2, 3
-SnapshotFormatIndex = 0
-# SnapshotFormatIndex defaults to 0 if not set.
+FormatMins = 0, 1
+FormtMaxes = 1, 3
+SnapMin = 0
+SnapMax = 250
 
 # Directory containing halo catalogs.
 HaloDir = path/to/halos/dir/

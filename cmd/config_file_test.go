@@ -10,6 +10,7 @@ func TestExampleFiles(t *testing.T) {
 	tests := []Mode {
 		&GlobalConfig{},
 		&IDConfig{},
+		&TreeConfig{},
 	}
 
 	for i := range tests {

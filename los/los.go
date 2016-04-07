@@ -190,7 +190,7 @@ func index(x, y, z, cells int64) int64 {
 
 func unpackTetra(idxs *rGeom.TetraIdxs, xs [][3]float32, t *geom.Tetra) {
     for i := 0; i < 4; i++ {
-		t[i] = geom.Vec(xs[idxs[i]])
+		t[i] = [3]float32(xs[idxs[i]])
     }
 }
 
@@ -198,7 +198,7 @@ func unpackTetra(idxs *rGeom.TetraIdxs, xs [][3]float32, t *geom.Tetra) {
 // as close to the given sheet as periodic boundary conditions will allow.
 func WrapHalo(hps []*HaloProfiles, hd *io.SheetHeader) {
 	tw := float32(hd.TotalWidth)
-	newC := &geom.Vec{}
+	newC := &[3]float32{}
 	for i := range hps {
 		h := hps[i]
 		for j := 0; j < 3; j++ {

@@ -54,7 +54,7 @@ type SphereHalo struct {
 	dPhi float64
 
 	rots, irots []mat.Matrix32
-	norms []geom.Vec
+	norms [][3]float32
 	profs []los.ProfileRing
 
 	defaultRho float64
@@ -67,7 +67,7 @@ var _ los.Halo = &SphereHalo{}
 // are given by the slice of vectors, norms. Each ring will consists of n
 // lines of sight and will have bins radial bins.
 func (h *SphereHalo) Init(
-	norms []geom.Vec, origin [3]float64,
+	norms [][3]float32, origin [3]float64,
 	rMin, rMax float64, bins, n int,
 	defaultRho float64,
 ) {
@@ -80,7 +80,7 @@ func (h *SphereHalo) Init(
 
 	h.defaultRho = defaultRho
 
-	zAxis := &geom.Vec{0, 0, 1}
+	zAxis := &[3]float32{0, 0, 1}
 
 	h.profs = make([]los.ProfileRing, h.rings)
 	h.rots = make([]mat.Matrix32, h.rings)
@@ -198,7 +198,7 @@ func (h *SphereHalo) Transform(vecs [][3]float32, totalWidth float64) {
 
 // Insert insreats a sphere with the given center and radius to all the rings
 // of the halo.
-func (h *SphereHalo) Insert(vec geom.Vec, radius, rho float64) {
+func (h *SphereHalo) Insert(vec [3]float32, radius, rho float64) {
 	// transform into displacement from the center
 	vec[0] -= float32(h.origin[0])
 	vec[1] -= float32(h.origin[1])
@@ -216,7 +216,7 @@ func (h *SphereHalo) Insert(vec geom.Vec, radius, rho float64) {
 
 // sphereIntersecRing performs an intersection
 func (h *SphereHalo) sphereIntersectRing(
-	vec geom.Vec, radius float64, ring int,
+	vec [3]float32, radius float64, ring int,
 ) bool {
 	norm := h.norms[ring]
 	dot := float64(norm[0]*vec[0] + norm[1]*vec[1] + norm[2]*vec[2])
@@ -225,8 +225,10 @@ func (h *SphereHalo) sphereIntersectRing(
 
 // insertToRing inserts a sphere of the given center, radius, and density to
 // one ring of the halo. This is where the magic happens.
-func (h *SphereHalo) insertToRing(vec geom.Vec, radius, rho float64, ring int) {
-	vec.Rotate(&h.rots[ring])
+func (h *SphereHalo) insertToRing(
+	vec [3]float32, radius, rho float64, ring int,
+) {
+	geom.RotateVec(&vec, &h.rots[ring])
 
 	// Properties of the projected circle.
 	cx, cy, cz := float64(vec[0]), float64(vec[1]), float64(vec[2])
@@ -409,12 +411,12 @@ func (h *SphereHalo) Phi(losIdx int) float64 { return h.ringPhis[losIdx] }
 // LineSegment calculates a line segment corresponding to a given profile
 // and writes it to out.
 func (h *SphereHalo) LineSegment(ring, losIdx int, out *geom.LineSegment) {
-	vec := geom.Vec{}
+	vec :=[3]float32{}
     sin, cos := math.Sincos(float64(h.ringPhis[losIdx]))
     vec[0], vec[1] = float32(cos), float32(sin)
-    vec.Rotate(&h.irots[ring])
+    geom.RotateVec(&vec, &h.irots[ring])
 
-	origin := geom.Vec{
+	origin := [3]float32{
 		float32(h.origin[0]), float32(h.origin[1]), float32(h.origin[2]),
 	}
 
@@ -451,8 +453,8 @@ func (h *SphereHalo) SheetIntersect(hd *io.SheetHeader) bool {
 // PlaneToVolume converts an (x, y) coordinate in the coordinate system of
 // a given ring into the box's coordinate system.
 func (h *SphereHalo) PlaneToVolume(ring int, px, py float64) (x, y, z float64) {
-	v := &geom.Vec{float32(px), float32(py), 0}
-	v.Rotate(&h.irots[ring])
+	v := &[3]float32{float32(px), float32(py), 0}
+	geom.RotateVec(v, &h.irots[ring])
 	return float64(v[0]), float64(v[1]), float64(v[2])
 }
 

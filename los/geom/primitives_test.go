@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func randomTranslations(n int) []Vec {
-	vs := make([]Vec, n)
+func randomTranslations(n int) [][3]float32 {
+	vs := make([][3]float32, n)
 	for i := range vs {
 		for j := 0; j < 3; j++ {
 			vs[i][j] = rand.Float32() - 0.5
@@ -17,8 +17,9 @@ func randomTranslations(n int) []Vec {
 }
 
 func TestPluckerTranslate(t *testing.T) {
-	tet := Tetra{Vec{4, 0, 1}, Vec{0, 4, 1}, Vec{0, 0, 1}, Vec{0, 0, 2}}
-	P, L := Vec{1, 1, 0}, Vec{0, 0, 1}
+	tet := Tetra{[3]float32{4, 0, 1}, [3]float32{0, 4, 1},
+		[3]float32{0, 0, 1}, [3]float32{0, 0, 2}}
+	P, L := [3]float32{1, 1, 0}, [3]float32{0, 0, 1}
 	p := new(AnchoredPluckerVec)
 	pt := new(PluckerTetra)
 	p.Init(&P, &L)
@@ -26,7 +27,7 @@ func TestPluckerTranslate(t *testing.T) {
 	targetEnter := float32(1.0)
 	
 	n := 1000
-	dxs := append([]Vec{{0, 0, 0}}, randomTranslations(n - 1)...)
+	dxs := append([][3]float32{{0, 0, 0}}, randomTranslations(n - 1)...)
 	w := new(IntersectionWorkspace)
 	
 	for i := range dxs {
@@ -73,21 +74,21 @@ func TestSphereSphereIntersect(t *testing.T) {
 		s1, s2 Sphere
 		res bool
 	} {
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 0, 0}, 1}, true},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 0, 0}, 2}, true},
-		{Sphere{Vec{0, 0, 0}, 2}, Sphere{Vec{0, 0, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 0}, 2}, true},
+		{Sphere{[3]float32{0, 0, 0}, 2}, Sphere{[3]float32{0, 0, 0}, 1}, true},
 		
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 0, 1}, 1}, true},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 1, 0}, 1}, true},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{1, 0, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 1}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 1, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{1, 0, 0}, 1}, true},
 
-		{Sphere{Vec{0, 0, 0}, 3}, Sphere{Vec{0, 0, 1.5}, 1}, true},
-		{Sphere{Vec{0, 0, 0}, 3}, Sphere{Vec{0, 1.5, 0}, 1}, true},
-		{Sphere{Vec{0, 0, 0}, 3}, Sphere{Vec{1.5, 0, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{0, 0, 1.5}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{0, 1.5, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{1.5, 0, 0}, 1}, true},
 
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 0, 3}, 1}, false},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 3, 0}, 1}, false},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{3, 0, 0}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 3}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 3, 0}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{3, 0, 0}, 1}, false},
 	}
 
 	for i, test := range table {
@@ -103,21 +104,21 @@ func TestSphereSphereContain(t *testing.T) {
 		s1, s2 Sphere
 		res bool
 	} {
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 0, 0}, 1}, false},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 0, 0}, 2}, false},
-		{Sphere{Vec{0, 0, 0}, 2}, Sphere{Vec{0, 0, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 0}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 0}, 2}, false},
+		{Sphere{[3]float32{0, 0, 0}, 2}, Sphere{[3]float32{0, 0, 0}, 1}, true},
 		
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 0, 1}, 1}, false},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 1, 0}, 1}, false},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{1, 0, 0}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 1}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 1, 0}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{1, 0, 0}, 1}, false},
 
-		{Sphere{Vec{0, 0, 0}, 3}, Sphere{Vec{0, 0, 1.5}, 1}, true},
-		{Sphere{Vec{0, 0, 0}, 3}, Sphere{Vec{0, 1.5, 0}, 1}, true},
-		{Sphere{Vec{0, 0, 0}, 3}, Sphere{Vec{1.5, 0, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{0, 0, 1.5}, 1},true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{0, 1.5, 0}, 1},true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{1.5, 0, 0}, 1},true},
 
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 0, 3}, 1}, false},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{0, 3, 0}, 1}, false},
-		{Sphere{Vec{0, 0, 0}, 1}, Sphere{Vec{3, 0, 0}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 3}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 3, 0}, 1}, false},
+		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{3, 0, 0}, 1}, false},
 	}
 
 	for i, test := range table {
@@ -137,30 +138,30 @@ func TestSphereLineSegmentIntersect(t *testing.T) {
 		enter, exit float32
 		enters, exits bool
 	} {
-		{Sphere{Vec{0, 0, 0}, 1},
-			LineSegment{Vec{0, 0, 0}, Vec{1, 0, 0}, -2, +2},
+		{Sphere{[3]float32{0, 0, 0}, 1},
+			LineSegment{[3]float32{0, 0, 0}, [3]float32{1, 0, 0}, -2, +2},
 			-1, +1, true, true},
-		{Sphere{Vec{0, 0, 0}, 1},
-			LineSegment{Vec{0, 0, 0}, Vec{rt2, rt2, 0}, -1.1, +2},
+		{Sphere{[3]float32{0, 0, 0}, 1},
+			LineSegment{[3]float32{0, 0, 0}, [3]float32{rt2, rt2, 0}, -1.1, +2},
 			-1, +1, true, true},
-		{Sphere{Vec{0, 0, 10}, 1},
-			LineSegment{Vec{0, 0, 0}, Vec{1, 0, 0}, -2, +2},
+		{Sphere{[3]float32{0, 0, 10}, 1},
+			LineSegment{[3]float32{0, 0, 0}, [3]float32{1, 0, 0}, -2, +2},
 			0, 0, false, false},
-		{Sphere{Vec{7, 0, 0}, 1},
-			LineSegment{Vec{0, 0, 0}, Vec{1, 0, 0}, 1, 10},
+		{Sphere{[3]float32{7, 0, 0}, 1},
+			LineSegment{[3]float32{0, 0, 0}, [3]float32{1, 0, 0}, 1, 10},
 			6, 8, true, true},
-		{Sphere{Vec{10, 0, 0}, 1},
-			LineSegment{Vec{0, 0, 0}, Vec{1, 0, 0}, 1, 10},
+		{Sphere{[3]float32{10, 0, 0}, 1},
+			LineSegment{[3]float32{0, 0, 0}, [3]float32{1, 0, 0}, 1, 10},
 			9, 0, true, false},
-		{Sphere{Vec{1, 0, 0}, 1},
-			LineSegment{Vec{0, 0, 0}, Vec{1, 0, 0}, 1, 10},
+		{Sphere{[3]float32{1, 0, 0}, 1},
+			LineSegment{[3]float32{0, 0, 0}, [3]float32{1, 0, 0}, 1, 10},
 			0, 2, false, true},
 	}
 
 	for i, test := range table {
 		enter, exit, enters, exits := test.s.LineSegmentIntersect(&test.ls)
 		if enters != test.enters || exits != test.exits ||
-			(enters && !almostEq(enter, test.enter,eps)) || 
+			(enters && !almostEq(enter, test.enter,eps)) ||
 			(exits && !almostEq(exit, test.exit,eps)) {
 			t.Errorf(
 				"%d) expected intersect result of (%g %g %v %v), got " + 
@@ -174,7 +175,7 @@ func TestSphereLineSegmentIntersect(t *testing.T) {
 func BenchmarkVecTranslate(b *testing.B) {
 	n := 1000
 	dxs := randomTranslations(n)
-	v := new(Vec)
+	v := &[3]float32{}
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 3; j++ { v[j] += dxs[i%n][j] }
 	}

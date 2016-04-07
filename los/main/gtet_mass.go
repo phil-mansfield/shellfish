@@ -161,7 +161,7 @@ func boundingSpheres(
 
 	spheres := make([]geom.Sphere, len(ids))
 	for i := range spheres {
-		spheres[i].C = geom.Vec{
+		spheres[i].C = [3]float32{
 			float32(xs[i]), float32(ys[i]), float32(zs[i]),
 		}
 		spheres[i].R = float32(rs[i])

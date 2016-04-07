@@ -39,13 +39,13 @@ func EulerMatrixAt(phi, theta, psi float32, out *mat.Matrix32) {
 
 
 // EulerMatrixBetween creates a 3D rotation matrix which such that M * v1 = v2.
-func EulerMatrixBetween(v1, v2 *Vec) *mat.Matrix32 {
+func EulerMatrixBetween(v1, v2 *[3]float32) *mat.Matrix32 {
 	rot := mat.NewMatrix32(make([]float32, 9), 3, 3)
 	EulerMatrixBetweenAt(v1, v2, rot)
 	return rot
 }
 
-func EulerMatrixBetweenAt(v1, v2 *Vec, out *mat.Matrix32) *mat.Matrix32 {
+func EulerMatrixBetweenAt(v1, v2 *[3]float32, out *mat.Matrix32) *mat.Matrix32 {
 	x1, y1, z1 := v1[0], v1[1], v1[2]
 	phi1, theta1 := SphericalAngles(x1, y1, z1)
 	x2, y2, z2 := v2[0], v2[1], v2[2]
@@ -56,7 +56,7 @@ func EulerMatrixBetweenAt(v1, v2 *Vec, out *mat.Matrix32) *mat.Matrix32 {
 }
 
 // Rotate rotates a vector by the given rotation matrix.
-func (v *Vec) Rotate(m *mat.Matrix32) {
+func RotateVec(v *[3]float32, m *mat.Matrix32) {
 	v0 := m.Vals[0]*v[0] + m.Vals[1]*v[1] + m.Vals[2]*v[2]
 	v1 := m.Vals[3]*v[0] + m.Vals[4]*v[1] + m.Vals[5]*v[2]
 	v2 := m.Vals[6]*v[0] + m.Vals[7]*v[1] + m.Vals[8]*v[2]
@@ -65,7 +65,7 @@ func (v *Vec) Rotate(m *mat.Matrix32) {
 
 // Rotate rotates a tetrahedron by the given rotation matrix.
 func (t *Tetra) Rotate(m *mat.Matrix32){
-	for i := 0; i < 4; i++ { t[i].Rotate(m) }
+	for i := 0; i < 4; i++ { RotateVec(&t[i], m) }
 }
 
 // SphericalAngles returns the azimuthal and polar angles (respectively) of

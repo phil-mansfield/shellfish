@@ -16,20 +16,20 @@ type haloRing struct {
 	ProfileRing
 	phis []float32
 	rot, irot mat.Matrix32
-	norm geom.Vec
+	norm [3]float32
 	rMax float64
 
 	// Options
 	log bool
 
 	// Workspace objects.
-	dr geom.Vec
+	dr [3]float32
 	t geom.Tetra
 	pt geom.PluckerTetra
 	poly geom.TetraSlice
 }
 
-func (hr *haloRing) Reuse(origin *geom.Vec, rMin, rMax float64) {
+func (hr *haloRing) Reuse(origin *[3]float32, rMin, rMax float64) {
 	hr.dr = *origin
 	for i := 0; i < 3; i++ { hr.dr[i] *= -1 }
 	hr.rMax = rMax
@@ -47,13 +47,13 @@ func Log(log bool) Option {
 func Rotate(phi, theta, psi float32) Option {
 	return func(hr *haloRing) {
 		rot := geom.EulerMatrix(phi, theta, psi)
-		hr.norm.Rotate(rot)
+		geom.RotateVec(&hr.norm, rot)
 	}
 }
 
 // Init initialized a haloRing.
 func (hr *haloRing) Init(
-	norm, origin *geom.Vec, rMin, rMax float64, bins, n int, opts ...Option,
+	norm, origin *[3]float32, rMin, rMax float64, bins, n int, opts ...Option,
 ) {
 	hr.log = false
 	hr.norm = *norm
@@ -69,7 +69,7 @@ func (hr *haloRing) Init(
 	}
 
 	hr.ProfileRing.Init(rMin, rMax, bins, n)
-	zAxis := &geom.Vec{0, 0, 1}
+	zAxis := &[3]float32{0, 0, 1}
 	
 	hr.rot.Init(make([]float32, 9), 3, 3)
 	hr.irot.Init(make([]float32, 9), 3, 3)
@@ -188,10 +188,10 @@ func (hr *haloRing) BinIdx(r float64) int {
 
 // LineSegment write a line segment corresponding to the given profile 
 func (hr *haloRing) LineSegment(prof int, out *geom.LineSegment) {
-	vec := geom.Vec{}
+	vec := [3]float32{}
 	sin, cos := math.Sincos(float64(hr.phis[prof]))
 	vec[0], vec[1] = float32(cos), float32(sin)
-	vec.Rotate(&hr.irot)
+	geom.RotateVec(&vec, &hr.irot)
 	
 	if hr.log {
 		*out = geom.LineSegment{Origin: hr.dr, Dir: vec,
@@ -215,7 +215,7 @@ func (hp *HaloProfiles) Clear() {
 	for i := range hp.rs { hp.rs[i].Clear() }
 }
 
-func (hp *HaloProfiles) Reuse(id int, origin *geom.Vec, rMin, rMax float64) {
+func (hp *HaloProfiles) Reuse(id int, origin *[3]float32, rMin, rMax float64) {
 	hp.C, hp.R = *origin, float32(rMax)
 	hp.cCopy = hp.C
 	hp.minSphere.C, hp.minSphere.R = *origin, float32(rMin)
@@ -243,7 +243,7 @@ func (hp *HaloProfiles) chanClear(out chan<- int) {
 // LoS profiles.
 type HaloProfiles struct {
 	geom.Sphere
-	cCopy geom.Vec
+	cCopy [3]float32
 	minSphere geom.Sphere
 
 	rs []haloRing
@@ -257,17 +257,17 @@ type HaloProfiles struct {
 
 // Init initializes a HaloProfiles struct with the given parameters.
 func (hp *HaloProfiles) Init(
-	id, rings int, origin *geom.Vec, rMin, rMax float64,
+	id, rings int, origin *[3]float32, rMin, rMax float64,
 	bins, n int, boxWidth float64, opts ...Option,
 ) *HaloProfiles {
 	// We might be able to do better than this.
-	var norms []geom.Vec
+	var norms [][3]float32
 	switch {
 	case rings > 10:
 		solid, _ := geom.NewUniquePlatonicSolid(10)
 		norms = solid.UniqueNormals()
 		for i := 10; i < rings; i++ {
-			v := geom.Vec{
+			v := [3]float32{
 				float32(rand.Float64() - 0.5),
 				float32(rand.Float64() - 0.5),
 				float32(rand.Float64() - 0.5),
@@ -286,9 +286,9 @@ func (hp *HaloProfiles) Init(
 			panic(fmt.Sprintf("Cannot uniformly space %d rings.", rings))
 		}
 	case rings == 2:
-		norms = []geom.Vec{{0, 0, 1}, {0, 1, 0}}
+		norms = [][3]float32{{0, 0, 1}, {0, 1, 0}}
 	case rings == 1:
-		norms = []geom.Vec{{0, 0, 1}}
+		norms = [][3]float32{{0, 0, 1}}
 	default:
 		panic("Invalid ring number.")
 	}
@@ -354,7 +354,7 @@ func (hp *HaloProfiles) SphereIntersect(s *geom.Sphere) bool {
 
 // VecIntersect returns true if the given vector is contained in the given halo
 // and false otherwise.
-func (hp *HaloProfiles) VecIntersect(v *geom.Vec) bool {
+func (hp *HaloProfiles) VecIntersect(v *[3]float32) bool {
 	return hp.Sphere.VecIntersect(v) && !hp.minSphere.VecIntersect(v)
 }
 
@@ -365,7 +365,7 @@ func (hp *HaloProfiles) TetraIntersect(t *geom.Tetra) bool {
 
 // ChangeCenter updates the center of the halo to a new position. This includes
 // updating several pieces of internal state.
-func (hp *HaloProfiles) ChangeCenter(v *geom.Vec) {
+func (hp *HaloProfiles) ChangeCenter(v *[3]float32) {
 	for i := 0; i < 3; i++ {
 		hp.C[i] = v[i]
 		hp.minSphere.C[i] = v[i]
@@ -460,16 +460,16 @@ func (hp *HaloProfiles) GetRs(out []float64) {
 func (hp *HaloProfiles) PlaneToVolume(
 	ring int, px, py float64,
 ) (x, y, z float64) {
-	v := &geom.Vec{float32(px), float32(py), 0}
-	v.Rotate(&hp.rs[ring].irot)
+	v := &[3]float32{float32(px), float32(py), 0}
+	geom.RotateVec(v, &hp.rs[ring].irot)
 	return float64(v[0]), float64(v[1]), float64(v[2])
 }
 
 func (hp *HaloProfiles) VolumeToPlane(
 	ring int, x, y, z float64,
 ) (px, py float64) {
-	v := &geom.Vec{float32(x), float32(y), float32(z)}
-	v.Rotate(&hp.rs[ring].rot)
+	v := &[3]float32{float32(x), float32(y), float32(z)}
+	geom.RotateVec(v, &hp.rs[ring].rot)
 	return float64(v[0]), float64(v[1])
 }
 

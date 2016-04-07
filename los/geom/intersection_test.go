@@ -6,7 +6,6 @@ import (
 	"math/rand"
 
 	"github.com/phil-mansfield/shellfish/render/io"
-	rGeom "github.com/phil-mansfield/shellfish/render/geom"
 )
 
 var (
@@ -16,13 +15,12 @@ var (
 	rMax = float32(0.6318755421407911)
 	rMin = float32(0)
 
-	L = Vec{0, 0, 1}
+	L = [3]float32{0, 0, 1}
 
 	hd io.SheetHeader
-	xs []rGeom.Vec
+	xs [][3]float32
 	ts []Tetra
 	pts []PluckerTetra
-	mainSuccess = myMain()
 )
 
 func randomizeTetra(t *Tetra, low, high float32) {
@@ -94,8 +92,8 @@ func randomAnchoredPluckerVec() *AnchoredPluckerVec {
 	z := rand.Float32()
 	norm := float32(math.Sqrt(float64(x*x + y*y + z*z)))
 
-	P := &Vec{0, 0, 0}
-	L := &Vec{ x/norm, y/norm, z/norm }
+	P := &[3]float32{0, 0, 0}
+	L := &[3]float32{ x/norm, y/norm, z/norm }
 	p := new(AnchoredPluckerVec)
 	p.Init(P, L)
 	return p
@@ -113,212 +111,6 @@ func BenchmarkPluckerTetraInit(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		i := n % len(ts)
 		pts[i].Init(&ts[i])
-	}
-}
-
-
-func BenchmarkIntersectionSheet(b *testing.B) {
-	if mainSuccess == 1 { b.FailNow() }
-
-	for idx := range ts {
-		pts[idx].Init(&ts[idx])
-	}
-	ap := new(AnchoredPluckerVec)
-	P := Vec{float32(hx), float32(hy), float32(hz)}
-	ap.Init(&P, &L)
-	w := new(IntersectionWorkspace)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for idx := range ts {
-			w.IntersectionDistance(&pts[idx], &ts[idx], ap)
-		}
-	}
-}
-
-func BenchmarkIntersectionIntersectOnly(b *testing.B) {
-	if mainSuccess == 1 { b.FailNow() }
-
-	for idx := range ts {
-		pts[idx].Init(&ts[idx])
-	}
-	ap := new(AnchoredPluckerVec)
-	P := Vec{float32(hx), float32(hy), float32(hz)}
-	ap.Init(&P, &L)
-	w := new(IntersectionWorkspace)
-
-	valid := make([]bool, len(ts))
-	for idx := range ts {
-		re, rl, ok := w.IntersectionDistance(&pts[idx], &ts[idx], ap)
-		if ok && ((re < rMax && re > rMin) || (rl < rMax && rl > rMin)) {
-			valid[idx] = true
-		}
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		for idx := range ts {
-			if valid[idx] {
-				w.IntersectionDistance(&pts[idx], &ts[idx], ap)
-			}
-		}
-	}
-}
-
-func BenchmarkSheetPreparation(b *testing.B) {
-	if mainSuccess == 1 { b.FailNow() }
-	vecs, phis := vectorRing(1000)
-	t := new(Tetra)
-	rot := EulerMatrix(0, 0, 0)
-
-	for idx := range ts {
-		*t = ts[idx]
-		t.Rotate(rot)
-		t.Orient(+1)
-	}
-
-	_, _ = vecs, phis
-
-}
-
-func BenchmarkSheetHaloIntersect(b *testing.B) {
-	if mainSuccess == 1 { b.FailNow() }
-	for idx := range ts {
-		ts[idx].Orient(+1)
-	}
-
-	b.ResetTimer()
-
-	var n int
-	for m := 0; m < b.N; m++ {
-		n = 0
-		rSqr := rMax*rMax
-		for i := range ts {
-			for j := 0; j < 4; j++ {
-				x, y, z := ts[i][j][0]-hx, ts[i][j][1]-hy, ts[i][j][2]-hz
-				if rSqr >= x*x + y*y + z*z {
-					n++
-					break
-				}
-			}
-		}
-	}
-}
-
-func BenchmarkSheetRingIntersectionDistance(b *testing.B) {
-	if mainSuccess == 1 { b.FailNow() }
-
-	valid := make([]bool, len(ts))
-	rMaxSqr, rMinSqr := rMax*rMax, rMin*rMin
-	_ = rMinSqr
-	for i := range ts {
-		for j := 0; j < 4; j++ {
-			x, y, z := ts[i][j][0]-hx, ts[i][j][1]-hy, ts[i][j][2]-hz
-			rSqr := x*x + y*y + z*z
-			if rSqr < rMaxSqr {
-				valid[i] = true
-				break
-			}
-		}
-	}
-
-	b.ResetTimer()
-
-	t := new(Tetra)
-	pt := new(PluckerTetra)
-	poly := new(TetraSlice)
-	w := new(IntersectionWorkspace)
-
-	rot := EulerMatrix(0, 0, 0)
-	dr := &Vec{-hx, -hy, -hz}
-	vecs, _ := vectorRing(1000)
-
-	var m int
-	for n := 0; n < b.N; n++ {
-		m = 0
-		for i, ok := range valid {
-			if ok {
-				*t = ts[i]
-				t.Translate(dr)
-				t.Rotate(rot)
-				pt.Init(t)
-				ok := t.ZPlaneSlice(pt, 0, poly)
-				if ok {
-					lowPhi, phiWidth := poly.AngleRange()
-					                    
-					lowIdx, idxWidth := AngleBinRange(
-						lowPhi, phiWidth, len(vecs),
-					)
-
-					for idx := lowIdx; idx < lowIdx + idxWidth; idx++ {
-						m++
-						j := idx
-						if j >= len(vecs) { j -= len(vecs) }
-						w.IntersectionDistance(pt, t, &vecs[j])
-					}
-				}
-			}
-		}
-	}
-	println(m)
-}
-
-func BenchmarkSheetRingLineSolve(b *testing.B) {
-	if mainSuccess == 1 { b.FailNow() }
-
-	y01, m1 := 2.0, -7.0
-	y02, m2 := 5.0, 1.0
-
-	valid := make([]bool, len(ts))
-	rMaxSqr, rMinSqr := rMax*rMax, rMin*rMin
-	_ = rMinSqr
-	for i := range ts {
-		for j := 0; j < 4; j++ {
-			x, y, z := ts[i][j][0]-hx, ts[i][j][1]-hy, ts[i][j][2]-hz
-			rSqr := x*x + y*y + z*z
-			if rSqr < rMaxSqr {
-				valid[i] = true
-				break
-			}
-		}
-	}
-
-	b.ResetTimer()
-
-	t := new(Tetra)
-	pt := new(PluckerTetra)
-	poly := new(TetraSlice)
-
-	rot := EulerMatrix(0, 0, 0)
-	dr := &Vec{-hx, -hy, -hz}
-	vecs, _ := vectorRing(1000)
-
-	for n := 0; n < b.N; n++ {
-		for i, ok := range valid {
-			if ok {
-				*t = ts[i]
-				t.Translate(dr)
-				t.Rotate(rot)
-				pt.Init(t)
-				ok := t.ZPlaneSlice(pt, 0, poly)
-				if ok {
-					lowPhi, phiWidth := poly.AngleRange()
-					                    
-					lowIdx, idxWidth := AngleBinRange(
-						lowPhi, phiWidth, len(vecs),
-					)
-
-					for idx := lowIdx; idx < lowIdx + idxWidth; idx++ {
-						j := idx
-						if j >= len(vecs) { j -= len(vecs) }
-						x := (y02 - y01) / (m2 - m1)
-						y := y01  + x * m1
-						math.Sqrt(x*x + y*y)
-					}
-				}
-			}
-		}
 	}
 }
 
@@ -365,7 +157,7 @@ func almostEq(x1, x2, eps float32) bool {
 }
 
 func TestIntersectionDistance(t *testing.T) {
-	P, L := Vec{-0.5, 1, 0.5}, Vec{1, 0, 0}
+	P, L := [3]float32{-0.5, 1, 0.5}, [3]float32{1, 0, 0}
 	eps := float32(1e-4)
 
 	ap := new(AnchoredPluckerVec)
@@ -379,19 +171,19 @@ func TestIntersectionDistance(t *testing.T) {
 		enter, exit float32 
 		ok bool
 	}{	
-		{Tetra{Vec{1,0,4},Vec{1,4,0},Vec{1,0,0},Vec{5,0,0}},1.5,4,true},
-		{Tetra{Vec{1,4,0},Vec{1,0,4},Vec{3,0,0},Vec{5, 0, 0}},2.75,4,true},
-		{Tetra{Vec{1,0,4},Vec{1,4,0},Vec{1,0,0},Vec{5,0,0}},1.5,4,true},
+		{Tetra{{1,0,4}, {1,4,0}, {1,0,0}, {5,0,0}},1.5,4,true},
+		{Tetra{{1,4,0}, {1,0,4}, {3,0,0}, {5, 0, 0}},2.75,4,true},
+		{Tetra{{1,0,4}, {1,4,0}, {1,0,0}, {5,0,0}},1.5,4,true},
 
-		{Tetra{Vec{-1,4,0},Vec{-1,0,4},Vec{-1,0,0},Vec{3,0,0}},-0.5,2,true},
-		{Tetra{Vec{9,4,0},Vec{9,0,4},Vec{9,0,0},Vec{13,0,0}},9.5,12,true},
+		{Tetra{{-1,4,0},{-1,0,4},{-1,0,0},{3,0,0}},-0.5,2,true},
+		{Tetra{{9,4,0}, {9,0,4}, {9,0,0}, {13,0,0}},9.5,12,true},
 
 
-		{Tetra{Vec{1,0,4},Vec{1,0,0},Vec{5,0,0},Vec{1,4,0}},1.5,4,true},
-		{Tetra{Vec{1,0,0},Vec{5,0,0},Vec{1,4,0},Vec{1,0,4}},1.5,4,true},
-		{Tetra{Vec{5,0,0},Vec{1,4,0},Vec{1,0,4},Vec{1,0,0},},1.5,4,true},
+		{Tetra{{1,0,4}, {1,0,0}, {5,0,0}, {1,4,0}},1.5,4,true},
+		{Tetra{{1,0,0}, {5,0,0}, {1,4,0}, {1,0,4}},1.5,4,true},
+		{Tetra{{5,0,0}, {1,4,0}, {1,0,4}, {1,0,0},},1.5,4,true},
 		
-		{Tetra{Vec{1,6,0},Vec{1,2,4},Vec{1,2,0},Vec{5,2,0}},0,0,false},
+		{Tetra{{1,6,0}, {1,2,4}, {1,2,0}, {5,2,0}},0,0,false},
 
 	}
 
@@ -431,7 +223,7 @@ func almostEqTetraSlice(poly *TetraSlice, xs, ys []float32) bool {
 }
 
 func TestZPlaneSlice(t *testing.T) {
-	tet := Tetra{Vec{0, 4, 3}, Vec{0, 4, -1}, Vec{4, 4, -1}, Vec{0, 8, -1}}
+	tet := Tetra{{0, 4, 3}, {0, 4, -1}, {4, 4, -1}, {0, 8, -1}}
 	xs, ys := []float32{0, 0, 3}, []float32{7, 4, 4}
 
 	tet.Orient(+1)
@@ -449,7 +241,7 @@ func TestZPlaneSlice(t *testing.T) {
 	}
 
 
-	tet.Translate(&Vec{0, 0, 10})
+	tet.Translate(&[3]float32{0, 0, 10})
 	pt.Init(&tet)
 	if tet.ZPlaneSlice(pt, 0, poly) {
 		t.Errorf("z=0 sliced a tetrahedron it did not intersect.")
@@ -459,14 +251,14 @@ func TestZPlaneSlice(t *testing.T) {
 func vectorRing(n int) (vecs []AnchoredPluckerVec, phis []float32) {
 	phis = make([]float32, n)
 	vecs = make([]AnchoredPluckerVec, n)
-	P := Vec{0, 0, 0}
+	P := [3]float32{0, 0, 0}
 
 	for i := 0; i < n; i++ {
 		phi := float32(i) * math.Pi * 2 / float32(n)
 		phis[i] = phi
 		x := float32(math.Cos(float64(phi)))
 		y := float32(math.Sin(float64(phi)))
-		L := Vec{x, y, 0}
+		L := [3]float32{x, y, 0}
 		vecs[i].Init(&P, &L)
 	}
 
@@ -530,12 +322,12 @@ func BenchmarkSphereLineSegmentIntersection(b *testing.B) {
 	n := 1000
 	ls := make([]LineSegment, n)
 	for i := range ls {
-		ls[i] = LineSegment{ Vec{ float32(rand.Float64()),
+		ls[i] = LineSegment{ [3]float32{ float32(rand.Float64()),
 			float32(rand.Float64()),
-			float32(rand.Float64())}, Vec{0, 0, 1}, 0, 1 }
+			float32(rand.Float64())}, [3]float32{0, 0, 1}, 0, 1 }
 	}
 	// Want most of the lines to intersect.
-	sphere := Sphere{ Vec{0.5, 0.5, 0.5}, 0.5 }
+	sphere := Sphere{ [3]float32{0.5, 0.5, 0.5}, 0.5 }
 
 	b.ResetTimer()
 	idx := 0
@@ -544,52 +336,4 @@ func BenchmarkSphereLineSegmentIntersection(b *testing.B) {
 		idx++
 		if idx == n { idx = 0 }
 	}
-}
-
-func coords(idx, cells int64) (x, y, z int64) {
-	x = idx % cells
-	y = (idx % (cells * cells)) / cells
-	z = idx / (cells * cells)
-	return x, y, z
-}
-
-func index(x, y, z, cells int64) int64 {
-	return x + y * cells + z * cells * cells
-}
-
-func readTetra(idxs *rGeom.TetraIdxs, xs []rGeom.Vec, t *Tetra) {
-	for i := 0; i < 4; i++ {
-		t[i] = Vec(xs[idxs[i]])
-	}
-}
-
-func myMain() int {
-	file := "/project/surph/mansfield/data/sheet_segments/" + 
-		"Box_L0063_N1024_G0008_CBol/snapdir_100/sheet167.dat"
-	if err := io.ReadSheetHeaderAt(file, &hd); err != nil {
-		return 1
-	}
-	xs = make([]rGeom.Vec, hd.GridCount)
-	if err := io.ReadSheetPositionsAt(file, xs); err != nil {
-		panic(err.Error())
-	}
-
-	n := hd.SegmentWidth * hd.SegmentWidth * hd.SegmentWidth
-	ts = make([]Tetra, n * 6)
-	pts = make([]PluckerTetra, n * 6)
-
-	idxBuf := &rGeom.TetraIdxs{}
-	for writeIdx := int64(0); writeIdx < n; writeIdx++ {
-		x, y, z := coords(writeIdx, hd.SegmentWidth)
-		readIdx := index(x, y, z, hd.SegmentWidth)
-
-		for dir := int64(0); dir < 6; dir++ {
-			tIdx := 6 * writeIdx + dir
-			idxBuf.Init(readIdx, hd.GridWidth, 1, int(dir))
-			readTetra(idxBuf, xs, &ts[tIdx])
-			ts[tIdx].Orient(+1)
-		}
-	}
-
-	return 0
 }

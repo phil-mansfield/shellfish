@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func vecEpsEq(v1, v2 *Vec, eps float32) bool {
+func vecEpsEq(v1, v2 *[3]float32, eps float32) bool {
 	for i := 0; i < 3; i++ {
 		diff := v1[i] - v2[i]
 		if diff > eps || diff < -eps {
@@ -24,30 +24,30 @@ func TestRotate(t *testing.T) {
 
 	table := []struct{
 		phi, theta, psi float32
-		start, end Vec
+		start, end [3]float32
 	} {
-		{0, 0, 0, Vec{1, 2, 3}, Vec{1, 2, 3}},
-		{pi, 0, 0, Vec{1, 0, 0}, Vec{-1, 0, 0}},
-		{-pi, 0, 0, Vec{1, 0, 0}, Vec{-1, 0, 0}},
-		{0, 0, pi, Vec{1, 0, 0}, Vec{-1, 0, 0}},
-		{0, 0, -pi, Vec{1, 0, 0}, Vec{-1, 0, 0}},
-		{0, pi, 0, Vec{0, 1, 0}, Vec{0, -1, 0}},
-		{0, -pi, 0, Vec{0, 1, 0}, Vec{0, -1, 0}},
+		{0, 0, 0, [3]float32{1, 2, 3}, [3]float32{1, 2, 3}},
+		{pi, 0, 0, [3]float32{1, 0, 0}, [3]float32{-1, 0, 0}},
+		{-pi, 0, 0, [3]float32{1, 0, 0}, [3]float32{-1, 0, 0}},
+		{0, 0, pi, [3]float32{1, 0, 0}, [3]float32{-1, 0, 0}},
+		{0, 0, -pi, [3]float32{1, 0, 0}, [3]float32{-1, 0, 0}},
+		{0, pi, 0, [3]float32{0, 1, 0}, [3]float32{0, -1, 0}},
+		{0, -pi, 0, [3]float32{0, 1, 0}, [3]float32{0, -1, 0}},
 
-		{pi2, 0, 0, Vec{1, 0, 0}, Vec{0, 1, 0}},
-		{pi2, 0, 0, Vec{0, 1, 0}, Vec{-1, 0, 0}},
-		{0, 0, pi2, Vec{1, 0, 0}, Vec{0, 1, 0}},
-		{0, 0, pi2, Vec{0, 1, 0}, Vec{-1, 0, 0}},
-		{0, pi2, 0, Vec{0, 1, 0}, Vec{0, 0, 1}},
-		{0, pi2, 0, Vec{0, 0, 1}, Vec{0, -1, 0}},
+		{pi2, 0, 0, [3]float32{1, 0, 0}, [3]float32{0, 1, 0}},
+		{pi2, 0, 0, [3]float32{0, 1, 0}, [3]float32{-1, 0, 0}},
+		{0, 0, pi2, [3]float32{1, 0, 0}, [3]float32{0, 1, 0}},
+		{0, 0, pi2, [3]float32{0, 1, 0}, [3]float32{-1, 0, 0}},
+		{0, pi2, 0, [3]float32{0, 1, 0}, [3]float32{0, 0, 1}},
+		{0, pi2, 0, [3]float32{0, 0, 1}, [3]float32{0, -1, 0}},
 
-		{pi2, pi2/2, 0, Vec{1, 0, 0}, Vec{0, sqrt2, sqrt2}},
+		{pi2, pi2/2, 0, [3]float32{1, 0, 0}, [3]float32{0, sqrt2, sqrt2}},
 	}
 
 	for i, test := range table {
 		m := EulerMatrix(test.phi, test.theta, test.psi)
 		v := test.start
-		v.Rotate(m)
+		RotateVec(v, m)
 		if !vecEpsEq(&v, &test.end, eps) {
 			t.Errorf(
 				"%d) %v.Rotate(%.4g %.4g %.4g) -> %v instead of %v",
@@ -62,27 +62,27 @@ func TestEulerMatrixBetween(t *testing.T) {
 
 	eps := float32(1e-4)
 	table := []struct{
-		v1, v2 Vec
+		v1, v2 [3]float32
 	} {
-		{Vec{1, 0, 0}, Vec{1, 0, 0}},
-		{Vec{1, 0, 0}, Vec{0, 1, 0}},
-		{Vec{0, 1, 0}, Vec{0, sqrt2, sqrt2}},
-		{Vec{1, 0, 0}, Vec{0, sqrt2, sqrt2}},
- 		{Vec{1, 0, 0}, Vec{0, 0, 1}},
-		{Vec{0, 1, 0}, Vec{1, 0, 0}},
-		{Vec{0, 1, 0}, Vec{0, 0, 1}},
-		{Vec{0, 0, 1}, Vec{1, 0, 0}},
+		{[3]float32{1, 0, 0}, [3]float32{1, 0, 0}},
+		{[3]float32{1, 0, 0}, [3]float32{0, 1, 0}},
+		{[3]float32{0, 1, 0}, [3]float32{0, sqrt2, sqrt2}},
+		{[3]float32{1, 0, 0}, [3]float32{0, sqrt2, sqrt2}},
+ 		{[3]float32{1, 0, 0}, [3]float32{0, 0, 1}},
+		{[3]float32{0, 1, 0}, [3]float32{1, 0, 0}},
+		{[3]float32{0, 1, 0}, [3]float32{0, 0, 1}},
+		{[3]float32{0, 0, 1}, [3]float32{1, 0, 0}},
 
 
-		{Vec{2, 3, 4}, Vec{4, 2, 3}},
-		{Vec{2, 3, 4}, Vec{4, 2, 3}},
-		{Vec{2, 3, 4}, Vec{4, 2, 3}},
+		{[3]float32{2, 3, 4}, [3]float32{4, 2, 3}},
+		{[3]float32{2, 3, 4}, [3]float32{4, 2, 3}},
+		{[3]float32{2, 3, 4}, [3]float32{4, 2, 3}},
 	}
 
 	for i, test := range table {
 		m := EulerMatrixBetween(&test.v1, &test.v2)
 		v := test.v1
-		v.Rotate(m)
+		RotateVec(v, m)
 		if !vecEpsEq(&v, &test.v2, eps) {
 			t.Errorf(
 				"%d) %v.Rotate(EulerMatrixBetween(%v %v)) -> %v instead of %v",
@@ -118,10 +118,10 @@ func TestAngularDistance(t *testing.T) {
 }
 
 func BenchmarkVecRotate(b *testing.B) {
-	v := Vec{1, 1, 1}
+	v := [3]float32{1, 1, 1}
 	m := EulerMatrix(1, 2, 3)
 	for i := 0; i < b.N; i++ {
-		v.Rotate(m)
+		RotateVec(v, m)
 	}
 }
 

@@ -13,26 +13,23 @@ import (
 	"math"
 )
 
-// Vec is a three dimensional vector. (Duh!)
-type Vec [3]float32
-
 // PluckerVec represents a ray. If P and L are the position of the ray's 
 // origin and the unit vector representing its direction, respectively, then
 // U = L and V = L cross P.
 type PluckerVec struct {
-	U, V Vec
+	U, V [3]float32
 }
 
 // AnchoredPluckerVec is a Plucker vector which also saves the position of
 // the ray's origin.
 type AnchoredPluckerVec struct {
 	PluckerVec
-	P Vec
+	P [3]float32
 }
 
 // Init initializes a Plucker vector given a ray origin, P, and a unit
 // direction vector, L.
-func (p *PluckerVec) Init(P, L *Vec) {
+func (p *PluckerVec) Init(P, L *[3]float32) {
 	p.U = *L
 	
 	p.V[0] = -P[1]*L[2] + P[2]*L[1]
@@ -42,7 +39,7 @@ func (p *PluckerVec) Init(P, L *Vec) {
 
 // InitFromSegment initialized a Plucker vector which corresponds to a ray
 // pointing from the position vector P1 to the position vector P2.
-func (p *PluckerVec) InitFromSegment(P1, P2 *Vec) {
+func (p *PluckerVec) InitFromSegment(P1, P2 *[3]float32) {
 	var sum float32
 	for i := 0; i < 3; i++ {
 		p.U[i] = P2[i] - P1[i]
@@ -57,7 +54,7 @@ func (p *PluckerVec) InitFromSegment(P1, P2 *Vec) {
 }
 
 // Translate translates a Plucker vector along the given vector.
-func (p *PluckerVec) Translate(dx *Vec) {
+func (p *PluckerVec) Translate(dx *[3]float32) {
 	p.V[0] += -dx[1]*p.U[2] + dx[2]*p.U[1]
     p.V[1] += -dx[2]*p.U[0] + dx[0]*p.U[2]
     p.V[2] += -dx[0]*p.U[1] + dx[1]*p.U[0]
@@ -93,20 +90,20 @@ func (p1 *PluckerVec) SignDot(p2 *PluckerVec, flip bool) (float32, int) {
 
 // Init initializes an anchored Plucker vector given a ray origin, P, and a
 // unit direction vector, L.
-func (ap *AnchoredPluckerVec) Init(P, L *Vec) {
+func (ap *AnchoredPluckerVec) Init(P, L *[3]float32) {
 	ap.PluckerVec.Init(P, L)
 	ap.P = *P
 }
 
 // InitFromSegment initialized a Plucker vector which corresponds to a ray
 // pointing from the position vector P1 to the position vector P2.
-func (ap *AnchoredPluckerVec) InitFromSegment(P1, P2 *Vec) {
+func (ap *AnchoredPluckerVec) InitFromSegment(P1, P2 *[3]float32) {
 	ap.PluckerVec.InitFromSegment(P1, P2)
 	ap.P = *P1
 }
 
 // Translate translates a Plucker vector along the given vector.
-func (ap *AnchoredPluckerVec) Translate(dx *Vec) {
+func (ap *AnchoredPluckerVec) Translate(dx *[3]float32) {
 	ap.PluckerVec.Translate(dx)
 	for i := 0; i < 3; i++ { ap.P[i] += dx[i] }
 }
@@ -118,7 +115,7 @@ func (ap *AnchoredPluckerVec) Translate(dx *Vec) {
 // F1(V2, V3, V0)
 // F2(V1, V0, V3)
 // F3(V0, V1, V2)
-type Tetra [4]Vec
+type Tetra [4][3]float32
 
 var tetraIdxs = [4][3]int {
 	[3]int{ 3, 2, 1 },
@@ -136,7 +133,7 @@ func (_ *Tetra) VertexIdx(face, vertex int) int {
 // Orient arranges tetrahedron points so that all faces point outward for
 // dir = +1 and inward for dir = -1.
 func (t *Tetra) Orient(dir int) {
-	v, w, n := Vec{}, Vec{}, Vec{}
+	v, w, n := [3]float32{}, [3]float32{}, [3]float32{}
 	for i := 0; i < 3; i++ {
 		v[i] = t[1][i] - t[0][i]
 		w[i] = t[2][i] - t[0][i]
@@ -156,7 +153,7 @@ func (t *Tetra) Orient(dir int) {
 }
 
 // Translate translates a tetrahedron by the given vector.
-func (t *Tetra) Translate(dx *Vec) {
+func (t *Tetra) Translate(dx *[3]float32) {
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 3; j++ {
 			t[i][j] += dx[j]
@@ -180,7 +177,7 @@ func (t *Tetra) Volume() float64 {
 
 // Sphere is exactly what you think it is.
 type Sphere struct {
-	C Vec
+	C [3]float32
 	R float32
 }
 
@@ -198,7 +195,7 @@ func (s1 *Sphere) SphereIntersect(s2 *Sphere) bool {
 }
 
 // VecIntersect returns true if a vector is contained inside a sphere.
-func (s *Sphere) VecIntersect(v *Vec) bool {
+func (s *Sphere) VecIntersect(v *[3]float32) bool {
 	sum := float32(0)
 	dr2 := s.R*s.R
 	for i := 0; i < 3; i++ {
@@ -220,7 +217,7 @@ func (s *Sphere) TetraIntersect(t *Tetra) bool {
 
 // LineSegment represents a line segment.
 type LineSegment struct {
-	Origin, Dir Vec
+	Origin, Dir [3]float32
 	StartR, EndR float32
 }
 
@@ -232,7 +229,7 @@ type LineSegment struct {
 func (s *Sphere) LineSegmentIntersect(
 	ls *LineSegment,
 ) (enter, exit float32, enters, exits bool) {
-	dr := Vec{}
+	dr := [3]float32{}
 	for i := 0; i < 3; i++ { dr[i] = ls.Origin[i] - s.C[i] }
 	b := 2 * ls.Dir[0]*dr[0] + ls.Dir[1]*dr[1] + ls.Dir[2]*dr[2]
 	c := dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2] - s.R*s.R
@@ -372,7 +369,7 @@ func (pt *PluckerTetra) Init(t *Tetra) {
 }
 
 // Translate translates a Plucker tetrahedron along the given vector.
-func (pt *PluckerTetra) Translate(dx *Vec) {
+func (pt *PluckerTetra) Translate(dx *[3]float32) {
 	for i := 0; i < 6; i++ { pt[i].Translate(dx) }
 }
 

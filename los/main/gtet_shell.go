@@ -11,7 +11,6 @@ import (
 	
 	"github.com/phil-mansfield/shellfish/los"
 	sph "github.com/phil-mansfield/shellfish/los/sphere_halo"
-	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
 	"github.com/phil-mansfield/shellfish/render/io"
@@ -220,7 +219,7 @@ func chanLoadSphereVec(
 			for x := 0; x < sw; x++ {
 
 				idx := x + y*gw + z*gw*gw
-				if intr[idx] { h.Insert(geom.Vec(vecs[idx]), rad, rho) }
+				if intr[idx] { h.Insert(vecs[idx], rad, rho) }
 			}
 		}
 	}
@@ -365,7 +364,7 @@ func createHalos(
 		
 		switch strings.ToLower(p.Interpolation) {
 		case "tetra":
-			origin := &geom.Vec{
+			origin := &[3]float32{
 				float32(xs[i]), float32(ys[i]), float32(zs[i]),
 			}
 			
@@ -415,14 +414,14 @@ func createHalos(
 	return halos, nil
 }
 
-func normVecs(n int) []geom.Vec {
-	var vecs []geom.Vec
+func normVecs(n int) [][3]float32 {
+	var vecs [][3]float32
 	gen := rand.NewTimeSeed(rand.Xorshift)
 	switch n {
 	case 3:
-		vecs = []geom.Vec{{0, 0, 1}, {0, 1, 0}, {1, 0, 0}}
+		vecs = [][3]float32{{0, 0, 1}, {0, 1, 0}, {1, 0, 0}}
 	default:
-		vecs = make([]geom.Vec, n)
+		vecs = make([][3]float32, n)
 		for i := range vecs {
 			for {
 				x := gen.Uniform(-1, +1)
@@ -431,7 +430,7 @@ func normVecs(n int) []geom.Vec {
 				r := math.Sqrt(x*x + y*y + z*z)
 
 				if r < 1 {
-					vecs[i] = geom.Vec{
+					vecs[i] = [3]float32{
 						float32(x/r), float32(y/r), float32(z/r),
 					}
 					break

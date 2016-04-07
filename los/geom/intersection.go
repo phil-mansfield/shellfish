@@ -95,7 +95,7 @@ func (t *Tetra) crossesZPlane(idx1, idx2 int, z float32) bool {
 // crossZ0Plane computes the x and y coordinates of the point where a ray
 // crosses the z = 0 plane. The ray is prepresented by a point, P, and a unit 
 // direction vector, L.
-func intersectZPlane(P, L *Vec, z float32) (x, y float32, ok bool) {
+func intersectZPlane(P, L *[3]float32, z float32) (x, y float32, ok bool) {
 	if L[2] == 0 { return 0, 0, false }
 	t := (z - P[2]) / L[2]
 	return P[0] + L[0]*t, P[1] + L[1]*t, true

@@ -55,24 +55,24 @@ func NewUniquePlatonicSolid(sides int) (solid PlatonicSolid, ok bool) {
 }
 
 var (
-	platonicTetrahedronVertices [][]Vec
-	platonicHexahedronVertices [][]Vec
-	platonicOctahedronVertices [][]Vec
-	platonicDodecahedronVertices [][]Vec
-	platonicIcosahedronVertices [][]Vec
+	platonicTetrahedronVertices [][][3]float32
+	platonicHexahedronVertices [][][3]float32
+	platonicOctahedronVertices [][][3]float32
+	platonicDodecahedronVertices [][][3]float32
+	platonicIcosahedronVertices [][][3]float32
 )
 
 func init() {
 	phi := float32((1 + math.Sqrt(5)) / 2)
 
-	platonicTetrahedronVertices = [][]Vec{
+	platonicTetrahedronVertices = [][][3]float32{
 		{{ 1, 1,  1}, {-1,  1, -1}, { 1, -1, -1}},
 		{{-1, 1, -1}, {-1, -1,  1}, { 1, -1, -1}},
 		{{ 1, 1,  1}, { 1, -1, -1}, {-1, -1,  1}},
 		{{ 1, 1,  1}, {-1, -1,  1}, {-1,  1, -1}},
 	}
 
-	platonicHexahedronVertices = [][]Vec{
+	platonicHexahedronVertices = [][][3]float32{
 		{{ 1, -1, -1}, { 1,  1, -1}, { 1,  1,  1}, { 1, -1,  1}},
 		{{-1,  1, -1}, {-1,  1,  1}, { 1,  1,  1}, { 1,  1, -1}},
 		{{-1, -1,  1}, { 1, -1,  1}, { 1,  1,  1}, {-1,  1,  1}},
@@ -83,7 +83,7 @@ func init() {
 	}
 
 	a, b := 1 / (2 * float32(math.Sqrt(2))), float32(0.5)
-	platonicOctahedronVertices = [][]Vec{
+	platonicOctahedronVertices = [][][3]float32{
 		{{-a, 0,  a}, {-a, 0, -a}, {0,  b, 0}},
 		{{-a, 0, -a}, { a, 0, -a}, {0,  b, 0}},
 		{{ a, 0, -a}, { a, 0,  a}, {0,  b, 0}},
@@ -97,7 +97,7 @@ func init() {
 
 	b = 1 / phi
 	c := 2 - phi
-	platonicDodecahedronVertices = [][]Vec{
+	platonicDodecahedronVertices = [][][3]float32{
 		{{ c,  0,  1}, {-c,  0,  1}, {-b,  b,  b}, { 0,  1,  c}, { b,  b,  b}},
 		{{-c,  0,  1}, { c,  0,  1}, { b, -b,  b}, { 0, -1,  c}, {-b, -b,  b}},
 		{{ 0, -1, -c}, { 0, -1,  c}, {-b, -b,  b}, {-1, -c,  0}, {-b, -b, -b}},
@@ -114,7 +114,7 @@ func init() {
 	}
 
 	a, b = float32(0.5), 1 / (2 * phi)
-	platonicIcosahedronVertices = [][]Vec{
+	platonicIcosahedronVertices = [][][3]float32{
 		{{ 0,  b,  a}, {-b,  a,  0}, { b,  a,  0}},
 		{{ 0,  b, -a}, { b,  a,  0}, {-b,  a,  0}},
 		{{ 0,  b,  a}, { 0, -b,  a}, {-a,  0,  b}},
@@ -143,7 +143,7 @@ func init() {
 // FaceVertices returns the coordinates of vertices of the specifed face.
 //
 // These coordinates are not normalized in any particular way.
-func (solid PlatonicSolid) FaceVertices(i int) []Vec {
+func (solid PlatonicSolid) FaceVertices(i int) [][3]float32 {
 	if i >= solid.Sides() {
 		panic(fmt.Sprintf(
 			"Invalid side number %d for PlatonidSolid %d", i, solid,
@@ -172,8 +172,8 @@ func (solid PlatonicSolid) FaceVertices(i int) []Vec {
 // generate origin-anchored planes from these vectors, make sure to remove
 // vectors which would result in duplicate planes (i.e. filter one of each pair
 // of vectors that point in opposite directions.)
-func (solid PlatonicSolid) Normals() []Vec {
-	vs := make([]Vec, solid.Sides())
+func (solid PlatonicSolid) Normals() [][3]float32 {
+	vs := make([][3]float32, solid.Sides())
 	for i := range vs {
 		v := &vs[i]
 		verts := solid.FaceVertices(i)
@@ -194,7 +194,7 @@ func (solid PlatonicSolid) Normals() []Vec {
 
 // UniqueNormals returns all the face-centered normal vectors which specify
 // unique origin-centered planes.
-func (solid PlatonicSolid) UniqueNormals() []Vec {
+func (solid PlatonicSolid) UniqueNormals() [][3]float32 {
 	vs := solid.Normals()
 	switch solid {
 	case PlatonicTetrahedron:

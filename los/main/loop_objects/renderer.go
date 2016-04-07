@@ -17,7 +17,7 @@ type Renderer struct {
 	Pw float64
 	Counts []int
 
-	vecBuf []rgeom.Vec
+	vecBuf [][3]float32
 	randBuf []float64
 	gen *rand.Generator
 }
@@ -54,7 +54,7 @@ func newRenderer(
 	r.Counts = make([]int, pixels[0]*pixels[1]*pixels[2])
 
     tetPts := int(math.Ceil(float64(pts*pts*pts) / 6))
-    r.vecBuf = make([]rgeom.Vec, tetPts)
+    r.vecBuf = make([][3]float32, tetPts)
     r.randBuf = make([]float64, 3*tetPts)
     r.gen = rand.NewTimeSeed(rand.Xorshift)
 
@@ -80,8 +80,8 @@ func (r *Renderer) UsePoint(x, y, z float64) {
 
 func (r *Renderer) UseTetra(t *geom.Tetra) {
     tet := &rgeom.Tetra{}
-    t0, t1 := rgeom.Vec(t[0]), rgeom.Vec(t[1])
-    t2, t3 := rgeom.Vec(t[2]), rgeom.Vec(t[3])
+    t0, t1 := [3]float32(t[0]), [3]float32(t[1])
+    t2, t3 := [3]float32(t[2]), [3]float32(t[3])
     tet.Init(&t0, &t1, &t2, &t3)
     tet.RandomSample(r.gen, r.randBuf, r.vecBuf)
 

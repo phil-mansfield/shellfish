@@ -18,9 +18,9 @@ import (
 // it is advised to construct a slice of [4]Points instead and switch to
 // Tetra instances only for calculations.
 type Tetra struct {
-	Corners [4]Vec
+	Corners [4][3]float32
 	volume  float64
-	bary    Vec
+	bary    [3]float32
 	vb      volumeBuffer
 	sb      sampleBuffer
 	volumeValid, baryValid bool
@@ -32,13 +32,13 @@ type TetraIdxs [4]int64
 // volumeBuffer contains buffer spaces used when calculating tetrahedron volumes
 // so that extra allocations do not need to be done.
 type volumeBuffer struct {
-	buf1, buf2, buf3 Vec
+	buf1, buf2, buf3 [3]float64
 }
 
 // sampleBuffer contains buffers spaces used when randomly sampling a
 // tetrahedron so the extra allocation does not need to be done.
 type sampleBuffer struct {
-	d, c [4]Vec
+	d, c [4][3]float32
 }
 
 const (
@@ -75,13 +75,13 @@ var (
 
 // NewTetra creates a new tetrahedron with corners at the specified positions
 // within a periodic box of the given width.
-func NewTetra(c0, c1, c2, c3 *Vec) *Tetra {
+func NewTetra(c0, c1, c2, c3 *[3]float32) *Tetra {
 	t := &Tetra{}
 	return t.Init(c0, c1, c2, c3)
 }
 
 // Init initializes a tetrahedron to correspond to the given corners.
-func (t *Tetra) Init(c0, c1, c2, c3 *Vec) *Tetra {
+func (t *Tetra) Init(c0, c1, c2, c3 *[3]float32) *Tetra {
 	t.volumeValid = false
 	t.baryValid = false
 
@@ -239,7 +239,7 @@ func (t *Tetra) Volume() float64 {
 
 // Contains returns true if a tetrahedron contains the given point and false
 // otherwise.
-func (t *Tetra) Contains(v *Vec) bool {
+func (t *Tetra) Contains(v *[3]float32) bool {
 	vol := t.Volume()
 
 	// (my appologies for the gross code here)
@@ -282,17 +282,19 @@ func epsEq(x, y, eps float64) bool {
 		(x != 0 && y != 0 && math.Abs((x-y)/x) <= eps)
 }
 
-func (t *Tetra) signedVolume(c0, c1, c2, c3 *Vec) float64 {
+func (t *Tetra) signedVolume(c0, c1, c2, c3 *[3]float32) float64 {
 	leg1, leg2, leg3 := &t.vb.buf1, &t.vb.buf2, &t.vb.buf3
 
 	for i := 0; i < 3; i++ {
-		leg1[i] = c1[i] - c0[i]
-		leg2[i] = c2[i] - c0[i]
-		leg3[i] = c3[i] - c0[i]
+		leg1[i] = float64(c1[i] - c0[i])
+		leg2[i] = float64(c2[i] - c0[i])
+		leg3[i] = float64(c3[i] - c0[i])
 	}
 
-	leg2.CrossSelf(leg3)
-	return leg1.Dot(leg2) / 6.0
+	panic("Relies on unsupported functions")
+
+	//leg2.CrossSelf(leg3)
+	//return leg1.Dot(leg2) / 6.0
 }
 
 func minMax(x, oldMin, oldMax float32) (min, max float32) {
@@ -308,7 +310,10 @@ func minMax(x, oldMin, oldMax float32) (min, max float32) {
 // RandomSample fills a buffer of vecotrs with points generated uniformly at
 // random from within a tetrahedron. The length of randBuf must be three times
 // the length of vecBuf.
-func (tet *Tetra) RandomSample(gen *rand.Generator, randBuf []float64, vecBuf []Vec) {
+func (tet *Tetra) RandomSample(
+	gen *rand.Generator, randBuf []float64, vecBuf [][3]float32,
+) {
+
 	N := len(vecBuf)
 	if len(randBuf) != N*3 {
 		panic(fmt.Sprintf("buf len %d not long enough for %d points.",
@@ -326,7 +331,7 @@ func (tet *Tetra) RandomSample(gen *rand.Generator, randBuf []float64, vecBuf []
 // Distribute converts a sequences of points generated uniformly within a 
 // unit cube to be distributed uniformly within the base tetrahedron. The
 // results are placed in vecBuf.
-func (tet *Tetra) Distribute(xs, ys, zs []float64, vecBuf []Vec) {
+func (tet *Tetra) Distribute(xs, ys, zs []float64, vecBuf [][3]float32) {
 	bary := tet.Barycenter()
 	// Some gross code to prevent allocations. cs are the displacement vectors
 	// to the corners
@@ -372,7 +377,7 @@ func (tet *Tetra) Distribute(xs, ys, zs []float64, vecBuf []Vec) {
 
 // DistributeUnit distributes a set of points in a unit cube across a unit
 // tetrahedron and stores the results to vecBuf.
-func DistributeUnit(vecBuf []Vec) {
+func DistributeUnit(vecBuf [][3]float32) {
 	for i := range vecBuf {
 		s, t, u := vecBuf[i][0], vecBuf[i][1], vecBuf[i][2]
 	
@@ -393,7 +398,7 @@ func DistributeUnit(vecBuf []Vec) {
 // DistributeTetra takes a set of points distributed across a unit tetrahedron
 // and distributes them across the given tetrahedron through barycentric
 // coordinate transformations.
-func (tet *Tetra) DistributeTetra(pts []Vec, out []Vec) {
+func (tet *Tetra) DistributeTetra(pts [][3]float32, out [][3]float32) {
 	bary := tet.Barycenter()
 
 	for i := 0; i < 4; i++ {
@@ -422,7 +427,7 @@ func (tet *Tetra) DistributeTetra(pts []Vec, out []Vec) {
 }
 
 // I hate that this function exists. Go, you make my life so hard sometimes.
-func (tet *Tetra) DistributeTetra64(pts []Vec, out [][3]float64) {
+func (tet *Tetra) DistributeTetra64(pts [][3]float32, out [][3]float64) {
 	bary := tet.Barycenter()
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 3; j++ {
@@ -447,7 +452,7 @@ func (tet *Tetra) DistributeTetra64(pts []Vec, out [][3]float64) {
 }
 
 // Barycenter computes the barycenter of a tetrahedron.
-func (t *Tetra) Barycenter() *Vec {
+func (t *Tetra) Barycenter() *[3]float32 {
 	if t.baryValid {
 		return &t.bary
 	}

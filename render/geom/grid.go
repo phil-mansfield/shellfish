@@ -151,13 +151,13 @@ func bound(x, origin, width int) int {
 }
 
 func (vcb *CellBounds) ScaleVecsSegment(
-	vs []Vec, cells int, boxWidth float64,
+	vs [][3]float32, cells int, boxWidth float64,
 ) {
 	fCells := float32(cells)
 	fWidth := float32(boxWidth)
 	scale := fCells / fWidth
 
-	origin := Vec{
+	origin := [3]float32{
 		float32(vcb.Origin[0]),
 		float32(vcb.Origin[1]),
 		float32(vcb.Origin[2]),
@@ -173,18 +173,18 @@ func (vcb *CellBounds) ScaleVecsSegment(
 }
 
 func (vcb *CellBounds) ScaleVecsDomain(
-	cb *CellBounds, vs []Vec, cells int, boxWidth float64,
+	cb *CellBounds, vs [][3]float32, cells int, boxWidth float64,
 ) {
 	fCells := float32(cells)
 	fWidth := float32(boxWidth)
 	scale := fCells / fWidth
 
-	origin := Vec{
+	origin := [3]float32{
 		float32(vcb.Origin[0]),
 		float32(vcb.Origin[1]),
 		float32(vcb.Origin[2]),
 	}
-	diff := Vec{
+	diff := [3]float32{
 		float32(vcb.Origin[0] - cb.Origin[0]),
 		float32(vcb.Origin[1] - cb.Origin[1]),
 		float32(vcb.Origin[2] - cb.Origin[2]),
@@ -208,7 +208,7 @@ func (vcb *CellBounds) ScaleVecsDomain(
 	}
 }
 
-func maxV(vs []Vec, dim int) float32 {
+func maxV(vs [][3]float32, dim int) float32 {
 	max := vs[0][dim]
 	for i := range vs {
 		if max < vs[i][dim] { max = vs[i][dim] }
@@ -216,7 +216,7 @@ func maxV(vs []Vec, dim int) float32 {
 	return max
 }
 
-func minV(vs []Vec, dim int) float32 {
+func minV(vs [][3]float32, dim int) float32 {
 	min := vs[0][dim]
 	for i := range vs {
 		if min > vs[i][dim] { min = vs[i][dim] }
@@ -224,7 +224,7 @@ func minV(vs []Vec, dim int) float32 {
 	return min
 }
 
-func countInBounds(cb *CellBounds, vs []Vec) int {
+func countInBounds(cb *CellBounds, vs [][3]float32) int {
 	num := 0
 	for _, v := range vs {
 		if int(v[0]) < cb.Width[0] && v[0] > 0 &&

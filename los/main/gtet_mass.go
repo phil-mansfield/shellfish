@@ -10,7 +10,6 @@ import (
 	"github.com/phil-mansfield/shellfish/cosmo"
 	"github.com/phil-mansfield/shellfish/render/io"
 	"github.com/phil-mansfield/shellfish/render/halo"
-	rgeom "github.com/phil-mansfield/shellfish/render/geom"
 	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
@@ -65,13 +64,13 @@ func main() {
 			rLows[i], rHighs[i] = shell.RadialRange(10 * 1000)
 		}
 
-		xs := []rgeom.Vec{}
+		xs := [][3]float32{}
 		for i := range hds {
 			if len(intrBins[i]) == 0 { continue }
 			hd := &hds[i]
 
 			n := hd.GridWidth*hd.GridWidth*hd.GridWidth
-			if len(xs) == 0 { xs = make([]rgeom.Vec, n) }
+			if len(xs) == 0 { xs = make([][3]float32, n) }
 			err := io.ReadSheetPositionsAt(files[i], xs)
 			if err != nil { log.Fatal(err.Error()) }
 
@@ -215,7 +214,7 @@ func rangeSp(coeffs []float64) (rmin, rmax float64) {
 }
 
 func massContained(
-	hd *io.SheetHeader, xs []rgeom.Vec, coeffs []float64,
+	hd *io.SheetHeader, xs [][3]float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
 ) float64 {
 	sw := hd.SegmentWidth
@@ -245,7 +244,7 @@ func massContained(
 }
 
 func massContainedChan(
-	hd *io.SheetHeader, xs []rgeom.Vec, coeffs []float64,
+	hd *io.SheetHeader, xs [][3]float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
 	start, end int64, out chan float64,
 ) {

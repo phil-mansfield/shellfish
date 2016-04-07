@@ -31,3 +31,4 @@ _testmain.go
 *.pdf
 *.iml
 .idea
+*.out

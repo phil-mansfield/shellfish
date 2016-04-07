@@ -24,7 +24,7 @@ const (
 
 // This is a terrible idea and shouldn't exist.
 type Particle struct {
-	Xs, Vs geom.Vec
+	Xs, Vs [3]float32
 	Id int64
 }
 
@@ -64,8 +64,8 @@ type SheetHeader struct {
 	Mass float64
 	TotalWidth float64
 
-	Origin, Width geom.Vec
-	VelocityOrigin, VelocityWidth geom.Vec
+	Origin, Width [3]float32
+	VelocityOrigin, VelocityWidth [3]float32
 }
 
 // CosmologyHeader contains information describing the cosmological
@@ -160,7 +160,7 @@ func ReadGadgetHeader(path string, order binary.ByteOrder) *CatalogHeader {
 func ReadGadgetParticlesAt(
 	path string,
 	order binary.ByteOrder,
-	xs, vs []geom.Vec,
+	xs, vs [][3]float32,
 	ids []int64,
 ) {
 	f, err := os.Open(path)
@@ -222,11 +222,11 @@ func ReadGadgetParticlesAt(
 // are returned in a standardized format.
 func ReadGadget(
 	path string, order binary.ByteOrder,
-) (hd *CatalogHeader, xs, vs []geom.Vec, ids []int64) {
+) (hd *CatalogHeader, xs, vs [][3]float32, ids []int64) {
 
 	hd = ReadGadgetHeader(path, order)
-	xs = make([]geom.Vec,  hd.Count)
-	vs = make([]geom.Vec,  hd.Count)
+	xs = make([][3]float32,  hd.Count)
+	vs = make([][3]float32,  hd.Count)
 	ids = make([]int64, hd.Count)
 
 	ReadGadgetParticlesAt(path, order, xs, vs, ids)
@@ -281,7 +281,7 @@ func ReadSheetHeaderAt(file string, hdBuf *SheetHeader) error {
 }
 
 // ReadPositionsAt reads the velocities in the given file into a buffer.
-func ReadSheetPositionsAt(file string, xsBuf []geom.Vec) error {
+func ReadSheetPositionsAt(file string, xsBuf [][3]float32) error {
 	h := &SheetHeader{}
 	f, order, err := readSheetHeaderAt(file, h)
 	if err != nil { return nil }
@@ -301,7 +301,7 @@ func ReadSheetPositionsAt(file string, xsBuf []geom.Vec) error {
 }
 
 // ReadVelocitiesAt reads the velocities in the given file into a buffer.
-func ReadSheetVelocitiesAt(file string, vsBuf []geom.Vec) error {
+func ReadSheetVelocitiesAt(file string, vsBuf [][3]float32) error {
 	h := &SheetHeader{}
 	f, order, err := readSheetHeaderAt(file, h)
 	if err != nil { return err }
@@ -319,7 +319,7 @@ func ReadSheetVelocitiesAt(file string, vsBuf []geom.Vec) error {
 
 // Write writes a grid of position and velocity vectors to a file, defined
 // by the given header.
-func WriteSheet(file string, h *SheetHeader, xs, vs []geom.Vec) {
+func WriteSheet(file string, h *SheetHeader, xs, vs [][3]float32) {
 	if int(h.GridCount) != len(xs) {
 		log.Fatalf("Header count %d for file %s does not match xs length, %d",
 			h.GridCount, file, len(xs))
@@ -373,7 +373,7 @@ func (hd *SheetHeader) CellBounds(cells int) *geom.CellBounds {
 	return cb
 }
 
-func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf []geom.Vec) error {
+func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {
 	bufLen := len(buf)
 
 	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))
@@ -399,7 +399,7 @@ func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf []geom.Vec) error {
 	return nil
 }
 
-func writeVecAsByte(wr io.Writer, end binary.ByteOrder, buf []geom.Vec) error {
+func writeVecAsByte(wr io.Writer, end binary.ByteOrder, buf [][3]float32) error {
 	bufLen := len(buf)
 
 	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))

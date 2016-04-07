@@ -7,7 +7,7 @@ import (
 
 type Interpolator interface {
 	Interpolate(
-		buf Buffer, xs, vs []geom.Vec,
+		buf Buffer, xs, vs [][3]float32,
 		ptVal float64, weights Buffer,
 		low, high, jump int,
 	)
@@ -36,22 +36,22 @@ type mcarlo struct {
 	tet geom.Tetra
 	vtet geom.Tetra
 
-	unitBufs [][]geom.Vec
-	vecBuf []geom.Vec
+	unitBufs [][][3]float32
+	vecBuf [][3]float32
 }
 
 func MonteCarlo(
 	segWidth int64,
 	points, cells int,
 	skip int64,
-	unitBufs [][]geom.Vec,
+	unitBufs [][][3]float32,
 	subIntr Interpolator,
 ) Interpolator {
 	mc := &mcarlo{
 		subIntr, segWidth, points, cells,
 		rand.NewTimeSeed(rand.Xorshift), skip,
 		geom.TetraIdxs{}, geom.Tetra{}, geom.Tetra{},
-		unitBufs, make([]geom.Vec, points),
+		unitBufs, make([][3]float32, points),
 	}
 
 	return mc
@@ -70,7 +70,7 @@ func (intr *mcarlo) Cells() int {
 }
 
 func (intr *mcarlo) Interpolate(
-	buf Buffer, xs, vs []geom.Vec,
+	buf Buffer, xs, vs [][3]float32,
 	ptVal float64, weights Buffer,
 	low, high, jump int,
 ) {
@@ -187,7 +187,7 @@ func coordNeg(tet *geom.Tetra, j int) bool {
 	return false
 }
 
-func modCoord(buf []geom.Vec, j int, width float32) {
+func modCoord(buf [][3]float32, j int, width float32) {
 	for i := range buf {
 		if buf[i][j] < 0 { buf[i][j] += width }
 	}

@@ -17,7 +17,6 @@ import (
 
 	ren "github.com/phil-mansfield/shellfish/render"
 	"github.com/phil-mansfield/shellfish/render/density"
-	"github.com/phil-mansfield/shellfish/render/geom"
 	"github.com/phil-mansfield/shellfish/render/io"
 
 	"unsafe"
@@ -256,7 +255,7 @@ func lGadget2Main(con *io.ConvertSnapshotConfig) {
 
 func createGrids(
 	catalogs []string,
-) (hd *io.CatalogHeader, xs, vs []geom.Vec) {
+) (hd *io.CatalogHeader, xs, vs [][3]float32) {
 	hs := make([]io.CatalogHeader, len(catalogs))
 	for i := range hs {
 		hs[i] = *io.ReadGadgetHeader(catalogs[i], gadgetEndianness)
@@ -275,15 +274,15 @@ func createGrids(
 		ms.Alloc / 1000000, ms.Alloc, ms.Sys / 1000000,
 	)
 	log.Printf("About to allocate another %d MB\n",
-		(hs[0].TotalCount * int64(unsafe.Sizeof(geom.Vec{}))) / 1000000,
+		(hs[0].TotalCount * int64(unsafe.Sizeof([3]float32{}))) / 1000000,
 	)
 	runtime.GC()
-	xs = make([]geom.Vec, hs[0].TotalCount)
-	vs = make([]geom.Vec, hs[0].TotalCount)
+	xs = make([][3]float32, hs[0].TotalCount)
+	vs = make([][3]float32, hs[0].TotalCount)
 	
 	idBuf := make([]int64, maxLen)
-	xBuf := make([]geom.Vec, maxLen)
-	vBuf := make([]geom.Vec, maxLen)
+	xBuf := make([][3]float32, maxLen)
+	vBuf := make([][3]float32, maxLen)
 	
 	buf := io.NewParticleBuffer(xs, vs, catalogBufLen)
 
@@ -333,15 +332,15 @@ func intCubeRoot(x int64) int64 {
 }
 
 func writeGrids(outDir string, hd *io.CatalogHeader,
-	cells int, xs, vs []geom.Vec) {
+	cells int, xs, vs [][3]float32) {
 
 	log.Println("Writing to directory", outDir)
 
 	segmentWidth := int(hd.CountWidth) / cells
 	gridWidth := segmentWidth + 1
 
-	xsSeg := make([]geom.Vec, gridWidth * gridWidth * gridWidth)
-	vsSeg := make([]geom.Vec, gridWidth * gridWidth * gridWidth)
+	xsSeg := make([][3]float32, gridWidth * gridWidth * gridWidth)
+	vsSeg := make([][3]float32, gridWidth * gridWidth * gridWidth)
 
 	shd := &io.SheetHeader{}
 	shd.Cosmo = hd.Cosmo
@@ -385,16 +384,18 @@ func writeGrids(outDir string, hd *io.CatalogHeader,
 // relatively close to the existing bounding box.
 type boundingBox struct {
 	Width float64
-	Center geom.Vec
-	ToMax, ToMin, ToPt geom.Vec
+	Center [3]float32
+	ToMax, ToMin, ToPt [3]float32
 }
 
-func (box *boundingBox) Init(pt *geom.Vec, width float64) {
+func (box *boundingBox) Init(pt *[3]float32, width float64) {
 	box.Width = width
 	box.Center = *pt
 }
 
-func (box *boundingBox) Add(pt *geom.Vec) {
+func (box *boundingBox) Add(pt *[3]float32) {
+	panic("Relies on unimplemented functions.")
+	/*
 	pt.SubAt(&box.Center, box.Width, &box.ToPt)
 
 	for i := 0; i < 3; i++ {
@@ -409,6 +410,7 @@ func (box *boundingBox) Add(pt *geom.Vec) {
 	box.Center.AddSelf(&box.ToPt)
     box.ToMax.SubSelf(&box.ToPt, box.Width)
     box.ToMin.SubSelf(&box.ToPt, box.Width)
+    */
 }
 
 
@@ -422,7 +424,7 @@ func minMax(min, max, x float32) (outMin, outMax float32) {
 	}
 }
 
-func copyToSegment(shd *io.SheetHeader, xs, vs, xsSeg, vsSeg []geom.Vec) {
+func copyToSegment(shd *io.SheetHeader, xs, vs, xsSeg, vsSeg [][3]float32) {
 	xStart := shd.SegmentWidth * (shd.Idx % shd.Cells)
 	yStart := shd.SegmentWidth * ((shd.Idx / shd.Cells) % shd.Cells)
 	zStart := shd.SegmentWidth * (shd.Idx / (shd.Cells * shd.Cells))
@@ -464,10 +466,13 @@ func copyToSegment(shd *io.SheetHeader, xs, vs, xsSeg, vsSeg []geom.Vec) {
 			}
 		}	
 	}
-	
+
+	panic("Relies on unimplemented functions.")
+	/*
 	box.Center.AddAt(&box.ToMin, &shd.Origin)
 	shd.Origin.ModSelf(shd.TotalWidth)
 	box.ToMax.ScaleAt(2.0, &shd.Width)
+	*/
 
 	shd.VelocityOrigin = vMin
 	for dim := range vMax { shd.VelocityWidth[dim] = vMax[dim] - vMin[dim] }

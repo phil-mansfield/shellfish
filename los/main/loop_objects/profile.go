@@ -17,7 +17,7 @@ type Profile struct {
 	
 	dlr, lrMin, rMin2, rMax2 float64
 
-	vecBuf []rgeom.Vec
+	vecBuf [][3]float32
 	randBuf []float64
 	gen *rand.Generator
 
@@ -66,7 +66,7 @@ func newProfile(
 
 	if ptRad < 0 && pts > 0 {
 		tetPts := int(math.Ceil(float64(pts*pts*pts) / 6))
-		p.vecBuf = make([]rgeom.Vec, tetPts)
+		p.vecBuf = make([][3]float32, tetPts)
 		p.randBuf = make([]float64, 3*tetPts)
 		p.gen = rand.NewTimeSeed(rand.Xorshift)
 	} else if ptRad > 0 && pts > 0 {
@@ -119,8 +119,8 @@ func (p *Profile) useSphere(x, y, z float64) {
 	
 func (p *Profile) UseTetra(t *geom.Tetra) {
 	tet := &rgeom.Tetra{}
-	t0, t1 := rgeom.Vec(t[0]), rgeom.Vec(t[1])
-	t2, t3 := rgeom.Vec(t[2]), rgeom.Vec(t[3])
+	t0, t1 := [3]float32(t[0]), [3]float32(t[1])
+	t2, t3 := [3]float32(t[2]), [3]float32(t[3])
 	tet.Init(&t0, &t1, &t2, &t3)
 	tet.RandomSample(p.gen, p.randBuf, p.vecBuf)
 	

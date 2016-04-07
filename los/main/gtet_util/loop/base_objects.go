@@ -1,9 +1,5 @@
 package loop
 
-import (
-	rgeom "github.com/phil-mansfield/shellfish/render/geom"
-)
-
 // Sphere is a struct that can be used as an embedded struct in structs which
 // are implementing the Object interface and are shaped like a sphere.
 type Sphere struct {
@@ -22,7 +18,7 @@ func (s *Sphere) Init(origin [3]float64, rMin, rMax float64) {
 
 // Transform does a coordinate transformation on a slice of vectors so that they
 // are as close to the center of the Sphere.
-func (s *Sphere) Transform(vecs []rgeom.Vec, totalWidth float64) {
+func (s *Sphere) Transform(vecs [][3]float32, totalWidth float64) {
     x0 := float32(s.origin[0])
     y0 := float32(s.origin[1])
     z0 := float32(s.origin[2])
@@ -97,7 +93,7 @@ func (b *Box) Init(origin, span [3]float64) {
 
 // Transform does a coordinate transformation on a slice of vectors so that they
 // are as close to the center of the Box.
-func (b *Box) Transform(vecs []rgeom.Vec, totalWidth float64) {
+func (b *Box) Transform(vecs [][3]float32, totalWidth float64) {
     x0 := float32(b.origin[0])
     y0 := float32(b.origin[1])
     z0 := float32(b.origin[2])

@@ -35,7 +35,7 @@ type Overlap interface {
 	BufferSize() int
 
 	// ScaleVecs converts a vector array into the overlap's code units.
-	ScaleVecs(vs []geom.Vec, vcb *geom.CellBounds)
+	ScaleVecs(vs [][3]float32, vcb *geom.CellBounds)
 
 	// Add adds the contents of buf to grid where buf is the overlap grid and
 	// grid is the domain grid. The domain grid is contained within the given
@@ -224,7 +224,7 @@ type baseOverlap struct {
 
 func (b *baseOverlap) BufferCellBounds() *geom.CellBounds { return &b.bufCb }
 func (b *baseOverlap) DomainCellBounds() *geom.CellBounds { return &b.domCb }
-func (b *baseOverlap) ScaleVecs(vs []geom.Vec, vcb *geom.CellBounds) {
+func (b *baseOverlap) ScaleVecs(vs [][3]float32, vcb *geom.CellBounds) {
 	panic("Method call to baseOverlap.ScaleVecs()")
 }
 func (b *baseOverlap) Cells() int { return b.cells }
@@ -246,7 +246,7 @@ func (w *baseOverlap2D) BufferSize() int {
 	return prod
 }
 
-func (w *domainOverlap2D) ScaleVecs(vs []geom.Vec, vcb *geom.CellBounds) {
+func (w *domainOverlap2D) ScaleVecs(vs [][3]float32, vcb *geom.CellBounds) {
 	vcb.ScaleVecsDomain(&w.bufCb, vs, w.cells, w.boxWidth)
 }
 
@@ -273,7 +273,7 @@ func (w *domainOverlap2D) Add(bbuf, bgrid density.Buffer) {
 	}
 }
 
-func (w *domainOverlap3D) ScaleVecs(vs []geom.Vec, vcb *geom.CellBounds) {
+func (w *domainOverlap3D) ScaleVecs(vs [][3]float32, vcb *geom.CellBounds) {
 	vcb.ScaleVecsDomain(&w.bufCb, vs, w.cells, w.boxWidth)
 }
 
@@ -306,7 +306,7 @@ func (w *baseOverlap3D) BufferSize() int {
 	return w.bufCb.Width[0] * w.bufCb.Width[1] * w.bufCb.Width[2]
 }
 
-func (w *segmentOverlap2D) ScaleVecs(vs []geom.Vec, vcb *geom.CellBounds) {
+func (w *segmentOverlap2D) ScaleVecs(vs [][3]float32, vcb *geom.CellBounds) {
 	vcb.ScaleVecsSegment(vs, w.cells, w.boxWidth)
 }
 
@@ -387,7 +387,7 @@ func (w *segmentOverlap2D) Add(bbuf, bgrid density.Buffer) {
 	}
 }
 
-func (w *segmentOverlap3D) ScaleVecs(vs []geom.Vec, vcb *geom.CellBounds) {
+func (w *segmentOverlap3D) ScaleVecs(vs [][3]float32, vcb *geom.CellBounds) {
 	vcb.ScaleVecsSegment(vs, w.cells, w.boxWidth)
 }
 
@@ -489,7 +489,7 @@ type segmentOverlap2D struct {
 }
 
 func (w *segmentOverlap2D) Interpolate(
-	bbuf density.Buffer, xs, vs []geom.Vec,
+	bbuf density.Buffer, xs, vs [][3]float32,
 	ptVal float64, bweights density.Buffer,
 	low, high, jump int,
 ) {
@@ -538,7 +538,7 @@ type segmentOverlap3D struct {
 }
 
 func (w *segmentOverlap3D) Interpolate(
-	bbuf density.Buffer, xs, vs []geom.Vec,
+	bbuf density.Buffer, xs, vs [][3]float32,
 	ptVal float64, bweights density.Buffer,
 	low, high, jump int,
 ) {
@@ -586,7 +586,7 @@ type domainOverlap2D struct {
 }
 
 func (w *domainOverlap2D) Interpolate(
-	bbuf density.Buffer, xs, vs []geom.Vec,
+	bbuf density.Buffer, xs, vs [][3]float32,
 	ptVal float64, bweights density.Buffer,
 	low, high, jump int,
 ) {
@@ -640,7 +640,7 @@ type domainOverlap3D struct {
 }
 
 func (w *domainOverlap3D) Interpolate(
-	bbuf density.Buffer, xs, vs []geom.Vec,
+	bbuf density.Buffer, xs, vs [][3]float32,
 	ptVal float64, bweights density.Buffer,
 	low, high, jump int,
 ) {

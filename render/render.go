@@ -22,13 +22,13 @@ var (
 
 type Manager struct {
 	// The currently loaded sheet segment.
-	xs, vs, scaledXs []geom.Vec
+	xs, vs, scaledXs [][3]float32
 	xCb geom.CellBounds
 	hd io.SheetHeader
 
 	renderers []renderer
 	skip int
-	unitBufs [][]geom.Vec
+	unitBufs [][][3]float32
 
 	// io related things
 	log bool
@@ -62,7 +62,7 @@ func NewManager(
 	man.log = logFlag
 
 	gen := rand.NewTimeSeed(rand.Tausworthe)
-	man.unitBufs = make([][]geom.Vec, UnitBufCount)
+	man.unitBufs = make([][][3]float32, UnitBufCount)
 
 	maxPoints := 0
 	for _, b := range boxes {
@@ -70,7 +70,7 @@ func NewManager(
 	}
 
 	for bi := range man.unitBufs {
-		man.unitBufs[bi] = make([]geom.Vec, maxPoints)
+		man.unitBufs[bi] = make([][3]float32, maxPoints)
 		buf := man.unitBufs[bi]
 		for j := range buf {
 			for k := 0; k < 3; k++ {
@@ -129,10 +129,10 @@ func NewManager(
 
 	err := io.ReadSheetHeaderAt(files[0], &man.hd)
 	if err != nil { return nil, err }
-	man.xs = make([]geom.Vec, man.hd.GridCount)
-	man.scaledXs = make([]geom.Vec, man.hd.GridCount)
+	man.xs = make([][3]float32, man.hd.GridCount)
+	man.scaledXs = make([][3]float32, man.hd.GridCount)
 	if q.RequiresVelocity() {
-		man.vs = make([]geom.Vec, man.hd.GridCount)
+		man.vs = make([][3]float32, man.hd.GridCount)
 	} else {
 		man.vs = nil
 	}

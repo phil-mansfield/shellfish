@@ -30,7 +30,7 @@ const (
 type Object interface {
 	// Transform does a coordinate transformation on a slice of vectors such
 	// that they are all as close to the center of the Object as possible.
-	Transform(vecs []rgeom.Vec, tw float64)
+	Transform(vecs [][3]float32, tw float64)
 	// Contains returns true if a point is contained inside the Object.
 	Contains(x, y, z float64) bool
 	// IntersectBox returns true if a box intersects the Object. This function
@@ -64,7 +64,7 @@ type Params struct {
 
 // Buffer is a struct which contains various pre-allocated buffers
 type Buffer struct {
-	vecs []rgeom.Vec
+	vecs [][3]float32
 	ib *intrBuffers
 }
 
@@ -76,7 +76,7 @@ func NewBuffer() *Buffer {
 func (b *Buffer) read(hd *io.SheetHeader, file string, skip, pts int) error {
 	n := int(hd.GridWidth*hd.GridWidth*hd.GridWidth)
 	if n > len(b.vecs) {
-		b.vecs = make([]rgeom.Vec, n)
+		b.vecs = make([][3]float32, n)
 		b.ib = newIntrBuffers(int(hd.SegmentWidth),
 			int(hd.GridWidth), skip, pts)
 	} else if n < len(b.vecs) {
@@ -146,8 +146,8 @@ type layer struct {
 
 type tetraLayers struct {
 	low, high layer
-	lowPts, highPts [][]rgeom.Vec
-	fullPts [][]rgeom.Vec // lowPts and highPts are slices of fullPts.
+	lowPts, highPts [][][3]float32
+	fullPts [][][3]float32 // lowPts and highPts are slices of fullPts.
 }
 
 //////////////////
@@ -195,15 +195,15 @@ func newIntrBuffers(segWidth, gridWidth, skip, pts int) *intrBuffers {
 	buf.vecIntr = make([]bool, buf.kw*buf.kw*buf.kw)
 	buf.boxIntr = make([]bool, (buf.kw-1)*(buf.kw-1)*(buf.kw-1))
 
-	buf.tetraLayers.lowPts = make([][]rgeom.Vec, buf.kw - 1)
-	buf.tetraLayers.highPts = make([][]rgeom.Vec, buf.kw - 1)
-	buf.tetraLayers.fullPts = make([][]rgeom.Vec, buf.kw - 1)
+	buf.tetraLayers.lowPts = make([][][3]float32, buf.kw - 1)
+	buf.tetraLayers.highPts = make([][][3]float32, buf.kw - 1)
+	buf.tetraLayers.fullPts = make([][][3]float32, buf.kw - 1)
 	lowPts := buf.tetraLayers.lowPts
 	highPts := buf.tetraLayers.highPts
 	fullPts := buf.tetraLayers.fullPts
 	n := (pts+1)*(pts+1)
 	for i := range fullPts {
-		fullPts[i] = make([]rgeom.Vec, 2*n)
+		fullPts[i] = make([][3]float32, 2*n)
 		lowPts[i] = fullPts[i][:n]
 		highPts[i] = fullPts[i][n:]
 	}
@@ -212,7 +212,7 @@ func newIntrBuffers(segWidth, gridWidth, skip, pts int) *intrBuffers {
 }
 
 // loadBuffers inserts a set of vectors into the intrBuffers.
-func (buf *intrBuffers) loadVecs(vecs []rgeom.Vec, obj Object, tw float64) {
+func (buf *intrBuffers) loadVecs(vecs [][3]float32, obj Object, tw float64) {
 	kw, gw, s := buf.kw, buf.gw, buf.skip
 
 	obj.Transform(vecs, tw)
@@ -324,7 +324,7 @@ func zSplit(zCounts []int, workers int) [][]int {
 // loopSegment places the density field represented by the given
 // points into the given profile.
 func loopSegment(
-	vecs []rgeom.Vec, pts int, obj Object,
+	vecs [][3]float32, pts int, obj Object,
 	con intrConstructor, buf *intrBuffers,
 	tw float64,
 ) {
@@ -469,7 +469,7 @@ func xyTetraInterpolate(
 						x := low.x.Eval(xl, yl, zl)
 						y := low.y.Eval(xl, yl, zl)
 						z := low.z.Eval(xl, yl, zl)
-						vec := rgeom.Vec{ float32(x), float32(y), float32(z) }
+						vec := [3]float32{ float32(x), float32(y), float32(z) }
 						ptIdx := xi + yi*(pts+1)
 						lowPts[xIdx][ptIdx] = vec
 
@@ -478,7 +478,7 @@ func xyTetraInterpolate(
 						x = high.x.Eval(xl, yl, zlh)
 						y = high.y.Eval(xl, yl, zlh)
 						z = high.z.Eval(xl, yl, zlh)
-						vec = rgeom.Vec{ float32(x), float32(y), float32(z) }
+						vec = [3]float32{ float32(x), float32(y), float32(z) }
 						highPts[xIdx][ptIdx] = vec
 					}
 				}
@@ -527,6 +527,6 @@ func binHeaderIntersections(
 	return bins
 }
 
-func vecTo64(v rgeom.Vec) [3]float64 {
+func vecTo64(v [3]float32) [3]float64 {
 	return [3]float64{ float64(v[0]), float64(v[1]), float64(v[2]) }
 }

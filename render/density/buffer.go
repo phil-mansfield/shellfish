@@ -16,7 +16,7 @@ type Buffer interface {
 	// Getters and Setters
 	Quantity() Quantity
 	SetGridLocation(g *geom.GridLocation)
-	SetVectors(vecs []geom.Vec) bool
+	SetVectors(vecs [][3]float32) bool
 
 	// Buffer Retrieval
 	CountBuffer() (num []int, ok bool)
@@ -96,7 +96,7 @@ func (b *scalarBuffer) Quantity() Quantity {
 
 func (b *scalarBuffer) SetGridLocation(g *geom.GridLocation) { }
 
-func (b *scalarBuffer) SetVectors(vecs []geom.Vec) bool { return false }
+func (b *scalarBuffer) SetVectors(vecs [][3]float32) bool { return false }
 
 
 // Buffer Retreival //
@@ -153,7 +153,7 @@ func (b *vectorBuffer) Quantity() Quantity {
 
 func (b *vectorBuffer) SetGridLocation(g *geom.GridLocation) { }
 
-func (b *vectorBuffer) SetVectors(vecs []geom.Vec) bool {
+func (b *vectorBuffer) SetVectors(vecs [][3]float32) bool {
 	for i := range vecs {
 		for j := 0; j < 3; j++ { b.vecs[i][j] = float64(vecs[i][j]) }
 	}

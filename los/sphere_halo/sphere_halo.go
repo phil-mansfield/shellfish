@@ -39,7 +39,6 @@ import (
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/math/mat"
 	"github.com/phil-mansfield/shellfish/math/sort"
-	rgeom "github.com/phil-mansfield/shellfish/render/geom"
 	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
@@ -149,7 +148,7 @@ func (h *SphereHalo) Join(hs []SphereHalo) {
 // buffer intr.
 //
 // Intersect must be called after Transform is called on the vectors.
-func (h *SphereHalo) Intersect(vecs []rgeom.Vec, r float64, intr []bool) {
+func (h *SphereHalo) Intersect(vecs [][3]float32, r float64, intr []bool) {
 	rMin, rMax := h.rMin - r, h.rMax + r
 	if rMin < 0 { rMin = 0 }
 	rMin2, rMax2 := float32(rMin*rMin), float32(rMax*rMax)
@@ -166,7 +165,7 @@ func (h *SphereHalo) Intersect(vecs []rgeom.Vec, r float64, intr []bool) {
 
 // Transform translates all the given vectors so that they are in the local
 // coordinate system of the halo.
-func (h *SphereHalo) Transform(vecs []rgeom.Vec, totalWidth float64) {
+func (h *SphereHalo) Transform(vecs [][3]float32, totalWidth float64) {
 	x0 := float32(h.origin[0])
 	y0 := float32(h.origin[1])
 	z0 := float32(h.origin[2])

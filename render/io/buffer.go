@@ -1,24 +1,20 @@
 package io
 
-import (	
-	"github.com/phil-mansfield/shellfish/render/geom"
-)
-
 // ParticleBuffer is a wrapper around catalog files which allows floats to be
 // appended to files on the fly without much overhead from I/O or without
 // excessive memory usage/reallocating.
 type ParticleBuffer struct {
-	xBuf, vBuf []geom.Vec
+	xBuf, vBuf [][3]float32
 	idBuf []int64
 	idx int
-	xs, vs []geom.Vec
+	xs, vs [][3]float32
 }
 
 // NewParticleBuffer creates a ParticleBuffer associated with the given file.
-func NewParticleBuffer(xs, vs []geom.Vec, bufSize int) *ParticleBuffer {
+func NewParticleBuffer(xs, vs [][3]float32, bufSize int) *ParticleBuffer {
 	pb := &ParticleBuffer{
-		make([]geom.Vec, bufSize),
-		make([]geom.Vec, bufSize),
+		make([][3]float32, bufSize),
+		make([][3]float32, bufSize),
 		make([]int64, bufSize),
 		0, xs, vs,
 	}
@@ -27,7 +23,7 @@ func NewParticleBuffer(xs, vs []geom.Vec, bufSize int) *ParticleBuffer {
 
 // Append adds a value to the float buffer, which will eventually be
 // written to the target file.
-func (pb *ParticleBuffer) Append(xBuf, vBuf []geom.Vec, idBuf []int64) {
+func (pb *ParticleBuffer) Append(xBuf, vBuf [][3]float32, idBuf []int64) {
 	for pi := range xBuf {
 		pb.xBuf[pb.idx] = xBuf[pi]
 		pb.vBuf[pb.idx] = vBuf[pi]

@@ -12,7 +12,6 @@ import (
 	"github.com/phil-mansfield/shellfish/los"
 	sph "github.com/phil-mansfield/shellfish/los/sphere_halo"
 	"github.com/phil-mansfield/shellfish/los/geom"
-	rgeom "github.com/phil-mansfield/shellfish/render/geom"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 	util "github.com/phil-mansfield/shellfish/los/main/gtet_util"
 	"github.com/phil-mansfield/shellfish/render/io"
@@ -100,7 +99,7 @@ func loop(ids, snaps []int, p *Params, out [][]float64) error {
 		gw := hds[0].GridWidth
 		sphBuf = &sphBuffers{
 			intr: make([]bool, gw*gw*gw),
-			vecs: make([]rgeom.Vec, gw*gw*gw),
+			vecs: make([][3]float32, gw*gw*gw),
 			sphWorkers: make([]sph.SphereHalo, workers - 1),
 		}
 	default:
@@ -167,7 +166,7 @@ func sphereLoop(
 
 type sphBuffers struct {
 	sphWorkers []sph.SphereHalo
-	vecs []rgeom.Vec
+	vecs [][3]float32
 	intr []bool
 }
 
@@ -202,7 +201,7 @@ func loadSphereVecs(
 }
 
 func chanLoadSphereVec(
-	h *sph.SphereHalo, vecs []rgeom.Vec, intr []bool,
+	h *sph.SphereHalo, vecs [][3]float32, intr []bool,
 	zIdxs []int, hd *io.SheetHeader,  p *Params, sync chan bool,
 ) {
 	gw, sw := int(hd.GridWidth), int(hd.SegmentWidth)
@@ -446,7 +445,7 @@ func normVecs(n int) []geom.Vec {
 
 type profileRange struct {
 	rMin, rMax float64
-	v0 rgeom.Vec
+	v0 [3]float32
 }
 	
 func newProfileRanges(ids, snaps []int, p *Params) ([]profileRange, error) {
@@ -464,7 +463,7 @@ func newProfileRanges(ids, snaps []int, p *Params) ([]profileRange, error) {
 		for i := range xs {
 			pr := profileRange{
 				p.MinMult * rs[i], p.MaxMult * rs[i],
-				rgeom.Vec{ float32(xs[i]), float32(ys[i]), float32(zs[i]) },
+				[3]float32{ float32(xs[i]), float32(ys[i]), float32(zs[i]) },
 			}
 			ranges[idxs[i]] = pr
 		}

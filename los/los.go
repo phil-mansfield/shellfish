@@ -10,7 +10,7 @@ import (
 )
 
 type Buffers struct {
-	xs []rGeom.Vec
+	xs [][3]float32
 	ts []geom.Tetra
 	ss []geom.Sphere
 	rhos []float64
@@ -24,7 +24,7 @@ func NewBuffers(file string, hd *io.SheetHeader, subsampleLength int) *Buffers {
 
     sw := hd.SegmentWidth / int64(subsampleLength)
 	buf.skip = int64(subsampleLength)
-    buf.xs = make([]rGeom.Vec, hd.GridCount)
+    buf.xs = make([][3]float32, hd.GridCount)
     buf.ts = make([]geom.Tetra, 6*sw*sw*sw)
     buf.ss = make([]geom.Sphere, 6*sw*sw*sw)
     buf.rhos = make([]float64, 6*sw*sw*sw)
@@ -188,7 +188,7 @@ func index(x, y, z, cells int64) int64 {
     return x + y * cells + z * cells * cells
 }
 
-func unpackTetra(idxs *rGeom.TetraIdxs, xs []rGeom.Vec, t *geom.Tetra) {
+func unpackTetra(idxs *rGeom.TetraIdxs, xs [][3]float32, t *geom.Tetra) {
     for i := 0; i < 4; i++ {
 		t[i] = geom.Vec(xs[idxs[i]])
     }

@@ -9,6 +9,7 @@ import (
 func TestExampleFiles(t *testing.T) {
 	tests := []Mode {
 		&GlobalConfig{},
+		&IDConfig{},
 	}
 
 	for i := range tests {

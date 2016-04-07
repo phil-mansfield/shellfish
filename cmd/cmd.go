@@ -63,12 +63,8 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Ints(&config.formatRanges, "FormatRanges", []int64{})
 	vars.Int(&config.snapshotFormatIndex, "SnapshotFormatIndex", 0)
 
-	err := parse.ReadConfig(fname, vars)
-	if err != nil { return err }
-
-	if err = config.validate(); err != nil { return err }
-
-	return nil
+	if err := parse.ReadConfig(fname, vars); err != nil { return err }
+	return config.validate()
 }
 
 // validate checks that all the user-generated fields of GlobalConfig are

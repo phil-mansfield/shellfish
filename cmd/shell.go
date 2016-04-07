@@ -91,12 +91,8 @@ func (config *ShellConfig) ReadConfig(fname string) error {
 	vars.Int(&config.smoothingWindow, "SmoothingWindow", 121)
 	vars.Float(&config.losSlopeCutoff, "LOSSlopeCutoff", 0.0)
 
-	err := parse.ReadConfig(fname, vars)
-	if err != nil { return err }
-
-	if err = config.validate(); err != nil { return err }
-
-	return nil
+	if err := parse.ReadConfig(fname, vars); err != nil { return err }
+	return config.validate()
 }
 
 func (config *ShellConfig) validate() error {

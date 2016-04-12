@@ -1,11 +1,11 @@
-package cmd
+package catfmt
 
 import (
 	"fmt"
 	"strings"
 )
 
-func commentString(intNames, floatNames []string, order []int) string {
+func CommentString(intNames, floatNames []string, order []int) string {
 	tokens := []string{"# Column contents:"}
 	n := 0
 	for i := range intNames {
@@ -20,15 +20,15 @@ func commentString(intNames, floatNames []string, order []int) string {
 	return strings.Join(tokens, " ")
 }
 
-func formatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
+func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 	if (len(intCols) == 0 && len(floatCols) == 0) ||
 		(len(intCols) > 0 && len(intCols[0]) == 0) ||
 		(len(floatCols) > 0 && len(floatCols[0]) == 0){
 		return []string{}
 	}
 
-	formattedIntCols := make([]string, len(intCols))
-	formattedFloatCols := make([]string, len(floatCols))
+	formattedIntCols := make([][]string, len(intCols))
+	formattedFloatCols := make([][]string, len(floatCols))
 
 	height := -1
 	for i := range intCols {
@@ -40,7 +40,7 @@ func formatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 		}
 	}
 	for i := range intCols {
-		formattedFloatCols[i] = formatFloatCol(intCols[i])
+		formattedFloatCols[i] = formatFloatCol(floatCols[i])
 		if height == -1 {
 			height = len(floatCols[i])
 		} else if height != len(floatCols[i]) {
@@ -48,7 +48,7 @@ func formatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 		}
 	}
 
-	orderedCols := []string{}
+	orderedCols := [][]string{}
 	for _, idx := range order {
 		if idx >= len(intCols) + len(floatCols) {
 			panic("Column ordering out of range.")
@@ -76,7 +76,7 @@ func formatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 }
 
 func formatIntCol(col []int) []string {
-	width := len(col[0])
+	width := len(fmt.Sprintf("%d", col[0]))
 	for i := 1; i < len(col); i++ {
 		n := len(fmt.Sprintf("%d", col[i]))
 		if n > width { width = n }
@@ -91,7 +91,7 @@ func formatIntCol(col []int) []string {
 }
 
 func formatFloatCol(col []float64) []string {
-	width := len(col[0])
+	width := len(fmt.Sprintf("%.4g", col[0]))
 	for i := 1; i < len(col); i++ {
 		n := len(fmt.Sprintf("%.4g", col[i]))
 		if n > width { width = n }
@@ -105,9 +105,9 @@ func formatFloatCol(col []float64) []string {
 	return out
 }
 
-func uncomment(lines []string) []string {
+func Uncomment(lines []string) []string {
 	for i := range lines {
-		idx := strings.Index(lines, "#")
+		idx := strings.Index(lines[i], "#")
 		if idx >= 0 {
 			lines[i] = lines[i][:idx]
 		}

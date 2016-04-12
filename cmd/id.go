@@ -2,8 +2,17 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/phil-mansfield/shellfish/parse"
+	"github.com/phil-mansfield/shellfish/cmd/env"
+	"github.com/phil-mansfield/shellfish/cmd/memo"
+	"github.com/phil-mansfield/shellfish/cmd/catalog"
+
+	"github.com/phil-mansfield/shellfish/render/halo"
+	"github.com/phil-mansfield/shellfish/render/io"
 )
+
+const finderCells = 150
 
 // IDConfig contains the configuration fileds for the 'id' mode of the shellfish
 // tool.
@@ -51,10 +60,10 @@ IDs = 10, 11, 12, 13, 14
 # ExclusionStrategy determines how to exclude IDs from the given set. This is
 # useful because splashback shells are not particularly meaningful for
 # subhalos. It can be set to the following modes:
-# none     - No halos are removed
-# subhalos - Halos flagged as subhalos in the catalog are removed
-# r200m    - Halos which have an R200m shell that overlaps with a larger halo's
-#            R200m shell are removed
+# none    - No halos are removed
+# subhalo - Halos flagged as subhalos in the catalog are removed
+# overlap - Halos which have an R200m shell that overlaps with a larger halo's
+#           R200m shell are removed
 #
 # ExclusionStrategy defaults to subhalo if not set.
 #
@@ -104,7 +113,7 @@ func (config *IDConfig) validate() error {
 
 	switch config.exclusionStrategy {
 	case "none", "subhalo":
-	case "r200m":
+	case "overlap":
 		if config.exclusionRadiusMult <= 0 {
 			return fmt.Errorf("The 'ExclusionRadiusMult' varaible is set to " +
 				"%g, but it needs to be positive.", config.exclusionRadiusMult)
@@ -147,5 +156,159 @@ func (config *IDConfig) validate() error {
 func (config *IDConfig) Run(
 	flags []string, gConfig *GlobalConfig, stdin []string,
 ) ([]string, error) {
-	panic("NYI")
+
+	stdin = catalog.Uncomment(stdin)
+	e := &env.Environment{MemoDir: gConfig.memoDir}
+	e.InitGotetra(
+		gConfig.snapshotFormat, gConfig.snapMin, gConfig.snapMax,
+		gConfig.formatMins, gConfig.formatMaxes,
+	)
+	e.InitRockstar(
+		gConfig.haloDir, gConfig.snapMin, gConfig.snapMax,
+	)
+
+	if config.snap < gConfig.snapMin || config.snap > gConfig.snapMax {
+		return nil, fmt.Errorf("'Snap' = %d, but 'SnapMin' = %d and " +
+			"'SnapMax = %d'", config.snap, gConfig.snapMin, gConfig.snapMax)
+	}
+
+	// Get IDs and snapshots
+
+	rawIds := getIDs(config.idStart, config.idEnd, config.ids)
+
+	var ids, snaps []int
+	switch config.idType {
+	case "halo-id":
+		snaps = make([]int, len(rawIds))
+		for i := range snaps { snaps[i] = int(config.snap) }
+		ids = rawIds
+	case "m200m":
+		snaps = make([]int, len(rawIds))
+		for i := range snaps { snaps[i] = int(config.snap) }
+
+		var err error
+		ids, err = convertSortedIDs(rawIds, int(config.snap), e)
+		if err != nil { return nil, err }
+	default:
+		panic("Impossible")
+	}
+
+	// Tag subhalos, if neccessary.
+	exclude := make([]bool, len(ids))
+	switch config.exclusionStrategy {
+	case "none":
+	case "subhalo":
+		panic("subhalo is not implemented")
+	case "overlap":
+		var err error
+		exclude, err = findOverlapSubs(ids, snaps, e, config)
+		if err != nil { return nil, err }
+	}
+
+	// Generate lines
+	intCols := [][]int{ids, snaps}
+	floatCols := [][]float64{}
+	colOrder := []int{0, 1}
+	lines := catalog.FormatCols(intCols, floatCols, colOrder)
+
+	// Filter
+	fLines := []string{}
+	for i := range lines {
+		if !exclude[i] { fLines = append(fLines, lines[i]) }
+	}
+
+	// Multiply
+	mLines := []string{}
+	for i := range fLines {
+		for j := 0; j < int(config.mult); j++ {
+			mLines = append(mLines, fLines[i])
+		}
+	}
+
+	cString := catalog.CommentString(
+		[]string{"ID", "Snapshot"}, []string{}, []int{0, 1},
+	)
+	mLines = append([]string{cString}, mLines...)
+
+	return mLines, nil
+}
+
+func getIDs(idStart, idEnd int64, ids []int64) []int {
+	if idStart == -1 {
+		out := make([]int, idEnd - idStart)
+		for i := range out {
+			out[i] = int(idStart) + i
+		}
+		return out
+	} else {
+		out := make([]int, len(ids))
+		for i := range out {
+			out[i] = int(ids[i])
+		}
+		return out
+	}
+}
+
+func convertSortedIDs(
+	rawIDs []int, snap int, e *env.Environment,
+) ([]int, error) {
+	maxID := 0
+	for _, id := range rawIDs {
+		if id > maxID { maxID = id }
+	}
+
+	rids, err := memo.ReadSortedRockstarIDs(snap, maxID, e)
+	if err != nil { return nil, err }
+
+	ids := make([]int, len(rawIDs))
+	for i := range ids { ids[i] = rids[rawIDs[i]] }
+	return ids, nil
+}
+
+func findOverlapSubs(
+	rawIDs, snaps []int, e *env.Environment, config *IDConfig,
+) ([]bool, error) {
+	isSub := make([]bool, len(rawIDs))
+
+	// Group by snapshot.
+	snapGroups := make(map[int][]int)
+	groupIdxs := make(map[int][]int)
+	for i, id := range rawIDs {
+		snap := snaps[i]
+		snapGroups[snap] = append(snapGroups[snap], id)
+		groupIdxs[snap] = append(groupIdxs[snap], i)
+	}
+
+	// Load each snapshot.
+	hd := &io.SheetHeader{}
+	for snap, group := range snapGroups {
+		err := io.ReadSheetHeaderAt(e.ParticleCatalog(snap, 0), &hd)
+		if err != nil { return nil, err }
+
+		rids, err := memo.ReadSortedRockstarIDs(snap, -1, halo.M200b, e)
+		if err != nil { return nil, err }
+		vals, err := memo.ReadRockstar(
+			snap, rids, e, halo.X, halo.Y, halo.Z, halo.Rad200b,
+		)
+		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
+
+		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
+		g.Insert(xs, ys, zs)
+		sf := halo.NewSubhaloFinder(g)
+		sf.FindSubhalos(xs, ys, zs, rs, config.exclusionRadiusMult)
+
+		for i, id := range group {
+			origIdx := groupIdxs[snap][i]
+			// TODO: Holy linear search, batman! Fix this.
+			for j, checkID := range rids {
+				if checkID == id {
+					isSub[origIdx] = sf.HostCount(j) > 0
+					break
+				} else if j == len(rids) - 1 {
+					return nil, fmt.Errorf("ID %d not in halo list.", id)
+				}
+			}
+		}
+	}
+	return isSub, nil
 }

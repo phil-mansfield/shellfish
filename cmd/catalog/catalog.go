@@ -1,4 +1,4 @@
-package catfmt
+package catalog
 
 import (
 	"fmt"

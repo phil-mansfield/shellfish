@@ -1,26 +1,38 @@
-/*package library implements a Library struct, which contains the names of
-all the files specified by some config file input.*/
 package library
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path"
 )
 
-type Library struct {
+type Environment struct {
+	Catalogs
+	Halos
+	MemoDir string
+
+}
+
+//////////////
+// Catalogs //
+//////////////
+
+type Catalogs struct {
 	snapMin int
 	names [][]string
 }
 
-func (lib *Library) Blocks() int {
-	return len(lib.names[0])
+
+func (cat *Catalogs) Blocks() int {
+	return len(cat.names[0])
 }
 
-func (lib *Library) Filename(snap, block int) string {
-	return lib.names[snap + lib.snapMin][block]
+func (cat *Catalogs) Catalog(snap, block int) string {
+	return cat.names[snap + cat.snapMin][block]
 }
 
-func (lib *Library) InitGotetra(
+func (cat *Catalogs) InitGotetra(
 	format string, snapMin, snapMax int, blockMins, blockMaxes []int,
 ) error {
 	if len(blockMins) != 3 {
@@ -30,8 +42,8 @@ func (lib *Library) InitGotetra(
 		)
 	}
 
-	lib.names = make([][]string, snapMax - snapMin)
-	lib.snapMin = snapMin
+	cat.names = make([][]string, snapMax - snapMin)
+	cat.snapMin = snapMin
 
 	for snap := snapMin; snap < snapMax; snap++ {
 		for x := blockMins[0]; x < blockMaxes[0]; x++ {
@@ -42,8 +54,8 @@ func (lib *Library) InitGotetra(
 					_, err := os.Stat(fname)
 					if err != nil { return err }
 
-					lib.names[snap - snapMin] = append(
-						lib.names[snap - snapMin], fname,
+					cat.names[snap - snapMin] = append(
+						cat.names[snap - snapMin], fname,
 					)
 				}
 			}
@@ -53,8 +65,42 @@ func (lib *Library) InitGotetra(
 	return nil
 }
 
-func (lib *Library) InitLGadget2(
+func (cat *Catalogs) InitLGadget2(
 	format string, snapMin, snapMax int, blockMins, blockMaxes []int,
 ) error {
 	panic("NYI")
+}
+
+///////////
+// Halos //
+///////////
+
+type Halos struct {
+	snapMin int
+	names []string
+}
+
+func (h *Halos) HaloCatalog(snap int) string {
+	return h.names[snap - h.snapMin]
+}
+
+func (h *Halos) InitRockstar(dir string, snapMin, snapMax int) error {
+	infos, err := ioutil.ReadDir(dir)
+	if err != nil { return err }
+
+	h.names = []string{}
+	for i := range infos {
+		h.names = append(h.names, path.Join(dir, infos[i].Name()))
+	}
+
+	if len(h.names) < snapMax - snapMin + 1 {
+		return fmt.Errorf(
+			"There are %d files in the 'HaloDir' directory, %s, but " +
+			"'SnapMin' = %d and 'SnapMax' = %d.",
+			len(h.names), dir, snapMin, snapMax,
+		)
+	}
+	h.names = h.names[len(h.names) - (snapMax - snapMin + 1):]
+
+	return nil
 }

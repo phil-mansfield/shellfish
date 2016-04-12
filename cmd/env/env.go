@@ -28,7 +28,7 @@ func (cat *Catalogs) Blocks() int {
 	return len(cat.names[0])
 }
 
-func (cat *Catalogs) Catalog(snap, block int) string {
+func (cat *Catalogs) ParticleCatalog(snap, block int) string {
 	return cat.names[snap + cat.snapMin][block]
 }
 

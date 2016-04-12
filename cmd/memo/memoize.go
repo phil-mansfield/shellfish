@@ -1,4 +1,4 @@
-package util
+package memo
 
 import (
 	"encoding/binary"
@@ -24,13 +24,16 @@ const (
 // ReadSortedRockstarIDs returns a slice of IDs corresponding to the highest
 // values of some quantity in a particular snapshot. maxID is the number of
 // halos to return.
-func ReadSortedRockstarIDs(snap, maxID int, flag halo.Val) ([]int, error) {
-	memoDir, err := MemoDir()
-	if err != nil { return nil, err }
-	dir := path.Join(memoDir, rockstarMemoDir)
+func ReadSortedRockstarIDs(
+	snap, maxID int, gConfig *GlobalConfig, flag halo.Val,
+) ([]int, error) {
+	dir := path.Join(gConfig.memoDir, rockstarMemoDir)
 	if !PathExists(dir) { os.Mkdir(dir, 0777) }
 
-	var vals [][]float64
+	var (
+		vals [][]float64
+		err error
+	)
 	if maxID >= RockstarShortMemoNum || maxID == -1 {
 		file := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
 		vals, err = readRockstar(
@@ -81,12 +84,10 @@ func sortRockstar(ids []int, ms []float64) {
 // This function does fairly large heap allocations even when it doesn't need
 // to. Consider passing it a buffer.
 func ReadRockstar(
-	snap int, ids []int, valFlags ...halo.Val,
+	snap int, ids []int, gConfig *GlobalConfig, valFlags ...halo.Val,
 ) ([][]float64, error) {
 	// Find binFile.
-	memoDir, err := MemoDir()
-	if err != nil { return nil, err }
-	dir := path.Join(memoDir, rockstarMemoDir)
+	dir := path.Join(gConfig.memoDir, rockstarMemoDir)
 	if !PathExists(dir) { os.Mkdir(dir, 0777) }
 
 	binFile := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
@@ -98,18 +99,17 @@ func ReadRockstar(
 		shortBinFile, RockstarShortMemoNum, snap, ids, valFlags...,
 	)
 	if err == nil { return vals, err }
-	return readRockstar(binFile, -1, snap, ids, valFlags...)
+	return readRockstar(binFile, -1, snap, ids, gConfig, valFlags...)
 }
 
 func readRockstar(
-	binFile string, n, snap int, ids []int, valFlags ...halo.Val,
+	binFile string, n, snap int, ids []int,
+	gConfig *GlobalConfig, valFlags ...halo.Val,
 ) ([][]float64, error) {
 	// If binFile doesn't exist, create it.
 	if !PathExists(binFile) {
-		rockstarDir, err := RockstarDir()
-		if err != nil { return nil, err }
-		hlists, err := DirContents(rockstarDir)
-		snapNum, err := SnapNum()
+		hlists, err := DirContents(gConfig.haloDir)
+		snapNum := snapNum(gConfig)
 		if err != nil { return nil, err }
 		negSnap := snapNum - snap
 		snapIdx := len(hlists) - 1 - negSnap
@@ -171,10 +171,26 @@ func (f IntFinder) Find(rid int) (int, bool) {
 	return line, ok
 }
 
-func readHeadersFromSheet(snap int) ([]io.SheetHeader, []string, error) {
-	gtetFmt, err := GtetFmt()
+func readHeader(snap int, config *GlobalConfig) (*io.SheetHeader, error) {
+	panic("Does not currently read headers correctly")
+
+	gtetFmt := config.snapshotFormat
+
+	gtetDir := fmt.Sprintf(gtetFmt, snap)
+	gtetFiles, err := DirContents(gtetDir)
+	if err != nil { return nil, err }
+
+	hd := &io.SheetHeader{}
+	err = io.ReadSheetHeaderAt(gtetFiles[0], hd)
+	if err != nil { return nil, err }
+	return hd, nil
+}
+
+func readHeadersFromSheet(
+	snap int, gConfig *GlobalConfig,
+) ([]io.SheetHeader, []string, error) {
 	if err != nil { return nil, nil, err }
-	dir := fmt.Sprintf(gtetFmt, snap)
+	dir := fmt.Sprintf(gConfig., snap)
 	files, err := DirContents(dir)
 	if err != nil { return nil, nil, err }
 

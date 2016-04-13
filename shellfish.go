@@ -41,6 +41,8 @@ func main() {
 		// TODO: Implement the setup command.
 		panic("NYI")
 	} else if args[1] == "help" {
+		fmt.Print(modeDescriptions())
+		os.Exit(0)
 		// TODO: Implement the help command.
 	}
 

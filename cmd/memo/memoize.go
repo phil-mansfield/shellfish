@@ -6,7 +6,9 @@ import (
 	"os"
 	"path"
 	"sort"
-	
+
+	"github.com/phil-mansfield/shellfish/cmd/env"
+
 	"github.com/phil-mansfield/shellfish/render/halo"
 	"github.com/phil-mansfield/shellfish/render/io"
 )
@@ -15,35 +17,34 @@ const (
 	rockstarMemoDir = "rockstar"
 	rockstarMemoFile = "halo_%d.dat"
 	rockstarShortMemoFile = "halo_short_%d.dat"
+	rockstarShortMemoNum = 10 * 1000
 
-	// RockstarShortMemoNum is the number of halos that will be cached in
-	// a smaller file.
-	RockstarShortMemoNum = 10 * 1000
+	headerMemoFile = "hd_snap%d.dat"
 )
 
 // ReadSortedRockstarIDs returns a slice of IDs corresponding to the highest
 // values of some quantity in a particular snapshot. maxID is the number of
 // halos to return.
 func ReadSortedRockstarIDs(
-	snap, maxID int, gConfig *GlobalConfig, flag halo.Val,
+	snap, maxID int, e *env.Environment, flag halo.Val,
 ) ([]int, error) {
-	dir := path.Join(gConfig.memoDir, rockstarMemoDir)
-	if !PathExists(dir) { os.Mkdir(dir, 0777) }
+	dir := path.Join(e.MemoDir, rockstarMemoDir)
+	if err, _ := os.Stat(dir); err != nil { os.Mkdir(dir, 0777) }
 
 	var (
 		vals [][]float64
 		err error
 	)
-	if maxID >= RockstarShortMemoNum || maxID == -1 {
+	if maxID >= rockstarShortMemoNum || maxID == -1 {
 		file := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
 		vals, err = readRockstar(
-			file, -1, snap, nil, halo.ID, flag,
+			file, -1, snap, nil, e, halo.ID, flag,
 		)
 		if err != nil { return nil, err }
 	} else {
 		file := path.Join(dir, fmt.Sprintf(rockstarShortMemoFile, snap))
 		vals, err = readRockstar(
-			file, RockstarShortMemoNum, snap, nil, halo.ID, flag,
+			file, rockstarShortMemoNum, snap, nil, e, halo.ID, flag,
 		)
 		if err != nil { return nil, err }
 	}
@@ -84,11 +85,11 @@ func sortRockstar(ids []int, ms []float64) {
 // This function does fairly large heap allocations even when it doesn't need
 // to. Consider passing it a buffer.
 func ReadRockstar(
-	snap int, ids []int, gConfig *GlobalConfig, valFlags ...halo.Val,
+	snap int, ids []int, e *env.Environment, valFlags ...halo.Val,
 ) ([][]float64, error) {
 	// Find binFile.
-	dir := path.Join(gConfig.memoDir, rockstarMemoDir)
-	if !PathExists(dir) { os.Mkdir(dir, 0777) }
+	dir := path.Join(e.MemoDir, rockstarMemoDir)
+	if err, _ := os.Stat(dir); err != nil { os.Mkdir(dir, 0777) }
 
 	binFile := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
 	shortBinFile := path.Join(dir, fmt.Sprintf(rockstarShortMemoFile, snap))
@@ -96,35 +97,28 @@ func ReadRockstar(
 	// This wastes a read the first time it's called. You need to decide if you
 	// care. (Answer: probably.)
 	vals, err := readRockstar(
-		shortBinFile, RockstarShortMemoNum, snap, ids, valFlags...,
+		shortBinFile, rockstarShortMemoNum, snap, ids, e, valFlags...,
 	)
 	if err == nil { return vals, err }
-	return readRockstar(binFile, -1, snap, ids, gConfig, valFlags...)
+	return readRockstar(binFile, -1, snap, ids, e, valFlags...)
 }
 
 func readRockstar(
 	binFile string, n, snap int, ids []int,
-	gConfig *GlobalConfig, valFlags ...halo.Val,
+	e *env.Environment, valFlags ...halo.Val,
 ) ([][]float64, error) {
 	// If binFile doesn't exist, create it.
-	if !PathExists(binFile) {
-		hlists, err := DirContents(gConfig.haloDir)
-		snapNum := snapNum(gConfig)
-		if err != nil { return nil, err }
-		negSnap := snapNum - snap
-		snapIdx := len(hlists) - 1 - negSnap
-		
-		if err != nil { return nil, err }
+	if _, err := os.Stat(binFile); err != nil {
 		if n == -1 {
-			err = halo.RockstarConvert(hlists[snapIdx], binFile)
+			err = halo.RockstarConvert(e.HaloCatalog(snap), binFile)
 			if err != nil { return nil, err }
 		} else {
-			err = halo.RockstarConvertTopN(hlists[snapIdx], binFile, n)
+			err = halo.RockstarConvertTopN(e.HaloCatalog(snap), binFile, n)
 			if err != nil { return nil, err}
 		}
 	}
 
-	hds, _, err := ReadHeaders(snap)
+	hds, _, err := ReadHeaders(snap, e)
 	if err != nil { return nil, err }
 	hd := &hds[0]
 
@@ -171,32 +165,14 @@ func (f IntFinder) Find(rid int) (int, bool) {
 	return line, ok
 }
 
-func readHeader(snap int, config *GlobalConfig) (*io.SheetHeader, error) {
-	panic("Does not currently read headers correctly")
-
-	gtetFmt := config.snapshotFormat
-
-	gtetDir := fmt.Sprintf(gtetFmt, snap)
-	gtetFiles, err := DirContents(gtetDir)
-	if err != nil { return nil, err }
-
-	hd := &io.SheetHeader{}
-	err = io.ReadSheetHeaderAt(gtetFiles[0], hd)
-	if err != nil { return nil, err }
-	return hd, nil
-}
-
 func readHeadersFromSheet(
-	snap int, gConfig *GlobalConfig,
+	snap int, e *env.Environment,
 ) ([]io.SheetHeader, []string, error) {
-	if err != nil { return nil, nil, err }
-	dir := fmt.Sprintf(gConfig., snap)
-	files, err := DirContents(dir)
-	if err != nil { return nil, nil, err }
-
-	hds := make([]io.SheetHeader, len(files))
+	files := make([]string, e.Blocks())
+	hds := make([]io.SheetHeader, e.Blocks())
 	for i := range files {
-		err = io.ReadSheetHeaderAt(files[i], &hds[i])
+		files[i] = e.ParticleCatalog(snap, i)
+		err := io.ReadSheetHeaderAt(files[i], &hds[i])
 		if err != nil { return nil, nil, err }
 	}
 	return hds, files, nil
@@ -204,18 +180,15 @@ func readHeadersFromSheet(
 
 // ReadHeaders returns all the segment headers and segment file names for all
 // the segments at a given snapshot.
-func ReadHeaders(snap int) ([]io.SheetHeader, []string, error) {
-	memoDir, err := MemoDir()
-	if err != nil { return nil, nil, err }
-	if _, err := os.Stat(memoDir); err != nil {
-		return nil, nil, err
-	}
-
-	memoFile := path.Join(memoDir, fmt.Sprintf("hd_snap%d.dat", snap))
+func ReadHeaders(
+	snap int, e *env.Environment,
+) ([]io.SheetHeader, []string, error) {
+	if _, err := os.Stat(e.MemoDir); err != nil { return nil, nil, err }
+	memoFile := path.Join(e.MemoDir, fmt.Sprintf(headerMemoFile, snap))
 
 	if _, err := os.Stat(memoFile); err != nil {
 		// File not written yet.
-		hds, files, err := readHeadersFromSheet(snap)
+		hds, files, err := readHeadersFromSheet(snap, e)
 		if err != nil { return nil, nil, err }
 		
         f, err := os.Create(memoFile)
@@ -230,17 +203,11 @@ func ReadHeaders(snap int) ([]io.SheetHeader, []string, error) {
 		f, err := os.Open(memoFile)
         if err != nil { return nil, nil, err }
         defer f.Close()
-		
-		n, err := SheetNum(snap)
-		if err != nil { return nil, nil, err }
-		hds := make([]io.SheetHeader, n)
-        binary.Read(f, binary.LittleEndian, hds) 
 
-		gtetFmt, err := GtetFmt()
-		if err != nil { return nil, nil, err }
-		dir := fmt.Sprintf(gtetFmt, snap)
-		files, err := DirContents(dir)
-		if err != nil { return nil, nil, err }
+		hds := make([]io.SheetHeader, e.Blocks())
+        binary.Read(f, binary.LittleEndian, hds)
+		files := make([]string, e.Blocks())
+		for i := range files { files[i] = e.ParticleCatalog(snap, i) }
 
 		return hds, files, nil
 	}

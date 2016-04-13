@@ -80,6 +80,7 @@ func (cat *Catalogs) InitLGadget2(
 
 type Halos struct {
 	snapMin int
+	snapOffset int
 	names []string
 }
 
@@ -87,9 +88,15 @@ func (h *Halos) HaloCatalog(snap int) string {
 	return h.names[snap - h.snapMin]
 }
 
+func (h *Halos) SnapOffset() int {
+	return h.snapOffset
+}
+
 func (h *Halos) InitRockstar(dir string, snapMin, snapMax int64) error {
 	infos, err := ioutil.ReadDir(dir)
 	if err != nil { return err }
+
+	h.snapOffset = int(snapMax) - len(infos)
 
 	h.snapMin = int(snapMin)
 	h.names = []string{}

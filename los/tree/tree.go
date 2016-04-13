@@ -10,7 +10,7 @@ import (
 // the root halo IDs, and the "snapshot offset." The snapshot offset is the
 // difference between the number of snpashots which contain a nonzero number
 // of halos and the total number of snapshots. This can be calculated by
-// gtet_util.SnapOffset(). HaloHistories will return slices of IDs and
+// env.Halos.SnapOffset(). HaloHistories will return slices of IDs and
 // snapshots which correspond to the history of each of the given root IDs.
 func HaloHistories(
 	files []string, roots []int, snapOffset int,

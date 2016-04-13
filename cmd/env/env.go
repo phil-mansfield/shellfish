@@ -33,7 +33,7 @@ func (cat *Catalogs) ParticleCatalog(snap, block int) string {
 }
 
 func (cat *Catalogs) InitGotetra(
-	format string, snapMin, snapMax int, blockMins, blockMaxes []int,
+	format string, snapMin, snapMax int64, blockMins, blockMaxes []int64,
 ) error {
 	if len(blockMins) != 3 {
 		return fmt.Errorf(
@@ -43,7 +43,7 @@ func (cat *Catalogs) InitGotetra(
 	}
 
 	cat.names = make([][]string, snapMax - snapMin)
-	cat.snapMin = snapMin
+	cat.snapMin = int(snapMin)
 
 	for snap := snapMin; snap < snapMax; snap++ {
 		for x := blockMins[0]; x < blockMaxes[0]; x++ {
@@ -66,7 +66,7 @@ func (cat *Catalogs) InitGotetra(
 }
 
 func (cat *Catalogs) InitLGadget2(
-	format string, snapMin, snapMax int, blockMins, blockMaxes []int,
+	format string, snapMin, snapMax int64, blockMins, blockMaxes []int,
 ) error {
 	panic("NYI")
 }
@@ -84,23 +84,24 @@ func (h *Halos) HaloCatalog(snap int) string {
 	return h.names[snap - h.snapMin]
 }
 
-func (h *Halos) InitRockstar(dir string, snapMin, snapMax int) error {
+func (h *Halos) InitRockstar(dir string, snapMin, snapMax int64) error {
 	infos, err := ioutil.ReadDir(dir)
 	if err != nil { return err }
 
+	h.snapMin = int(snapMin)
 	h.names = []string{}
 	for i := range infos {
 		h.names = append(h.names, path.Join(dir, infos[i].Name()))
 	}
 
-	if len(h.names) < snapMax - snapMin + 1 {
+	if len(h.names) < int(snapMax - snapMin) + 1 {
 		return fmt.Errorf(
 			"There are %d files in the 'HaloDir' directory, %s, but " +
 			"'SnapMin' = %d and 'SnapMax' = %d.",
 			len(h.names), dir, snapMin, snapMax,
 		)
 	}
-	h.names = h.names[len(h.names) - (snapMax - snapMin + 1):]
+	h.names = h.names[len(h.names) - int(snapMax - snapMin + 1):]
 
 	return nil
 }

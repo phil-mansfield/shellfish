@@ -45,6 +45,8 @@ type GlobalConfig struct {
 
 	formatMins, formatMaxes []int64
 	snapMin, snapMax int64
+
+	validateFormats bool
 }
 
 var _ Mode = &GlobalConfig{}
@@ -65,6 +67,7 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Ints(&config.formatMaxes, "FormatMaxes", []int64{})
 	vars.Int(&config.snapMin, "SnapMin", -1)
 	vars.Int(&config.snapMax, "SnapMax", -1)
+	vars.Bool(&config.validateFormats, "ValidateFormats", false)
 
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
 	return config.validate()
@@ -246,7 +249,16 @@ TreeDir = path/to/merger/tree/dir/
 # A directory you create the first time you run Shellfish for a particular
 # simulation. Shellfish will memoize certain partial results in this directoy
 # (most importantly: the first couple of halos in )
-MemoDir = path/to/memo/dir/`, version.SourceVersion)
+MemoDir = path/to/memo/dir/
+
+# ValidateFormats checks the the specified halo files and snapshot catalogs all
+# exist at startup before running any other code. Otherwise, these will be
+# checked only immediately before a particular file is opened. In general,
+# it's best to check this to false for short jobs because checking every file
+# is a lot of system calls and can take minutes, although it's generally a good
+# idea to check at least once after making the config file that you aren't
+# accidentally specifying nonexistent files.
+ValidateFormats = false`, version.SourceVersion)
 }
 
 // Run is a dummy method which allows GlobalConfig to conform to the Mode

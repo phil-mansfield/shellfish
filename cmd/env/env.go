@@ -34,6 +34,7 @@ func (cat *Catalogs) ParticleCatalog(snap, block int) string {
 
 func (cat *Catalogs) InitGotetra(
 	format string, snapMin, snapMax int64, blockMins, blockMaxes []int64,
+	validate bool,
 ) error {
 	if len(blockMins) != 3 {
 		return fmt.Errorf(
@@ -51,8 +52,10 @@ func (cat *Catalogs) InitGotetra(
 				for z := blockMins[2]; z < blockMaxes[2]; z++ {
 
 					fname := fmt.Sprintf(format, snap, x, y, z)
-					_, err := os.Stat(fname)
-					if err != nil { return err }
+					if validate {
+						_, err := os.Stat(fname)
+						if err != nil { return err }
+					}
 
 					cat.names[snap - snapMin] = append(
 						cat.names[snap - snapMin], fname,

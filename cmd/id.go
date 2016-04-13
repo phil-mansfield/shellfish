@@ -161,7 +161,7 @@ func (config *IDConfig) Run(
 	e := &env.Environment{MemoDir: gConfig.memoDir}
 	e.InitGotetra(
 		gConfig.snapshotFormat, gConfig.snapMin, gConfig.snapMax,
-		gConfig.formatMins, gConfig.formatMaxes,
+		gConfig.formatMins, gConfig.formatMaxes, gConfig.validateFormats,
 	)
 	e.InitRockstar(
 		gConfig.haloDir, gConfig.snapMin, gConfig.snapMax,

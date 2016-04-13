@@ -29,7 +29,7 @@ func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 
 	formattedIntCols := make([][]string, len(intCols))
 	formattedFloatCols := make([][]string, len(floatCols))
-
+	
 	height := -1
 	for i := range intCols {
 		formattedIntCols[i] = formatIntCol(intCols[i])
@@ -39,7 +39,8 @@ func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 			panic("Columns of unequal height.")
 		}
 	}
-	for i := range intCols {
+	
+	for i := range floatCols {
 		formattedFloatCols[i] = formatFloatCol(floatCols[i])
 		if height == -1 {
 			height = len(floatCols[i])
@@ -47,13 +48,14 @@ func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 			panic("Columns of unequal height.")
 		}
 	}
-
+	
 	orderedCols := [][]string{}
 	for _, idx := range order {
 		if idx >= len(intCols) + len(floatCols) {
 			panic("Column ordering out of range.")
 		}
-		if idx >= len(intCols) {
+
+		if idx < len(intCols) {
 			orderedCols = append(orderedCols, formattedIntCols[idx])
 		} else {
 			idx -= len(intCols)
@@ -71,7 +73,6 @@ func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 		lines = append(lines, line)
 	}
 
-
 	return lines
 }
 
@@ -84,7 +85,7 @@ func formatIntCol(col []int) []string {
 
 	out := []string{}
 	for i := range col {
-		out = append(out, fmt.Sprintf("%*d", col[i], width))
+		out = append(out, fmt.Sprintf("%*d", width, col[i]))
 	}
 
 	return out
@@ -99,7 +100,7 @@ func formatFloatCol(col []float64) []string {
 
 	out := []string{}
 	for i := range col {
-		out = append(out, fmt.Sprintf("%*.4g", col[i], width))
+		out = append(out, fmt.Sprintf("%*.4g", width, col[i]))
 	}
 
 	return out

@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-
+	
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
@@ -156,7 +156,7 @@ func (config *IDConfig) validate() error {
 func (config *IDConfig) Run(
 	flags []string, gConfig *GlobalConfig, stdin []string,
 ) ([]string, error) {
-
+	
 	stdin = catalog.Uncomment(stdin)
 	e := &env.Environment{MemoDir: gConfig.memoDir}
 	e.InitGotetra(
@@ -175,7 +175,7 @@ func (config *IDConfig) Run(
 	// Get IDs and snapshots
 
 	rawIds := getIDs(config.idStart, config.idEnd, config.ids)
-
+	
 	var ids, snaps []int
 	switch config.idType {
 	case "halo-id":
@@ -192,7 +192,7 @@ func (config *IDConfig) Run(
 	default:
 		panic("Impossible")
 	}
-
+	
 	// Tag subhalos, if neccessary.
 	exclude := make([]bool, len(ids))
 	switch config.exclusionStrategy {
@@ -229,12 +229,12 @@ func (config *IDConfig) Run(
 		[]string{"ID", "Snapshot"}, []string{}, []int{0, 1},
 	)
 	mLines = append([]string{cString}, mLines...)
-
+	
 	return mLines, nil
 }
 
 func getIDs(idStart, idEnd int64, ids []int64) []int {
-	if idStart == -1 {
+	if idStart != -1 {
 		out := make([]int, idEnd - idStart)
 		for i := range out {
 			out[i] = int(idStart) + i

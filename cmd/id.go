@@ -257,7 +257,7 @@ func convertSortedIDs(
 		if id > maxID { maxID = id }
 	}
 
-	rids, err := memo.ReadSortedRockstarIDs(snap, maxID, e)
+	rids, err := memo.ReadSortedRockstarIDs(snap, maxID, e, halo.M200b)
 	if err != nil { return nil, err }
 
 	ids := make([]int, len(rawIDs))

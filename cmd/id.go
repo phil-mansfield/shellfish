@@ -157,7 +157,6 @@ func (config *IDConfig) Run(
 	flags []string, gConfig *GlobalConfig, stdin []string,
 ) ([]string, error) {
 	
-	stdin = catalog.Uncomment(stdin)
 	e := &env.Environment{MemoDir: gConfig.memoDir}
 	e.InitGotetra(
 		gConfig.snapshotFormat, gConfig.snapMin, gConfig.snapMax,

@@ -23,8 +23,7 @@ func modeDescriptions() string {
 	"$ ./shellfish id     [flags] ____.config [____.id.config]\n" +
 	"$ ./shellfish tree   [flags] ____.config [____.tree.config]\n" +
 	"$ ./shellfish shell  [flags] ____.config [____.shell.config]\n" +
-	"$ ./shellfish stats  [flags] ____.config [____.stats.config]\n\n" +
-	"$ ./shellfish append [flags] ____.config [____.append.config]\n"
+	"$ ./shellfish stats  [flags] ____.config [____.stats.config]\n\n"
 }
 
 func main() {
@@ -54,10 +53,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	lines, err := stdinLines()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
+	var lines []string
+	switch args[1] {
+	case "tree", "shell", "stats":
+		var err error
+		lines, err = stdinLines()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, err.Error())
+			os.Exit(1)
+		}
 	}
 
 	flags := getFlags(args)

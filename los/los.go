@@ -5,7 +5,6 @@ import (
 	"runtime"
 
 	"github.com/phil-mansfield/shellfish/render/io"
-	rGeom "github.com/phil-mansfield/shellfish/render/geom"
 	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
@@ -17,86 +16,6 @@ type Buffers struct {
 	intr []bool
 	bufHs []HaloProfiles
 	skip int64
-}
-
-func NewBuffers(file string, hd *io.SheetHeader, subsampleLength int) *Buffers {
-	buf := new(Buffers)
-
-    sw := hd.SegmentWidth / int64(subsampleLength)
-	buf.skip = int64(subsampleLength)
-    buf.xs = make([][3]float32, hd.GridCount)
-    buf.ts = make([]geom.Tetra, 6*sw*sw*sw)
-    buf.ss = make([]geom.Sphere, 6*sw*sw*sw)
-    buf.rhos = make([]float64, 6*sw*sw*sw)
-	buf.intr = make([]bool, 6*sw*sw*sw)
-
-	buf.Read(file, hd)
-	return buf
-}
-
-func (buf *Buffers) ParallelRead(file string, hd *io.SheetHeader) {
-	workers := runtime.NumCPU()
-	runtime.GOMAXPROCS(workers)
-	buf.read(file, hd, workers)
-}
-
-func (buf *Buffers) Read(file string, hd *io.SheetHeader) {
-	buf.read(file, hd, 1)
-}
-
-func (buf *Buffers) read(file string, hd *io.SheetHeader, workers int) {
-	io.ReadSheetPositionsAt(file, buf.xs)
-	tw := float32(hd.TotalWidth)
-	// This can only be parallelized if we sychronize afterwards. This
-	// is insignificant compared to the serial I/O time.
-	for i := range buf.xs {
-		for j := 0; j < 3; j++ {
-			if buf.xs[i][j] < hd.Origin[j] {
-				buf.xs[i][j] += tw
-			}
-		}
-	}
-
-	out := make(chan int, workers)
-	for id := 0; id < workers - 1; id++ {
-		go buf.chanRead(hd, id, workers, out)
-	}
-	buf.chanRead(hd, workers - 1, workers, out)
-
-	for i := 0; i < workers; i++ { <- out }
-}
-
-func (buf *Buffers) chanRead(
-	hd *io.SheetHeader, id, workers int, out chan<- int,
-) {
-	// Remember: Grid -> All particles; Segment -> Particles that can be turned
-	// into tetrahedra.
-	skipVol := buf.skip*buf.skip*buf.skip
-	n := hd.SegmentWidth*hd.SegmentWidth*hd.SegmentWidth / skipVol
-	
-	gw := hd.GridWidth
-	tw := hd.TotalWidth
-	tFactor := tw*tw*tw / float64(hd.Count * 6 / skipVol)
-	idxBuf := new(rGeom.TetraIdxs)
-
-	jump := int64(workers)
-	for segIdx := int64(id); segIdx < n; segIdx += jump {
-		x, y, z := coords(segIdx, hd.SegmentWidth / buf.skip)
-		x, y, z = x*buf.skip, y*buf.skip, z*buf.skip
-		idx := gw*gw*z + gw*y + x
-		for dir := int64(0); dir < 6; dir++ {
-			ti := 6 * segIdx + dir
-			idxBuf.Init(idx, gw, buf.skip, int(dir))
-			unpackTetra(idxBuf, buf.xs, &buf.ts[ti])
-			buf.ts[ti].Orient(+1)
-
-			buf.rhos[ti] = tFactor / buf.ts[ti].Volume()
-
-			buf.ts[ti].BoundingSphere(&buf.ss[ti])
-		}
-	}
-
-	out <- id
 }
 
 func (buf *Buffers) ParallelDensity(h *HaloProfiles) {
@@ -175,23 +94,6 @@ func splits(intr []bool, workers int) (idxs []int, ok bool) {
 	}
 
 	return idxs, true
-}
-
-func coords(idx, cells int64) (x, y, z int64) {
-    x = idx % cells
-    y = (idx % (cells * cells)) / cells
-    z = idx / (cells * cells)
-    return x, y, z
-}
-
-func index(x, y, z, cells int64) int64 {
-    return x + y * cells + z * cells * cells
-}
-
-func unpackTetra(idxs *rGeom.TetraIdxs, xs [][3]float32, t *geom.Tetra) {
-    for i := 0; i < 4; i++ {
-		t[i] = [3]float32(xs[idxs[i]])
-    }
 }
 
 // WrapHalo updates the coordinates of a slice of HaloProfiles so that they

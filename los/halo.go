@@ -492,31 +492,6 @@ func (hp *HaloProfiles) GetRhos(ring, prof int, out []float64) {
 	r.Retrieve(prof, out)
 }
 
-// I hate all of this :(
-
-func LoadDensities(
-	hs []HaloProfiles, hds []io.SheetHeader,
-	files []string, buf *Buffers,
-) {
-	ptrs := make([]*HaloProfiles, len(hs))
-	for i := range ptrs { ptrs[i] = &hs[i] }
-	LoadPtrDensities(ptrs, hds, files, buf)
-}
-
-func LoadPtrDensities(
-	hs []*HaloProfiles, hds []io.SheetHeader,
-	files []string, buf *Buffers,
-) {
-	for i, file := range files {
-		hd := &hds[i]
-		WrapHalo(hs, hd)
-		buf.ParallelRead(file, hd)
-		for j := range hs {
-			buf.ParallelDensity(hs[j])
-		}
-	}
-}
-
 func (h *HaloProfiles) MedianProfile() []float64 {
 	// Read Densities
 	rhoBufs := make([][]float64, h.n * len(h.rs))

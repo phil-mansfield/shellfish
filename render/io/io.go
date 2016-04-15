@@ -10,8 +10,6 @@ import (
 	"reflect"
 
 	"unsafe"
-
-	"github.com/phil-mansfield/shellfish/render/geom"
 )
 
 // TODO: swtich from logging error statements to returning error codes.
@@ -355,8 +353,12 @@ func WriteSheet(file string, h *SheetHeader, xs, vs [][3]float32) {
 	}
 }
 
-func (hd *SheetHeader) CellBounds(cells int) *geom.CellBounds {
-	cb := &geom.CellBounds{}
+type CellBounds struct {
+	Origin, Width [3]int
+}
+
+func (hd *SheetHeader) CellBounds(cells int) *CellBounds {
+	cb := &CellBounds{}
 	cellWidth := hd.TotalWidth / float64(cells)
 
 	for j := 0; j < 3; j++ {

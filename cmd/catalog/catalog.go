@@ -152,7 +152,7 @@ func ParseCols(
 				"Line %d has %d columns, but I need %d columns.",
 				lineNums[i], len(toks), minWidth,
 			)
-
+		} else {
 			for colIdx, j := range intIdxs {
 				n, err := strconv.Atoi(toks[j])
 				if err != nil {

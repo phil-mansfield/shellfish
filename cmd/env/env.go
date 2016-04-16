@@ -47,9 +47,9 @@ func (cat *Catalogs) InitGotetra(
 	cat.snapMin = int(snapMin)
 
 	for snap := snapMin; snap <= snapMax; snap++ {
-		for x := blockMins[0]; x < blockMaxes[0]; x++ {
-			for y := blockMins[1]; y < blockMaxes[1]; y++ {
-				for z := blockMins[2]; z < blockMaxes[2]; z++ {
+		for x := blockMins[0]; x <= blockMaxes[0]; x++ {
+			for y := blockMins[1]; y <= blockMaxes[1]; y++ {
+				for z := blockMins[2]; z <= blockMaxes[2]; z++ {
 
 					fname := fmt.Sprintf(format, snap, x, y, z)
 					if validate {

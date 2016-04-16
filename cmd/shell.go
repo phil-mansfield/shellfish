@@ -114,6 +114,7 @@ func (config *ShellConfig) ReadConfig(fname string) error {
 	vars.Float(&config.losSlopeCutoff, "LOSSlopeCutoff", 0.0)
 	vars.Float(&config.backgroundRhoMult, "BackgroundRhoMult", 0.5)
 
+	if fname == "" { return nil }
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
 	return config.validate()
 }
@@ -177,7 +178,7 @@ func (config *ShellConfig) Run(
 		gConfig.haloDir, gConfig.snapMin, gConfig.snapMax,
 	)
 
-		// Parse.
+	// Parse.
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
@@ -208,16 +209,31 @@ func (config *ShellConfig) Run(
 		}
 	}
 
-	lines := catalog.FormatCols(
-		[][]int{ids, snaps}, [][]float64{}, []int{0, 1},
-	)
 
 	colOrder := make([]int, 2 + 2*config.order*config.order)
 	for i := range colOrder { colOrder[i] = i }
+	
+	lines := catalog.FormatCols(
+		[][]int{ids, snaps}, transpose(out), colOrder,
+	)
+
 	cString := catalog.CommentString(intNames, floatNames, colOrder)
 	return append([]string{cString}, lines...), nil
 }
 
+func transpose(in [][]float64) [][]float64 {
+	rows, cols := len(in), len(in[0])
+	out := make([][]float64, cols)
+	for i := range out { out[i] = make([]float64, rows) }
+
+	for y := 0; y < rows; y++ {
+		for x := 0; x < cols; x++ {
+			out[x][y] = in[y][x]
+		}
+	}
+	
+	return out
+}
 
 func loop(
 	ids, snaps []int, c *ShellConfig, e *env.Environment, out [][]float64,
@@ -272,11 +288,11 @@ func sphereLoop(
 	hds, files, err := memo.ReadHeaders(snap, e)
 	if err != nil { return err }
 	intrBins := binIntersections(hds, halos)
-
+	
 	for i := range hds {
 		runtime.GC()
 		if len(intrBins[i]) == 0 { continue }
-
+		
 		err := io.ReadSheetPositionsAt(files[i], sphBuf.vecs)
 		if err != nil { return err }
 
@@ -311,7 +327,11 @@ func loadSphereVecs(
 	h.Transform(vecs, hd.TotalWidth)
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
 	h.Intersect(vecs, rad, intr)
-
+	numIntr := 0
+	for i := range intr {
+		if intr[i] { numIntr++ }
+	}
+	
 	counts := zCounts(sphBuf.intr, int(hd.GridWidth))
 	zIdxs := zSplit(counts, workers)
 
@@ -339,7 +359,7 @@ func chanLoadSphereVec(
 
 	pl := hd.TotalWidth / float64(int(hd.CountWidth) / int(c.subsampleFactor))
 	pVol := pl*pl*pl
-
+	
 	rho := pVol / sphVol
 	for _, z := range zIdxs {
 		if z >= sw { continue }
@@ -348,13 +368,18 @@ func chanLoadSphereVec(
 			for x := 0; x < sw; x++ {
 
 				idx := x + y*gw + z*gw*gw
-				if intr[idx] { h.Insert(vecs[idx], rad, rho) }
+				if intr[idx] {
+					insertCalls++
+					h.Insert(vecs[idx], rad, rho)
+				}
 			}
 		}
 	}
 
 	sync <- true
 }
+
+var insertCalls = 0
 
 func haloAnalysis(
 	halos []los.Halo, idxs []int, c *ShellConfig,
@@ -363,6 +388,7 @@ func haloAnalysis(
 	// Calculate Penna coefficients.
 	for i := range halos {
 		runtime.GC()
+
 		var ok bool
 		out[idxs[i]], ok = calcCoeffs(halos[i], ringBuf, c)
 		if !ok {
@@ -383,7 +409,7 @@ func createHalos(
 	if err != nil { return nil, err }
 
 	xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
-
+	
 	// Initialize halos.
 	halos := make([]los.Halo, len(ids))
 
@@ -496,7 +522,7 @@ func zSplit(zCounts []int, workers int) [][]int {
 }
 
 func binIntersections(
-hds []io.SheetHeader, halos []los.Halo,
+	hds []io.SheetHeader, halos []los.Halo,
 ) [][]los.Halo {
 
 	bins := make([][]los.Halo, len(hds))

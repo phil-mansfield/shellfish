@@ -90,6 +90,7 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "none")
 	vars.Int(&config.order, "Order", 3)
 
+	if fname == "" { return nil }
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
 	return config.validate()
 }

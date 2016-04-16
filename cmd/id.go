@@ -98,6 +98,7 @@ func (config *IDConfig) ReadConfig(fname string) error {
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "subhalo")
 	vars.Float(&config.exclusionRadiusMult, "ExclusionRadiusMult", 1)
 
+	if fname == "" { return nil }
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
 	return config.validate()
 }

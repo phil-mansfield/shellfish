@@ -77,6 +77,10 @@ func main() {
 		if err = mode.ReadConfig(config); err != nil {
 			log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 		}
+	} else {
+		if err = mode.ReadConfig(""); err != nil {
+			log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+		}
 	}
 
 	out, err := mode.Run(flags, gConfig, lines)

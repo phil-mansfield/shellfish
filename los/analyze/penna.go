@@ -121,32 +121,6 @@ func PennaVolumeFit(
 	return cs, PennaFunc(cs, I, J, 2)
 }
 
-func PennaPlaneFit(
-	xs, ys [][]float64, hRef *los.HaloProfiles, I, J int,
-) (cs []float64, shell ProjectedShell) {
-	n := 0
-	for i := range xs { n += len(xs[i]) }
-	fXs, fYs, fZs := make([]float64, n), make([]float64, n), make([]float64, n)
-	
-	idx := 0
-	for i := range xs {
-		for j := range xs[i] {
-			fXs[idx], fYs[idx], fZs[idx] =
-				hRef.PlaneToVolume(i, xs[i][j], ys[i][j])
-			idx++
-		}
-	}
-
-	cs = PennaCoeffs(fXs, fYs, fZs, I, J, 2)
-	pf := PennaFunc(cs, I, J, 2)
-	return cs, func (h *los.HaloProfiles, ring int, phi float64) float64 {
-		sin, cos := math.Sincos(phi)
-		x, y, z := h.PlaneToVolume(ring, cos, sin)
-		pi2 := 2 * math.Pi
-		return pf(math.Mod(math.Atan2(y, x) + pi2, pi2), math.Acos(z))
-	}
-}
-
 func FilterPoints(
 	rs []RingBuffer, levels int, hFactor float64,
 ) (pxs, pys [][]float64, ok bool) {

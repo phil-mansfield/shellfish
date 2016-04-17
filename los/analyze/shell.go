@@ -5,11 +5,9 @@ import (
 	"math/rand"
 
 	"github.com/phil-mansfield/shellfish/math/sort"
-	"github.com/phil-mansfield/shellfish/los"
 )
 
 type Shell func(phi, theta float64) float64
-type ProjectedShell func(h *los.HaloProfiles, ring int, phi float64) float64
 
 func randomAngle() (phi, theta float64) {
 	u, v := rand.Float64(), rand.Float64()
@@ -135,35 +133,6 @@ func (s Shell) Contains(x, y, z float64) bool {
 	phi := math.Atan2(y, x)
 	theta := math.Acos(z / r)
 	return s(phi, theta) > r
-}
-
-func CumulativeShells(
-	xs, ys [][]float64, h *los.HaloProfiles,
-	I, J, start, stop, step int,
-) (ringCounts []int, shells []Shell) {
-	n := 0
-	for i := range xs { n += len(xs[i]) }
-	fXs, fYs, fZs := make([]float64, n), make([]float64, n), make([]float64, n)
-
-	idx := 0
-	for i := range xs {
-		for j := range xs[i] {
-			fXs[idx], fYs[idx], fZs[idx] =
-				h.PlaneToVolume(i, xs[i][j], ys[i][j])
-			idx++
-		}
-	}
-
-	shells, ringCounts = []Shell{}, []int{}
-	for rings := start; rings < stop; rings++ {
-		end := 0
-		for _, x := range xs[:rings] { end += len(x) }
-		cs := PennaCoeffs(fXs[:end], fYs[:end], fZs[:end], I, J, 2)
-		shells = append(shells, PennaFunc(cs, I, J, 2))
-		ringCounts = append(ringCounts, rings)
-	}
-
-	return ringCounts, shells
 }
 
 type Tracers struct {

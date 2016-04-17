@@ -19,6 +19,3 @@ type Halo interface {
 	PlaneToVolume(ring int, px, py float64) (x, y, z float64)
 	RMax() float64
 }
-
-// typechecking
-var _ Halo = &HaloProfiles{}

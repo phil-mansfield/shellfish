@@ -144,9 +144,10 @@ func ParseCols(
 
 	intCols := make([][]int, len(intIdxs))
 	floatCols := make([][]float64, len(floatIdxs))
-
+	
 	for i := range fLines {
 		toks := tokenize(fLines[i])
+
 		if len(toks) < minWidth {
 			return nil, nil, fmt.Errorf(
 				"Line %d has %d columns, but I need %d columns.",
@@ -168,7 +169,7 @@ func ParseCols(
 					return nil, nil, fmt.Errorf("Cannot parse column %d of " +
 						"line %d, '%s', to a float.", j, lineNums[i], toks[j])
 				}
-				floatCols[colIdx] = append(floatCols[j], x)
+				floatCols[colIdx] = append(floatCols[colIdx], x)
 			}
 		}
 	}

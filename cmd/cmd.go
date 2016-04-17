@@ -14,6 +14,7 @@ import (
 var ModeNames map[string]Mode = map[string]Mode{
 	"id": &IDConfig{},
 	"tree": &TreeConfig{},
+	"coord": &CoordConfig{},
 	"shell": &ShellConfig{},
 	"stats": &StatsConfig{},
 }

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-
 	"math"
 	"runtime"
 	"sort"
@@ -137,11 +136,13 @@ func (config *StatsConfig) Run(
 
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
-	coeffs := floatCols[:]
-
+	coeffs := transpose(floatCols)
+	
 	snapBins, coeffBins, idxBins := binCoeffsBySnap(snaps, ids, coeffs)
 
 	e := &env.Environment{MemoDir: gConfig.memoDir}
+	e.InitGotetra(gConfig.snapshotFormat, gConfig.snapMin, gConfig.snapMax,
+		gConfig.formatMins, gConfig.formatMaxes, gConfig.validateFormats)
 	e.InitRockstar(gConfig.haloDir, gConfig.snapMin, gConfig.snapMax)
 
 	masses := make([]float64, len(ids))

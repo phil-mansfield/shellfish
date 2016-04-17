@@ -9,8 +9,8 @@ import (
 
 	"github.com/phil-mansfield/shellfish/cmd/env"
 
-	"github.com/phil-mansfield/shellfish/render/halo"
-	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/cmd/halo"
+	"github.com/phil-mansfield/shellfish/io"
 )
 
 const (

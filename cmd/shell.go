@@ -15,7 +15,7 @@ import (
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 
-	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/io"
 
 	"github.com/phil-mansfield/shellfish/math/rand"
 

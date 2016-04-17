@@ -7,7 +7,7 @@ import (
 	"sort"
 
 	"github.com/phil-mansfield/shellfish/cosmo"
-	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 

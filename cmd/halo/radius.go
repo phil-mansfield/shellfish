@@ -4,7 +4,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/cosmo"
 )
 

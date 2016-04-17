@@ -5,7 +5,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/table"
 )
 

@@ -4,7 +4,7 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
-	"github.com/phil-mansfield/shellfish/render/halo"
+	"github.com/phil-mansfield/shellfish/cmd/halo"
 )
 
 type CoordConfig struct {

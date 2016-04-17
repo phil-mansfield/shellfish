@@ -35,7 +35,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/phil-mansfield/shellfish/render/io"
+	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/math/mat"
 	"github.com/phil-mansfield/shellfish/math/sort"
 	"github.com/phil-mansfield/shellfish/los/geom"

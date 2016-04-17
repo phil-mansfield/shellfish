@@ -8,7 +8,6 @@ import (
 
 	"github.com/phil-mansfield/shellfish/cosmo"
 	"github.com/phil-mansfield/shellfish/render/io"
-	"github.com/phil-mansfield/shellfish/render/halo"
 	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 
@@ -128,7 +127,7 @@ func (config *StatsConfig) Run(
 ) ([]string, error) {
 
 	intColIdxs := []int{0, 1}
-	floatColIdxs := make([]int, 2*config.order*config.order)
+	floatColIdxs := make([]int, 4 + 2*config.order*config.order)
 	for i := range floatColIdxs { floatColIdxs[i] = i + len(intColIdxs) }
 	intCols, floatCols, err := catalog.ParseCols(
 		stdin, intColIdxs, floatColIdxs,
@@ -136,7 +135,7 @@ func (config *StatsConfig) Run(
 
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
-	coeffs := transpose(floatCols)
+	coords, coeffs := floatCols[:4], transpose(floatCols[4:])
 	
 	snapBins, coeffBins, idxBins := binCoeffsBySnap(snaps, ids, coeffs)
 
@@ -157,9 +156,20 @@ func (config *StatsConfig) Run(
 	sort.Ints(sortedSnaps)
 
 	for _, snap := range sortedSnaps {
-		snapIDs := snapBins[snap]
+		if snap == -1 { continue }
 		snapCoeffs := coeffBins[snap]
 		idxs := idxBins[snap]
+
+		snapCoords := [][]float64{
+			make([]float64, len(idxs)), make([]float64, len(idxs)),
+			make([]float64, len(idxs)), make([]float64, len(idxs)),
+		}
+		for i, idx := range idxs {
+			snapCoords[i] = []float64{
+				coords[0][idx], coords[1][idx],
+				coords[2][idx], coords[3][idx],
+			}
+		}
 
 		for j := range idxs {
 			rads[idxs[j]] = rSp(snapCoeffs[j])
@@ -168,7 +178,7 @@ func (config *StatsConfig) Run(
 
 		hds, files, err := memo.ReadHeaders(snap, e)
 		if err != nil { return nil, err }
-		hBounds, err := boundingSpheres(snap, &hds[0], snapIDs, config, e)
+		hBounds, err := boundingSpheres(snapCoords, &hds[0], config, e)
 		if err != nil { return nil, err }
 		intrBins := binSphereIntersections(hds, hBounds)
 
@@ -253,16 +263,11 @@ func binCoeffsBySnap(
 }
 
 func boundingSpheres(
-	snap int, hd *io.SheetHeader, ids []int, c *StatsConfig, e *env.Environment,
+	coords [][]float64, hd *io.SheetHeader, c *StatsConfig, e *env.Environment,
 ) ([]geom.Sphere, error) {
-	vals, err := memo.ReadRockstar(
-		snap, ids, e, halo.X, halo.Y, halo.Z, halo.Rad200b,
-	)
+	xs, ys, zs, rs := coords[0], coords[1], coords[2], coords[3]
 
-	if err != nil { return nil, err }
-	xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
-
-	spheres := make([]geom.Sphere, len(ids))
+	spheres := make([]geom.Sphere, len(coords))
 	for i := range spheres {
 		spheres[i].C = [3]float32{
 			float32(xs[i]), float32(ys[i]), float32(zs[i]),

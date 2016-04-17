@@ -16,7 +16,6 @@ import (
 	"github.com/phil-mansfield/shellfish/los/analyze"
 
 	"github.com/phil-mansfield/shellfish/render/io"
-	"github.com/phil-mansfield/shellfish/render/halo"
 
 	"github.com/phil-mansfield/shellfish/math/rand"
 
@@ -178,7 +177,9 @@ func (config *ShellConfig) Run(
 	)
 
 	// Parse.
-	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
+	intCols, coords, err := catalog.ParseCols(
+		stdin, []int{0, 1}, []int{2, 3, 4, 5},
+	)
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
 
@@ -186,18 +187,17 @@ func (config *ShellConfig) Run(
 
 	// Compute coefficients.
 	out := make([][]float64, len(ids))
-
-
 	rowLength := config.order*config.order*2
 
 	for i := range out {
 		out[i] = make([]float64, rowLength)
 	}
 
-	err = loop(ids, snaps, config, e, out)
+	err = loop(ids, snaps, coords, config, e, out)
 	if err != nil { return nil, err }
 
-	floatNames, intNames := []string{"ID", "Snapshot"}, []string{}
+	intNames := []string{"ID", "Snapshot"}
+	floatNames := []string{"X", "Y", "Z", "R_200m"}
 	for k := 0; k < 2; k++ {
 		for j := 0; j < int(config.order); j++ {
 			for i := 0; i < int(config.order); i++ {
@@ -209,11 +209,11 @@ func (config *ShellConfig) Run(
 	}
 
 
-	colOrder := make([]int, 2 + 2*config.order*config.order)
+	colOrder := make([]int, 2 + 4 + 2*config.order*config.order)
 	for i := range colOrder { colOrder[i] = i }
-	
+
 	lines := catalog.FormatCols(
-		[][]int{ids, snaps}, transpose(out), colOrder,
+		[][]int{ids, snaps}, append(coords, transpose(out)...), colOrder,
 	)
 
 	cString := catalog.CommentString(intNames, floatNames, colOrder)
@@ -235,7 +235,8 @@ func transpose(in [][]float64) [][]float64 {
 }
 
 func loop(
-	ids, snaps []int, c *ShellConfig, e *env.Environment, out [][]float64,
+	ids, snaps []int, coords [][]float64,
+	c *ShellConfig, e *env.Environment, out [][]float64,
 ) error {
 	snapBins, idxBins := binBySnap(snaps, ids)
 	ringBuf := make([]analyze.RingBuffer, c.rings)
@@ -260,12 +261,21 @@ func loop(
 
 	for _, snap := range sortedSnaps {
 		if snap == -1 { continue }
-		snapIDs := snapBins[snap]
 		idxs := idxBins[snap]
+		snapCoords := [][]float64{
+			make([]float64, len(idxs)), make([]float64, len(idxs)),
+			make([]float64, len(idxs)), make([]float64, len(idxs)),
+		}
+		for i, idx := range idxs {
+			snapCoords[i] = []float64{
+				coords[0][idx], coords[1][idx],
+				coords[2][idx], coords[3][idx],
+			}
+		}
 
 		// Create Halos
 		runtime.GC()
-		halos, err := createHalos(snap, &hds[0], snapIDs, c, e)
+		halos, err := createHalos(snapCoords, &hds[0], c, e)
 		if err != nil { return err }
 
 		if err = sphereLoop(snap, ids, idxs, halos, c, e, sphBuf, out);
@@ -398,27 +408,20 @@ func haloAnalysis(
 }
 
 func createHalos(
-	snap int, hd *io.SheetHeader, ids []int, c *ShellConfig, e *env.Environment,
+	coords [][]float64, hd *io.SheetHeader, c *ShellConfig, e *env.Environment,
 ) ([]*los.Halo, error) {
-	vals, err := memo.ReadRockstar(
-		snap, ids, e, halo.X, halo.Y, halo.Z, halo.Rad200b,
-	)
-	if err != nil { return nil, err }
+	halos := make([]*los.Halo, len(coords))
+	for i, _ := range coords {
+		x, y, z, r := coords[0][i], coords[1][i], coords[2][i], coords[3][i]
 
-	xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
-	
-	// Initialize halos.
-	halos := make([]*los.Halo, len(ids))
-
-	for i, _ := range ids {
-		if rs[i] <= 0 { continue }
+		// This happens sometimes...
+		if r <= 0 { continue }
 
 		norms := normVecs(int(c.rings))
-		origin := [3]float64{
-			float64(xs[i]), float64(ys[i]), float64(zs[i]),
-		}
-		rMax, rMin := rs[i] * c.rMaxMult, rs[i] * c.rMinMult
-		rad := rs[i]*c.rKernelMult
+		origin := [3]float64{x, y, z}
+		rMax, rMin := r*c.rMaxMult, r*c.rMinMult
+		rad := r*c.rKernelMult
+
 		sphVol := 4*math.Pi/3*rad*rad*rad
 		pl := hd.TotalWidth/float64(int(hd.CountWidth)/int(c.subsampleFactor))
 		pVol := pl*pl*pl

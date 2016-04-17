@@ -281,7 +281,7 @@ func loop(
 }
 
 func sphereLoop(
-	snap int, IDs, ids []int, halos []los.Halo, c *ShellConfig,
+	snap int, IDs, ids []int, halos []*los.SphereHalo, c *ShellConfig,
 	e *env.Environment, sphBuf *sphBuffers, out [][]float64,
 ) error {
 	hds, files, err := memo.ReadHeaders(snap, e)
@@ -297,9 +297,7 @@ func sphereLoop(
 
 		binHs := intrBins[i]
 		for j := range binHs {
-			h, ok := binHs[j].(*los.SphereHalo)
-			if !ok { panic("Invalid Halo interface given to sphereLoop().") }
-			loadSphereVecs(h, sphBuf, &hds[i], c)
+			loadSphereVecs(binHs[j], sphBuf, &hds[i], c)
 		}
 
 	}
@@ -381,7 +379,7 @@ func chanLoadSphereVec(
 var insertCalls = 0
 
 func haloAnalysis(
-	halos []los.Halo, idxs []int, c *ShellConfig,
+	halos []*los.SphereHalo, idxs []int, c *ShellConfig,
 	ringBuf []analyze.RingBuffer, out [][]float64,
 ) error {
 	// Calculate Penna coefficients.
@@ -401,7 +399,7 @@ func haloAnalysis(
 
 func createHalos(
 	snap int, hd *io.SheetHeader, ids []int, c *ShellConfig, e *env.Environment,
-) ([]los.Halo, error) {
+) ([]*los.SphereHalo, error) {
 	vals, err := memo.ReadRockstar(
 		snap, ids, e, halo.X, halo.Y, halo.Z, halo.Rad200b,
 	)
@@ -410,7 +408,7 @@ func createHalos(
 	xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
 	
 	// Initialize halos.
-	halos := make([]los.Halo, len(ids))
+	halos := make([]*los.SphereHalo, len(ids))
 
 	for i, _ := range ids {
 		if rs[i] <= 0 { continue }
@@ -521,10 +519,10 @@ func zSplit(zCounts []int, workers int) [][]int {
 }
 
 func binIntersections(
-	hds []io.SheetHeader, halos []los.Halo,
-) [][]los.Halo {
+	hds []io.SheetHeader, halos []*los.SphereHalo,
+) [][]*los.SphereHalo {
 
-	bins := make([][]los.Halo, len(hds))
+	bins := make([][]*los.SphereHalo, len(hds))
 	for i := range hds {
 		for hi := range halos {
 			if halos[hi].SheetIntersect(&hds[i]) {
@@ -536,7 +534,7 @@ func binIntersections(
 }
 
 func calcCoeffs(
-	halo los.Halo, buf []analyze.RingBuffer, c *ShellConfig,
+	halo *los.SphereHalo, buf []analyze.RingBuffer, c *ShellConfig,
 ) ([]float64, bool) {
 	for i := range buf {
 		buf[i].Clear()

@@ -14,16 +14,16 @@ import (
 
 func modeDescriptions() string {
 	return "My help mode is:\n" +
-	"$ ./shellfish help\n\n" +
+	"shellfish help\n\n" +
 
 	"My setup mode is:\n" +
-	"$ ./shellfish setup ____.setup.config\n\n" +
+	"shellfish setup ____.setup.config\n\n" +
 
 	"My other modes are:\n" +
-	"$ ./shellfish id     [flags] ____.config [____.id.config]\n" +
-	"$ ./shellfish tree   [flags] ____.config [____.tree.config]\n" +
-	"$ ./shellfish shell  [flags] ____.config [____.shell.config]\n" +
-	"$ ./shellfish stats  [flags] ____.config [____.stats.config]\n\n"
+	"shellfish id     [flags] ____.config [____.id.config]\n" +
+	"shellfish tree   [flags] ____.config [____.tree.config]\n" +
+	"shellfish shell  [flags] ____.config [____.shell.config]\n" +
+	"shellfish stats  [flags] ____.config [____.stats.config]\n\n"
 }
 
 func main() {

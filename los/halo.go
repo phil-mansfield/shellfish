@@ -42,7 +42,7 @@ import (
 )
 
 // Type SphereHalo represents a halo which can have spheres inserted into it.
-type SphereHalo struct {
+type Halo struct {
 	origin [3]float64
 	rings, bins, n int // bins = radial bins, n = number of lines per 
 	rMin, rMax float64
@@ -63,7 +63,7 @@ type SphereHalo struct {
 // given by rMin, and rMax. It will consist of a family of rings whose normals
 // are given by the slice of vectors, norms. Each ring will consists of n
 // lines of sight and will have bins radial bins.
-func (h *SphereHalo) Init(
+func (h *Halo) Init(
 	norms [][3]float32, origin [3]float64,
 	rMin, rMax float64, bins, n int,
 	defaultRho float64,
@@ -105,7 +105,7 @@ func (h *SphereHalo) Init(
 // stored in h.
 //
 // Used for parallelization. But very expensive.
-func (h *SphereHalo) Split(hs []SphereHalo) {
+func (h *Halo) Split(hs []Halo) {
 	for i := range hs {
 		hi := &hs[i]
 		if h.rings != hi.rings || h.bins != hi.bins || h.n != hi.n {
@@ -127,7 +127,7 @@ func (h *SphereHalo) Split(hs []SphereHalo) {
 // at the end is equal to the total mass intially in h and all the halos in hs.
 //
 // Used for parallelization. But very expensive.
-func (h *SphereHalo) Join(hs []SphereHalo) {
+func (h *Halo) Join(hs []Halo) {
 	for i := range hs {
 		hi := &hs[i]
 		if h.rings != hi.rings || h.bins != hi.bins || h.n != hi.n {
@@ -145,7 +145,7 @@ func (h *SphereHalo) Join(hs []SphereHalo) {
 // buffer intr.
 //
 // Intersect must be called after Transform is called on the vectors.
-func (h *SphereHalo) Intersect(vecs [][3]float32, r float64, intr []bool) {
+func (h *Halo) Intersect(vecs [][3]float32, r float64, intr []bool) {
 	rMin, rMax := h.rMin - r, h.rMax + r
 	if rMin < 0 { rMin = 0 }
 	rMin2, rMax2 := float32(rMin*rMin), float32(rMax*rMax)
@@ -162,7 +162,7 @@ func (h *SphereHalo) Intersect(vecs [][3]float32, r float64, intr []bool) {
 
 // Transform translates all the given vectors so that they are in the local
 // coordinate system of the halo.
-func (h *SphereHalo) Transform(vecs [][3]float32, totalWidth float64) {
+func (h *Halo) Transform(vecs [][3]float32, totalWidth float64) {
 	x0 := float32(h.origin[0])
 	y0 := float32(h.origin[1])
 	z0 := float32(h.origin[2])
@@ -195,7 +195,7 @@ func (h *SphereHalo) Transform(vecs [][3]float32, totalWidth float64) {
 
 // Insert insreats a sphere with the given center and radius to all the rings
 // of the halo.
-func (h *SphereHalo) Insert(vec [3]float32, radius, rho float64) {
+func (h *Halo) Insert(vec [3]float32, radius, rho float64) {
 	// transform into displacement from the center
 	vec[0] -= float32(h.origin[0])
 	vec[1] -= float32(h.origin[1])
@@ -212,7 +212,7 @@ func (h *SphereHalo) Insert(vec [3]float32, radius, rho float64) {
 }
 
 // sphereIntersecRing performs an intersection
-func (h *SphereHalo) sphereIntersectRing(
+func (h *Halo) sphereIntersectRing(
 	vec [3]float32, radius float64, ring int,
 ) bool {
 	norm := h.norms[ring]
@@ -222,7 +222,7 @@ func (h *SphereHalo) sphereIntersectRing(
 
 // insertToRing inserts a sphere of the given center, radius, and density to
 // one ring of the halo. This is where the magic happens.
-func (h *SphereHalo) insertToRing(
+func (h *Halo) insertToRing(
 	vec [3]float32, radius, rho float64, ring int,
 ) {
 	geom.RotateVec(&vec, &h.rots[ring])
@@ -272,7 +272,7 @@ func (h *SphereHalo) insertToRing(
 // LoS array, two sets of indices are returned and bot sets must be looped over.
 //
 // Upper indices are _exclusive_.
-func (h *SphereHalo) idxRange(
+func (h *Halo) idxRange(
 	phiLo, phiHi float64,
 ) (iLo1, iHi1, iLo2, iHi2 int) {
 	// An alternate approach involves doing some modulo calculations.
@@ -339,7 +339,7 @@ func oneValIntrDist(dist2, rad2, b, dir float64) float64 {
 
 // GetRhos writes the density of the LoS at a given ring and LoS profile
 // into buf.
-func (h *SphereHalo) GetRhos(ring, losIdx int, buf []float64) {
+func (h *Halo) GetRhos(ring, losIdx int, buf []float64) {
 	h.profs[ring].Retrieve(losIdx, buf)
 	for i, rho := range buf {
 		if rho < h.defaultRho { buf[i] = h.defaultRho }
@@ -347,7 +347,7 @@ func (h *SphereHalo) GetRhos(ring, losIdx int, buf []float64) {
 }
 
 // GetRs writes the radial values of each bin into a a buffer.
-func (h *SphereHalo) GetRs(buf []float64) {
+func (h *Halo) GetRs(buf []float64) {
 	if len(buf) != h.bins { panic("|buf| != h.bins") }
 
 	dlr := (math.Log(h.rMax) - math.Log(h.rMin))/float64(h.bins)
@@ -356,7 +356,7 @@ func (h *SphereHalo) GetRs(buf []float64) {
 }
 
 // MedianProfile computes the median value of all the halo's LoS profiles.
-func (h *SphereHalo) MedianProfile() []float64 {
+func (h *Halo) MedianProfile() []float64 {
 	// Read Densities
 	rhoBufs := make([][]float64, h.n * h.rings)
 	for i := range rhoBufs {
@@ -385,7 +385,7 @@ func (h *SphereHalo) MedianProfile() []float64 {
 }
 
 // MeanProfile computes the mean value of all the halo's LoS profiles.
-func (h *SphereHalo) MeanProfile() []float64 {
+func (h *Halo) MeanProfile() []float64 {
 	mean := make([]float64, h.bins)
 	buf := make([]float64, h.bins)
 	
@@ -403,11 +403,11 @@ func (h *SphereHalo) MeanProfile() []float64 {
 }
 
 // Phi returns the angle corresponding to the given LoS index.
-func (h *SphereHalo) Phi(losIdx int) float64 { return h.ringPhis[losIdx] }
+func (h *Halo) Phi(losIdx int) float64 { return h.ringPhis[losIdx] }
 
 // LineSegment calculates a line segment corresponding to a given profile
 // and writes it to out.
-func (h *SphereHalo) LineSegment(ring, losIdx int, out *geom.LineSegment) {
+func (h *Halo) LineSegment(ring, losIdx int, out *geom.LineSegment) {
 	vec :=[3]float32{}
     sin, cos := math.Sincos(float64(h.ringPhis[losIdx]))
     vec[0], vec[1] = float32(cos), float32(sin)
@@ -438,7 +438,7 @@ func inRange(x, r, low, width, tw float64) bool {
 
 // SheetIntersect returns true if the given halo and sheet intersect one another
 // and false otherwise.
-func (h *SphereHalo) SheetIntersect(hd *io.SheetHeader) bool {
+func (h *Halo) SheetIntersect(hd *io.SheetHeader) bool {
 	return inRange(h.origin[0], h.rMax, float64(hd.Origin[0]),
 		float64(hd.Width[0]), hd.TotalWidth) &&
 			inRange(h.origin[1], h.rMax, float64(hd.Origin[1]),
@@ -449,11 +449,11 @@ func (h *SphereHalo) SheetIntersect(hd *io.SheetHeader) bool {
 
 // PlaneToVolume converts an (x, y) coordinate in the coordinate system of
 // a given ring into the box's coordinate system.
-func (h *SphereHalo) PlaneToVolume(ring int, px, py float64) (x, y, z float64) {
+func (h *Halo) PlaneToVolume(ring int, px, py float64) (x, y, z float64) {
 	v := &[3]float32{float32(px), float32(py), 0}
 	geom.RotateVec(v, &h.irots[ring])
 	return float64(v[0]), float64(v[1]), float64(v[2])
 }
 
 // RMax returns maximum radius of the halo profiles.
-func (h *SphereHalo) RMax() float64 { return h.rMax }
+func (h *Halo) RMax() float64 { return h.rMax }

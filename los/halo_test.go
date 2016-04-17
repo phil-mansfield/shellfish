@@ -38,7 +38,7 @@ func TestInsertToRing(t *testing.T) {
 
 	buf := make([]float64, 8)
 	for i, test := range tests {
-		h := SphereHalo{}
+		h := Halo{}
 		h.Init([]geom.Vec{{0, 0, 1}}, [3]float64{1, 1, 1}, 0.1, 10, 8, test.n,0)
 		h.insertToRing(test.vec, test.radius, 1, 0)
 		h.GetRhos(0, test.los, buf)

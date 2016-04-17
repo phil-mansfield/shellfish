@@ -255,7 +255,7 @@ func loop(
 	sphBuf := &sphBuffers{
 		intr: make([]bool, gw * gw * gw),
 		vecs: make([][3]float32, gw * gw * gw),
-		sphWorkers: make([]los.SphereHalo, workers - 1),
+		sphWorkers: make([]los.Halo, workers - 1),
 	}
 
 	for _, snap := range sortedSnaps {
@@ -281,7 +281,7 @@ func loop(
 }
 
 func sphereLoop(
-	snap int, IDs, ids []int, halos []*los.SphereHalo, c *ShellConfig,
+	snap int, IDs, ids []int, halos []*los.Halo, c *ShellConfig,
 	e *env.Environment, sphBuf *sphBuffers, out [][]float64,
 ) error {
 	hds, files, err := memo.ReadHeaders(snap, e)
@@ -306,13 +306,13 @@ func sphereLoop(
 }
 
 type sphBuffers struct {
-	sphWorkers []los.SphereHalo
+	sphWorkers []los.Halo
 	vecs [][3]float32
 	intr []bool
 }
 
 func loadSphereVecs(
-	h *los.SphereHalo, sphBuf *sphBuffers, hd *io.SheetHeader, c *ShellConfig,
+	h *los.Halo, sphBuf *sphBuffers, hd *io.SheetHeader, c *ShellConfig,
 ) {
 	workers := runtime.NumCPU()
 	runtime.GOMAXPROCS(workers)
@@ -346,7 +346,7 @@ func loadSphereVecs(
 }
 
 func chanLoadSphereVec(
-	h *los.SphereHalo, vecs [][3]float32, intr []bool,
+	h *los.Halo, vecs [][3]float32, intr []bool,
 	zIdxs []int, hd *io.SheetHeader, c *ShellConfig, sync chan bool,
 ) {
 	gw, sw := int(hd.GridWidth), int(hd.SegmentWidth)
@@ -379,7 +379,7 @@ func chanLoadSphereVec(
 var insertCalls = 0
 
 func haloAnalysis(
-	halos []*los.SphereHalo, idxs []int, c *ShellConfig,
+	halos []*los.Halo, idxs []int, c *ShellConfig,
 	ringBuf []analyze.RingBuffer, out [][]float64,
 ) error {
 	// Calculate Penna coefficients.
@@ -399,7 +399,7 @@ func haloAnalysis(
 
 func createHalos(
 	snap int, hd *io.SheetHeader, ids []int, c *ShellConfig, e *env.Environment,
-) ([]*los.SphereHalo, error) {
+) ([]*los.Halo, error) {
 	vals, err := memo.ReadRockstar(
 		snap, ids, e, halo.X, halo.Y, halo.Z, halo.Rad200b,
 	)
@@ -408,7 +408,7 @@ func createHalos(
 	xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
 	
 	// Initialize halos.
-	halos := make([]*los.SphereHalo, len(ids))
+	halos := make([]*los.Halo, len(ids))
 
 	for i, _ := range ids {
 		if rs[i] <= 0 { continue }
@@ -425,7 +425,7 @@ func createHalos(
 		rho := pVol / sphVol
 		defaultRho := rho * c.backgroundRhoMult
 
-		halo := &los.SphereHalo{}
+		halo := &los.Halo{}
 		halo.Init(norms, origin, rMin, rMax, int(c.radialBins),
 			int(c.spokes), defaultRho)
 
@@ -519,10 +519,10 @@ func zSplit(zCounts []int, workers int) [][]int {
 }
 
 func binIntersections(
-	hds []io.SheetHeader, halos []*los.SphereHalo,
-) [][]*los.SphereHalo {
+	hds []io.SheetHeader, halos []*los.Halo,
+) [][]*los.Halo {
 
-	bins := make([][]*los.SphereHalo, len(hds))
+	bins := make([][]*los.Halo, len(hds))
 	for i := range hds {
 		for hi := range halos {
 			if halos[hi].SheetIntersect(&hds[i]) {
@@ -534,7 +534,7 @@ func binIntersections(
 }
 
 func calcCoeffs(
-	halo *los.SphereHalo, buf []analyze.RingBuffer, c *ShellConfig,
+	halo *los.Halo, buf []analyze.RingBuffer, c *ShellConfig,
 ) ([]float64, bool) {
 	for i := range buf {
 		buf[i].Clear()

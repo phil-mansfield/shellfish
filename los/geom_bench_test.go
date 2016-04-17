@@ -44,7 +44,7 @@ func randomNorms(n int) []geom.Vec {
 func BenchmarkSphereIntersectHalo100(b *testing.B) {
 	rings := 100
 	norms := randomNorms(rings)
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(norms, [3]float64{0, 0, 0}, 1, 2, 1, 1, 0)
 
 	b.ResetTimer()

@@ -17,7 +17,7 @@ func BenchmarkTransform10000000(b *testing.B) {
 		vecs[i][2] = float32(rand.Float64())
 	}
 
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(nil, [3]float64{0.25, 0.25, 0.25}, 0, 0, 0, 0, 0)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -34,7 +34,7 @@ func BenchmarkIntersect10000000(b *testing.B) {
 		vecs[i][2] = float32(rand.Float64())
 	}
 
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(nil, [3]float64{0.5, 0.5, 0.5}, 0.25, 0.5, 0, 0, 0)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -45,9 +45,9 @@ func BenchmarkIntersect10000000(b *testing.B) {
 func BenchmarkSplitJoin16(b *testing.B) {
 	norms := make([]geom.Vec, 100)
 	for i := range norms { norms[i] = geom.Vec{0, 0, 1} }
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(norms, [3]float64{1, 1, 1}, 0.5, 5.0, 200, 256, 0)
-	hs := make([]SphereHalo, 15)
+	hs := make([]Halo, 15)
 	h.Split(hs)
 	
 	for i := 0; i < b.N; i++ {
@@ -59,9 +59,9 @@ func BenchmarkSplitJoin16(b *testing.B) {
 func BenchmarkSplit16(b *testing.B) {
 	norms := make([]geom.Vec, 100)
 	for i := range norms { norms[i] = geom.Vec{0, 0, 1} }
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(norms, [3]float64{1, 1, 1}, 0.5, 5.0, 200, 256, 0)
-	hs := make([]SphereHalo, 15)
+	hs := make([]Halo, 15)
 	h.Split(hs)
 
 	for i := 0; i < b.N; i++ {
@@ -72,9 +72,9 @@ func BenchmarkSplit16(b *testing.B) {
 func BenchmarkJoin16(b *testing.B) {
 	norms := make([]geom.Vec, 100)
 	for i := range norms { norms[i] = geom.Vec{0, 0, 1} }
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(norms, [3]float64{1, 1, 1}, 0.5, 5.0, 200, 256, 0)
-	hs := make([]SphereHalo, 15)
+	hs := make([]Halo, 15)
 	h.Split(hs)
 
 	for i := 0; i < b.N; i++ {
@@ -83,7 +83,7 @@ func BenchmarkJoin16(b *testing.B) {
 }
 
 func BenchmarkGetRhos(b *testing.B) {
-	h := SphereHalo{}
+	h := Halo{}
 	norms := make([]geom.Vec, 100)
 	for i := range norms { norms[i] = geom.Vec{0, 0, 1} }
 	h.Init(norms, [3]float64{0, 0, 0}, 0.5, 5.0, 200, 256, 0)
@@ -96,7 +96,7 @@ func BenchmarkGetRhos(b *testing.B) {
 }
 
 func BenchmarkGetRhosFull(b *testing.B) {
-	h := SphereHalo{}
+	h := Halo{}
 	norms := make([]geom.Vec, 100)
 	for i := range norms { norms[i] = geom.Vec{0, 0, 1} }
 	h.Init(norms, [3]float64{0, 0, 0}, 0.5, 5.0, 200, 256, 0)
@@ -139,7 +139,7 @@ func randomDirs(n int) []geom.Vec {
 }
 
 func BenchmarkInsert1(b *testing.B) {
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(randomDirs(100), [3]float64{0, 0, 0}, 0.3, 3, 200, 256, 0)
 
 	var vecR float32 = 1.0
@@ -163,7 +163,7 @@ func BenchmarkInsert1(b *testing.B) {
 }
 
 func BenchmarkInsert3(b *testing.B) {
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(randomDirs(100), [3]float64{0, 0, 0}, 0.3, 3, 200, 256, 0)
 
 	var vecR float32 = 3.0
@@ -187,7 +187,7 @@ func BenchmarkInsert3(b *testing.B) {
 }
 
 func BenchmarkInsert0_3(b *testing.B) {
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(randomDirs(100), [3]float64{0, 0, 0}, 0.3, 3, 200, 256, 0)
 
 	var vecR float32 = 0.3

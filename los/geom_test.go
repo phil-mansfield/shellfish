@@ -76,7 +76,7 @@ func TestIdxRange(t *testing.T) {
 	rMin, rMax := 1.0, 2.0
 	bins, n := 10, 12
 
-	h := SphereHalo{}
+	h := Halo{}
 	h.Init(norms, origin, rMin, rMax, bins, n, 0)
 
 	tests := []struct {
@@ -120,7 +120,7 @@ func TestSphereIntersectRing(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		h := SphereHalo{}
+		h := Halo{}
 		norms := []geom.Vec{test.ringNorm}
 		h.Init(norms, [3]float64{0, 0, 0}, 1, 2, 1, 1, 0)
 		res := h.sphereIntersectRing(test.c, test.r, 0)

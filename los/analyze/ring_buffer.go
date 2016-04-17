@@ -41,7 +41,7 @@ func (r *RingBuffer) Clear() {
 }
 
 func (r *RingBuffer) Splashback(
-	h *los.SphereHalo, ring int, window int, dLim float64,
+	h *los.Halo, ring int, window int, dLim float64,
 ) {
 	h.GetRs(r.profRs)
 	ls := new(geom.LineSegment)

@@ -180,6 +180,10 @@ func ParseCols(
 func tokenize(line string) []string {
 	toks := strings.Split(line, " ")
 	fToks := []string{}
-	for i := range toks { fToks = append(fToks, toks[i]) }
+	for i := range toks {
+		if len(toks[i]) > 0 {
+			fToks = append(fToks, toks[i])
+		}
+	}
 	return fToks
 }

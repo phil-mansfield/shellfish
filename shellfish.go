@@ -21,7 +21,8 @@ func modeDescriptions() string {
 
 	"My other modes are:\n" +
 	"shellfish id     [flags] ____.config [____.id.config]\n" +
-	"shellfish tree   [flags] ____.config [____.tree.config]\n" +
+	"shellfish tree ____.config\n" +
+	"shellfish coord ____.config\n" +
 	"shellfish shell  [flags] ____.config [____.shell.config]\n" +
 	"shellfish stats  [flags] ____.config [____.stats.config]\n\n"
 }

@@ -1,58 +1,50 @@
 package los
 
 import (
-	"runtime"
+	"math"
 	"testing"
-
+	
 	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
-func TestInRange(t *testing.T) {
-	tw := float32(100)
-	r := float32(10)
-	table := []struct {
-		x, low, width float32
-		res bool
-	} {
-		{50, 40, 20, true},
-		{20, 40, 20, false},
-		{80, 40, 20, false},
-		{45, 40, 20, true},
-		{65, 40, 20, true},
+func Float64SliceEq(xs, ys []float64) bool {
+	if len(xs) != len(ys) { return false }
+	for i := range xs {
+		if !almostEq(xs[i], ys[i]) { return false }
+	}
+	return true
+}
 
-		{5, 90, 20, true},
-		{15, 90, 20, true},
-		{25, 90, 20, false},
+func TestInsertToRing(t *testing.T) {
+	edges := make([]float64, 9)
+	for i := range edges { edges[i] = math.Pow(10, 1 - float64(i)/4) }
+
+	tests := []struct {
+		los, n int
+		vec geom.Vec
+		radius float64
+		res []float64
+	} {
+		{0, 8, geom.Vec{0, 0, 0}, 1, []float64{1, 1, 1, 1, 0, 0, 0, 0}},
+		{0, 8, geom.Vec{0.25, 0, 0}, 0.75, []float64{1, 1, 1, 1, 0, 0, 0, 0}},
+		{4, 8, geom.Vec{0.25, 0, 0}, 0.75, []float64{1,1,0.79588,0,0,0,0,0}},
+		{0, 8, geom.Vec{float32(edges[4] + edges[3])/2, 0, 0},
+			(edges[4] - edges[3])/2, []float64{0, 0, 0, 0, 1, 0, 0, 0}},
+		{0, 8, geom.Vec{float32(edges[4] + edges[3])/2, 0, 0},
+			(edges[4] - edges[3])/2, []float64{0, 0, 0, 0, 1, 0, 0, 0}},
+		{0, 8, geom.Vec{float32(edges[8] + edges[0])/2, 0, 0},
+			(edges[8] - edges[0])/2, []float64{1, 1, 1, 1, 1, 1, 1, 1}},
 	}
 
-	for i, test := range table {
-		ir := inRange(test.x, r, test.low, test.width, tw)
-		if ir != test.res {
-			t.Errorf(
-				"%d) inRange(%g, %g, %g, %g, %g) != %v",
-				i + 1, test.x, r, test.low, test.width, tw, test.res,
-			)
+	buf := make([]float64, 8)
+	for i, test := range tests {
+		h := SphereHalo{}
+		h.Init([]geom.Vec{{0, 0, 1}}, [3]float64{1, 1, 1}, 0.1, 10, 8, test.n,0)
+		h.insertToRing(test.vec, test.radius, 1, 0)
+		h.GetRhos(0, test.los, buf)
+		if !Float64SliceEq(buf, test.res) {
+			t.Errorf("%d) h.InsertToRing() -> %.4g, but expected %.4g",
+				i, buf, test.res)
 		}
 	}
-}
-
-func BenchmarkHaloProfilesClear(b *testing.B) {
-	hp := new(HaloProfiles)
-	hp.Init(0, 1, &geom.Vec{0, 0, 0}, 0, 1, 256, 1024, 100000)
-	for i := 0; i < b.N; i++ { hp.Clear() }
-}
-
-func BenchmarkHaloProfilesParallelClear(b *testing.B) {
-	hs := make([]HaloProfiles, runtime.NumCPU())
-	for i := range hs { 
-		hs[i].Init(0, 1, &geom.Vec{0, 0, 0}, 0, 1, 256, 1024, 100000)
-	}
-	for i := 0; i < b.N/len(hs); i++ { ParallelClearHaloProfiles(hs) }
-}
-
-func BenchmarkHaloProfilesAdd(b *testing.B) {
-	hp1, hp2 := new(HaloProfiles), new(HaloProfiles)
-	hp1.Init(0, 10, &geom.Vec{0, 0, 0}, 0, 1, 200, 1024, 100000)
-	hp2.Init(0, 10, &geom.Vec{0, 0, 0}, 0, 1, 200, 1024, 100000)
-	for i := 0; i < b.N; i++ { hp1.Add(hp2) }
 }

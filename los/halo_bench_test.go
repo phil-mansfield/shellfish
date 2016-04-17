@@ -1,4 +1,4 @@
-package sphere_halo
+package los
 
 import (
 	"math"

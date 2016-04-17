@@ -13,7 +13,6 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 
 	"github.com/phil-mansfield/shellfish/los"
-	sph "github.com/phil-mansfield/shellfish/los/sphere_halo"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 
 	"github.com/phil-mansfield/shellfish/render/io"
@@ -256,7 +255,7 @@ func loop(
 	sphBuf := &sphBuffers{
 		intr: make([]bool, gw * gw * gw),
 		vecs: make([][3]float32, gw * gw * gw),
-		sphWorkers: make([]sph.SphereHalo, workers - 1),
+		sphWorkers: make([]los.SphereHalo, workers - 1),
 	}
 
 	for _, snap := range sortedSnaps {
@@ -298,7 +297,7 @@ func sphereLoop(
 
 		binHs := intrBins[i]
 		for j := range binHs {
-			h, ok := binHs[j].(*sph.SphereHalo)
+			h, ok := binHs[j].(*los.SphereHalo)
 			if !ok { panic("Invalid Halo interface given to sphereLoop().") }
 			loadSphereVecs(h, sphBuf, &hds[i], c)
 		}
@@ -309,13 +308,13 @@ func sphereLoop(
 }
 
 type sphBuffers struct {
-	sphWorkers []sph.SphereHalo
+	sphWorkers []los.SphereHalo
 	vecs [][3]float32
 	intr []bool
 }
 
 func loadSphereVecs(
-	h *sph.SphereHalo, sphBuf *sphBuffers, hd *io.SheetHeader, c *ShellConfig,
+	h *los.SphereHalo, sphBuf *sphBuffers, hd *io.SheetHeader, c *ShellConfig,
 ) {
 	workers := runtime.NumCPU()
 	runtime.GOMAXPROCS(workers)
@@ -349,7 +348,7 @@ func loadSphereVecs(
 }
 
 func chanLoadSphereVec(
-	h *sph.SphereHalo, vecs [][3]float32, intr []bool,
+	h *los.SphereHalo, vecs [][3]float32, intr []bool,
 	zIdxs []int, hd *io.SheetHeader, c *ShellConfig, sync chan bool,
 ) {
 	gw, sw := int(hd.GridWidth), int(hd.SegmentWidth)
@@ -428,7 +427,7 @@ func createHalos(
 		rho := pVol / sphVol
 		defaultRho := rho * c.backgroundRhoMult
 
-		halo := &sph.SphereHalo{}
+		halo := &los.SphereHalo{}
 		halo.Init(norms, origin, rMin, rMax, int(c.radialBins),
 			int(c.spokes), defaultRho)
 

@@ -29,14 +29,13 @@ Operating on a SphereHalo is relatively simple:
 
     h.Join(hs)
 */
-package sphere_halo
+package los
 
 import (
 	"fmt"
 	"math"
 
 	"github.com/phil-mansfield/shellfish/render/io"
-	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/math/mat"
 	"github.com/phil-mansfield/shellfish/math/sort"
 	"github.com/phil-mansfield/shellfish/los/geom"
@@ -55,12 +54,12 @@ type SphereHalo struct {
 
 	rots, irots []mat.Matrix32
 	norms [][3]float32
-	profs []los.ProfileRing
+	profs []ProfileRing
 
 	defaultRho float64
 }
 
-var _ los.Halo = &SphereHalo{}
+var _ Halo = &SphereHalo{}
 
 // Init initializes a halo centered at origin with minimum and maximum radii
 // given by rMin, and rMax. It will consist of a family of rings whose normals
@@ -82,7 +81,7 @@ func (h *SphereHalo) Init(
 
 	zAxis := &[3]float32{0, 0, 1}
 
-	h.profs = make([]los.ProfileRing, h.rings)
+	h.profs = make([]ProfileRing, h.rings)
 	h.rots = make([]mat.Matrix32, h.rings)
 	h.irots = make([]mat.Matrix32, h.rings)
 

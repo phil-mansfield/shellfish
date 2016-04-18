@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/phil-mansfield/shellfish/cmd"
+	"github.com/phil-mansfield/shellfish/cmd/env"
 )
 
 func modeDescriptions() string {
@@ -84,7 +85,23 @@ func main() {
 		}
 	}
 
-	out, err := mode.Run(flags, gConfig, lines)
+	e := &env.Environment{MemoDir: gConfig.MemoDir}
+	err = e.InitGotetra(
+		gConfig.SnapshotFormat, gConfig.SnapMin, gConfig.SnapMax,
+		gConfig.FormatMins, gConfig.FormatMaxes, gConfig.ValidateFormats,
+	)
+	if err != nil {
+		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+	}
+
+	err = e.InitRockstar(
+		gConfig.HaloDir, gConfig.SnapMin, gConfig.SnapMax,
+	)
+	if err != nil {
+		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+	}
+
+	out, err := mode.Run(flags, gConfig, e, lines)
 	if err != nil {
 		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 	}

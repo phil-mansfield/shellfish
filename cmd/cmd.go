@@ -9,6 +9,7 @@ import (
 
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/version"
+	"github.com/phil-mansfield/shellfish/cmd/env"
 )
 
 var ModeNames map[string]Mode = map[string]Mode{
@@ -31,23 +32,24 @@ type Mode interface {
 	// an initialized GlobalConfig struct, and a slice of lines representing the
 	// contents of stdin. It will return a slice of lines that should be
 	// written to stdout along with an error if one occurs.
-	Run(flags []string, gConfig *GlobalConfig, stdin []string) ([]string, error)
+	Run(flags []string, gConfig *GlobalConfig,
+		e *env.Environment, stdin []string) ([]string, error)
 }
 
 // GlobalConfig is a config file used by every mode. It contains information on
 // the directories that various files are stored in.
 type GlobalConfig struct {
-	version string
+	Version                      string
 
-	snapshotFormat, snapshotType string
-	haloDir, haloType string
-	treeDir, treeType string
-	memoDir string
+	SnapshotFormat, SnapshotType string
+	HaloDir, HaloType            string
+	TreeDir, TreeType            string
+	MemoDir                      string
 
-	formatMins, formatMaxes []int64
-	snapMin, snapMax int64
+	FormatMins, FormatMaxes      []int64
+	SnapMin, SnapMax             int64
 
-	validateFormats bool
+	ValidateFormats              bool
 }
 
 var _ Mode = &GlobalConfig{}
@@ -56,19 +58,19 @@ var _ Mode = &GlobalConfig{}
 func (config *GlobalConfig) ReadConfig(fname string) error {
 
 	vars := parse.NewConfigVars("config")
-	vars.String(&config.version, "Version", version.SourceVersion)
-	vars.String(&config.snapshotFormat, "SnapshotFormat", "")
-	vars.String(&config.snapshotType, "SnapshotType", "")
-	vars.String(&config.haloDir, "HaloDir", "")
-	vars.String(&config.haloType, "HaloType", "")
-	vars.String(&config.treeDir, "TreeDir", "")
-	vars.String(&config.treeType, "TreeType", "")
-	vars.String(&config.memoDir, "MemoDir", "")
-	vars.Ints(&config.formatMins, "FormatMins", []int64{})
-	vars.Ints(&config.formatMaxes, "FormatMaxes", []int64{})
-	vars.Int(&config.snapMin, "SnapMin", -1)
-	vars.Int(&config.snapMax, "SnapMax", -1)
-	vars.Bool(&config.validateFormats, "ValidateFormats", false)
+	vars.String(&config.Version, "Version", version.SourceVersion)
+	vars.String(&config.SnapshotFormat, "SnapshotFormat", "")
+	vars.String(&config.SnapshotType, "SnapshotType", "")
+	vars.String(&config.HaloDir, "HaloDir", "")
+	vars.String(&config.HaloType, "HaloType", "")
+	vars.String(&config.TreeDir, "TreeDir", "")
+	vars.String(&config.TreeType, "TreeType", "")
+	vars.String(&config.MemoDir, "MemoDir", "")
+	vars.Ints(&config.FormatMins, "FormatMins", []int64{})
+	vars.Ints(&config.FormatMaxes, "FormatMaxes", []int64{})
+	vars.Int(&config.SnapMin, "SnapMin", -1)
+	vars.Int(&config.SnapMax, "SnapMax", -1)
+	vars.Bool(&config.ValidateFormats, "ValidateFormats", false)
 
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
 	return config.validate()
@@ -77,7 +79,7 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 // validate checks that all the user-generated fields of GlobalConfig are
 // properly set.
 func (config *GlobalConfig) validate() error {
-	major, minor, patch, err := version.Parse(config.version)
+	major, minor, patch, err := version.Parse(config.Version)
 	if err != nil {
 		return fmt.Errorf("I couldn't parse the 'Version' variable: %s",
 			err.Error())
@@ -86,55 +88,55 @@ func (config *GlobalConfig) validate() error {
 	if major != smajor || minor != sminor || patch != spatch {
 		return fmt.Errorf("The 'Version' variable is set to %s, but the " +
 			"version of the source is %s",
-			config.version, version.SourceVersion)
+			config.Version, version.SourceVersion)
 	}
 
-	switch config.snapshotType {
+	switch config.SnapshotType {
 	case "LGadget-2":
 	case "":
 		return fmt.Errorf("The 'SnapshotType variable isn't set.'")
 	default:
 		return fmt.Errorf("The 'SnapshotType' variable is set to '%s', " +
-			"which I don't recognize.", config.snapshotType)
+			"which I don't recognize.", config.SnapshotType)
 	}
 
-	switch config.haloType {
+	switch config.HaloType {
 	case "Rockstar":
 	case "":
 		return fmt.Errorf("The 'HaloType variable isn't set.'")
 	default:
 		return fmt.Errorf("The 'HaloType' variable is set to '%s', " +
-		"which I don't recognize.", config.haloType)
+		"which I don't recognize.", config.HaloType)
 	}
 
-	switch config.treeType {
+	switch config.TreeType {
 	case "consistent-trees":
 	case "":
 		return fmt.Errorf("The 'TreeType variable isn't set.'")
 	default:
 		return fmt.Errorf("The 'TreeType' variable is set to '%s', " +
-		"which I don't recognize.", config.treeType)
+		"which I don't recognize.", config.TreeType)
 	}
 
-	if config.haloDir == "" {
+	if config.HaloDir == "" {
 		return fmt.Errorf("The 'HaloDir' variable isn't set.")
-	} else if err = validateDir(config.haloDir); err != nil {
+	} else if err = validateDir(config.HaloDir); err != nil {
 		return fmt.Errorf("The 'HaloDir' variable is set to '%s', but %s",
-			config.haloDir, err.Error())
+			config.HaloDir, err.Error())
 	}
 
-	if config.treeDir == "" {
+	if config.TreeDir == "" {
 		return fmt.Errorf("The 'TreeDir' variable isn't set.")
-	} else if err = validateDir(config.treeDir); err != nil {
+	} else if err = validateDir(config.TreeDir); err != nil {
 		return fmt.Errorf("The 'TreeDir' variable is set to '%s', but %s",
-			config.treeDir, err.Error())
+			config.TreeDir, err.Error())
 	}
 
-	if config.memoDir == "" {
+	if config.MemoDir == "" {
 		return fmt.Errorf("The 'MemoDir' variable isn't set.")
-	} else if err = validateDir(config.memoDir); err != nil {
+	} else if err = validateDir(config.MemoDir); err != nil {
 		return fmt.Errorf("The 'MemoDir' variable is set to '%s', but %s",
-			config.memoDir, err.Error())
+			config.MemoDir, err.Error())
 	}
 
 	if err = validateFormat(config); err != nil {
@@ -162,28 +164,28 @@ func validateFormat(config *GlobalConfig) error {
 	// TODO: This doesn't validate correctly.
 
 	// This is wrong because of "%%" specifiers.
-	specifiers := strings.Count(config.snapshotFormat, "%")
+	specifiers := strings.Count(config.SnapshotFormat, "%")
 
-	if len(config.formatMins) != len(config.formatMaxes) {
+	if len(config.FormatMins) != len(config.FormatMaxes) {
 		return fmt.Errorf("The lengths of the variables 'FormatMins' and" +
 			"'FormatMaxes' are not equal")
 	}
 
 	switch {
-	case config.snapMin == -1:
+	case config.SnapMin == -1:
 		return fmt.Errorf("The variable 'SnapMin' wasn't set.")
-	case config.snapMax == -1:
+	case config.SnapMax == -1:
 		return fmt.Errorf("The variable 'SnapMax' wasn't set.")
 	}
 
-	if config.snapMin > config.snapMax {
+	if config.SnapMin > config.SnapMax {
 		return fmt.Errorf("'SnapMin' is larger than 'SnapMax'")
 	}
 
-	if len(config.formatMins) + 1 != specifiers {
+	if len(config.FormatMins) + 1 != specifiers {
 		return fmt.Errorf("The length of 'FormatMins' is %d, but there " +
 		"are %d '%%' specifiers in the format string '%s'.",
-			len(config.formatMins), specifiers, config.snapshotFormat,
+			len(config.FormatMins), specifiers, config.SnapshotFormat,
 		)
 	}
 	// This is wrong because it doesn't check that the properly formatted
@@ -265,7 +267,7 @@ ValidateFormats = false`, version.SourceVersion)
 // Run is a dummy method which allows GlobalConfig to conform to the Mode
 // interface for testing purposes.
 func (config *GlobalConfig) Run(
-	flags []string, gConfig *GlobalConfig, stdin []string,
+	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	panic("GlobalConfig.Run() should never be executed.")
 }

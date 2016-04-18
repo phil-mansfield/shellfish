@@ -20,14 +20,11 @@ func (config *CoordConfig) ReadConfig(fname string) error { return nil }
 func (config *CoordConfig) validate() error { return nil }
 
 func (config *CoordConfig) Run(
-	flags []string, gConfig *GlobalConfig, stdin []string,
+	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
-
-	e := &env.Environment{}
-	e.InitRockstar(gConfig.haloDir, gConfig.snapMin, gConfig.snapMax)
 
 	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, e)
 	if err != nil { return nil, err }

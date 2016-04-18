@@ -155,21 +155,12 @@ func (config *IDConfig) validate() error {
 
 // Run executes the ID mode of shellfish tool.
 func (config *IDConfig) Run(
-	flags []string, gConfig *GlobalConfig, stdin []string,
+	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
-	
-	e := &env.Environment{MemoDir: gConfig.memoDir}
-	e.InitGotetra(
-		gConfig.snapshotFormat, gConfig.snapMin, gConfig.snapMax,
-		gConfig.formatMins, gConfig.formatMaxes, gConfig.validateFormats,
-	)
-	e.InitRockstar(
-		gConfig.haloDir, gConfig.snapMin, gConfig.snapMax,
-	)
 
-	if config.snap < gConfig.snapMin || config.snap > gConfig.snapMax {
+	if config.snap < gConfig.SnapMin || config.snap > gConfig.SnapMax {
 		return nil, fmt.Errorf("'Snap' = %d, but 'SnapMin' = %d and " +
-			"'SnapMax = %d'", config.snap, gConfig.snapMin, gConfig.snapMax)
+			"'SnapMax = %d'", config.snap, gConfig.SnapMin, gConfig.SnapMax)
 	}
 
 	// Get IDs and snapshots

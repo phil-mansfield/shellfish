@@ -22,7 +22,7 @@ func (config *TreeConfig) ReadConfig(fname string) error { return nil }
 func (config *TreeConfig) validate() error { return nil }
 
 func (config *TreeConfig) Run(
-	flags []string, gConfig *GlobalConfig, stdin []string,
+	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil { return nil, err }
@@ -30,9 +30,6 @@ func (config *TreeConfig) Run(
 
 	trees, err := treeFiles(gConfig)
 	if err != nil { return nil, err }
-
-	e := &env.Environment{}
-	e.InitRockstar(gConfig.haloDir, gConfig.snapMin, gConfig.snapMax)
 
 	idSets, snapSets, err := tree.HaloHistories(
 		trees, inputIDs, e.SnapOffset(),
@@ -56,8 +53,8 @@ func (config *TreeConfig) Run(
 	)
 	fLines := []string{}
 	for i := range lines {
-		if snaps[i] <= int(gConfig.snapMin) &&
-			snaps[i] >= int(gConfig.snapMax) {
+		if snaps[i] <= int(gConfig.SnapMin) &&
+			snaps[i] >= int(gConfig.SnapMax) {
 
 			fLines = append(fLines, lines[i])
 		}
@@ -71,7 +68,7 @@ func (config *TreeConfig) Run(
 }
 
 func treeFiles(gConfig *GlobalConfig) ([]string, error) {
-	infos, err := ioutil.ReadDir(gConfig.treeDir)
+	infos, err := ioutil.ReadDir(gConfig.TreeDir)
 	if err != nil { return nil, err }
 
 	names := []string{}
@@ -80,7 +77,7 @@ func treeFiles(gConfig *GlobalConfig) ([]string, error) {
 		n := len(name)
 		// This is pretty hacky.
 		if n > 4 && name[:5] == "tree_" && name[n-4:] == ".dat" {
-			names = append(names, path.Join(gConfig.treeDir, name))
+			names = append(names, path.Join(gConfig.TreeDir, name))
 		}
 	}
 	return names, nil

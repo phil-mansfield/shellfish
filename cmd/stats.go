@@ -123,7 +123,7 @@ func (config *StatsConfig) validate() error {
 }
 
 func (config *StatsConfig) Run(
-	flags []string, gConfig *GlobalConfig, stdin []string,
+	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 
 	intColIdxs := []int{0, 1}
@@ -138,11 +138,6 @@ func (config *StatsConfig) Run(
 	coords, coeffs := floatCols[:4], transpose(floatCols[4:])
 	
 	snapBins, coeffBins, idxBins := binCoeffsBySnap(snaps, ids, coeffs)
-
-	e := &env.Environment{MemoDir: gConfig.memoDir}
-	e.InitGotetra(gConfig.snapshotFormat, gConfig.snapMin, gConfig.snapMax,
-		gConfig.formatMins, gConfig.formatMaxes, gConfig.validateFormats)
-	e.InitRockstar(gConfig.haloDir, gConfig.snapMin, gConfig.snapMax)
 
 	masses := make([]float64, len(ids))
 	rads := make([]float64, len(ids))

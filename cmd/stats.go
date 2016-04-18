@@ -160,10 +160,10 @@ func (config *StatsConfig) Run(
 			make([]float64, len(idxs)), make([]float64, len(idxs)),
 		}
 		for i, idx := range idxs {
-			snapCoords[i] = []float64{
-				coords[0][idx], coords[1][idx],
-				coords[2][idx], coords[3][idx],
-			}
+			snapCoords[0][i] = coords[0][idx]
+			snapCoords[1][i] = coords[1][idx]
+			snapCoords[2][i] = coords[2][idx]
+			snapCoords[3][i] = coords[3][idx]
 		}
 
 		for j := range idxs {
@@ -211,7 +211,7 @@ func (config *StatsConfig) Run(
 	)
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"},
-		[]string{"M_sp", "R_sp", "R_sp,max", "R_sp,min"},
+		[]string{"M_sp", "R_sp", "R_sp,min", "R_sp,max"},
 		[]int{0, 1, 2, 3, 4, 5},
 	)
 
@@ -262,7 +262,7 @@ func boundingSpheres(
 ) ([]geom.Sphere, error) {
 	xs, ys, zs, rs := coords[0], coords[1], coords[2], coords[3]
 
-	spheres := make([]geom.Sphere, len(coords))
+	spheres := make([]geom.Sphere, len(coords[0]))
 	for i := range spheres {
 		spheres[i].C = [3]float32{
 			float32(xs[i]), float32(ys[i]), float32(zs[i]),

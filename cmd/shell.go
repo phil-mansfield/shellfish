@@ -173,7 +173,7 @@ func (config *ShellConfig) Run(
 	)
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
-
+	
 	if len(ids) == 0 { return nil, fmt.Errorf("No input IDs.") }
 
 	// Compute coefficients.
@@ -258,10 +258,10 @@ func loop(
 			make([]float64, len(idxs)), make([]float64, len(idxs)),
 		}
 		for i, idx := range idxs {
-			snapCoords[i] = []float64{
-				coords[0][idx], coords[1][idx],
-				coords[2][idx], coords[3][idx],
-			}
+			snapCoords[0][i] = coords[0][idx]
+			snapCoords[1][i] = coords[1][idx]
+			snapCoords[2][i] = coords[2][idx]
+			snapCoords[3][i] = coords[3][idx]
 		}
 
 		// Create Halos
@@ -401,8 +401,8 @@ func haloAnalysis(
 func createHalos(
 	coords [][]float64, hd *io.SheetHeader, c *ShellConfig, e *env.Environment,
 ) ([]*los.Halo, error) {
-	halos := make([]*los.Halo, len(coords))
-	for i, _ := range coords {
+	halos := make([]*los.Halo, len(coords[0]))
+	for i, _ := range coords[0] {
 		x, y, z, r := coords[0][i], coords[1][i], coords[2][i], coords[3][i]
 
 		// This happens sometimes...
@@ -515,7 +515,6 @@ func zSplit(zCounts []int, workers int) [][]int {
 func binIntersections(
 	hds []io.SheetHeader, halos []*los.Halo,
 ) [][]*los.Halo {
-
 	bins := make([][]*los.Halo, len(hds))
 	for i := range hds {
 		for hi := range halos {

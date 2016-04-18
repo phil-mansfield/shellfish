@@ -25,7 +25,7 @@ func (config *CoordConfig) Run(
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
-
+	
 	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, e)
 	if err != nil { return nil, err }
 

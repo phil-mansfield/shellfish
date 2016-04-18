@@ -26,9 +26,13 @@ func (config *CoordConfig) Run(
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
 
-	e := &env.Environment{}
+	e := &env.Environment{MemoDir: gConfig.memoDir}
 	e.InitRockstar(gConfig.haloDir, gConfig.snapMin, gConfig.snapMax)
-
+	e.InitGotetra(
+		gConfig.snapshotFormat, gConfig.snapMin, gConfig.snapMax,
+		gConfig.formatMins, gConfig.formatMaxes, gConfig.validateFormats,
+	)
+	
 	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, e)
 	if err != nil { return nil, err }
 

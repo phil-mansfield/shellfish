@@ -49,6 +49,8 @@ type GlobalConfig struct {
 	FormatMins, FormatMaxes      []int64
 	SnapMin, SnapMax             int64
 
+	Endianness                   string
+
 	ValidateFormats              bool
 }
 
@@ -70,6 +72,7 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Ints(&config.FormatMaxes, "FormatMaxes", []int64{})
 	vars.Int(&config.SnapMin, "SnapMin", -1)
 	vars.Int(&config.SnapMax, "SnapMax", -1)
+	vars.String(&config.Endianness, "Endianness", "")
 	vars.Bool(&config.ValidateFormats, "ValidateFormats", false)
 
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
@@ -161,7 +164,7 @@ func validateDir(name string) error {
 // validateFormat returns an error if there are any problems with the
 // given format variables.
 func validateFormat(config *GlobalConfig) error {
-	// TODO: This doesn't validate correctly.
+	// TODO: This doesn't validate formats correctly.
 
 	// This is wrong because of "%%" specifiers.
 	specifiers := strings.Count(config.SnapshotFormat, "%")
@@ -188,7 +191,15 @@ func validateFormat(config *GlobalConfig) error {
 			len(config.FormatMins), specifiers, config.SnapshotFormat,
 		)
 	}
-	// This is wrong because it doesn't check that the properly formatted
+
+	switch config.Endianness {
+	case "":
+		return fmt.Errorf("The variable 'Endianness' was not set.")
+	case "LittleEndian", "BigEndian":
+	default:
+		return fmt.Errorf("The variable 'Endianness' must be sent to " +
+			"either 'LittleEndian' or 'BigEndian'.")
+	}
 
 	return nil
 }
@@ -253,6 +264,16 @@ TreeDir = path/to/merger/tree/dir/
 # simulation. Shellfish will memoize certain partial results in this directoy
 # (most importantly: the first couple of halos in )
 MemoDir = path/to/memo/dir/
+
+# Endianness of any external binary files read by Shellfish. It should be set
+# to either LittleEndian or BigEndian (this will almost always correspond to the
+# endianness of your system). If you don't know the endianness of your system,
+# you can find it under the "Byte Order" field of the output of the 'lscpu'
+# command on unix systems.
+#
+# (Note that any _internal binaries_ written by Shellfish will ignore this
+# variable.)
+Endianness = LittleEndian
 
 # ValidateFormats checks the the specified halo files and snapshot catalogs all
 # exist at startup before running any other code. Otherwise, these will be

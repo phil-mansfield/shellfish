@@ -3,10 +3,12 @@ halos in N-body simulations.*/
 package main
 
 import (
+	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"fmt"
+	"path"
 	"strings"
 
 	"github.com/phil-mansfield/shellfish/cmd"
@@ -69,7 +71,7 @@ func main() {
 	}
 
 	flags := getFlags(args)
-	gConfig, err := getGlobalConfig(args)
+	gConfigName, gConfig, err := getGlobalConfig(args)
 	if err != nil {
 		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 	}
@@ -84,6 +86,8 @@ func main() {
 			log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 		}
 	}
+
+	checkMemoDir(gConfig.MemoDir, gConfigName)
 
 	e := &env.Environment{MemoDir: gConfig.MemoDir}
 	err = e.InitGotetra(
@@ -131,11 +135,11 @@ func getFlags(args []string) ([]string) {
 
 // getGlobalConfig returns the name of the base config file from the command
 // line arguments.
-func getGlobalConfig(args []string) (*cmd.GlobalConfig, error) {
+func getGlobalConfig(args []string) (string, *cmd.GlobalConfig, error) {
 	name := ""
 	switch configNum(args) {
 	case 0:
-		return nil, fmt.Errorf("No config files provided in command " +
+		return "", nil, fmt.Errorf("No config files provided in command " +
 			"line arguments")
 	case 1:
 		name = args[len(args) - 1]
@@ -145,8 +149,8 @@ func getGlobalConfig(args []string) (*cmd.GlobalConfig, error) {
 
 	config := &cmd.GlobalConfig{}
 	err := config.ReadConfig(name)
-	if err != nil { return nil, err }
-	return config, nil
+	if err != nil { return "", nil, err }
+	return name, config, nil
 }
 
 // getConfig return the name of the mode-specific config file from the command
@@ -175,4 +179,44 @@ func configNum(args []string) int {
 // isConfig returns true if the fiven string is a config file name.
 func isConfig(s string) bool {
 	return len(s) >= 7 &&  s[len(s) - 7:] == ".config"
+}
+
+// cehckMemoDir checks whether the given MemoDir corresponds to a GlobalConfig
+// file with the exact same variables. If not, a non-nil error is returned.
+// If the MemoDir does not have an associated GlobalConfig file, the current
+// one will be copied in.
+func checkMemoDir(memoDir, configFile string) error {
+	memoConfigFile := path.Join(memoDir, "memo.config")
+	if _, err := os.Stat(memoConfigFile); err != nil {
+		// File doesn't exist, directory is clean.
+		err = copyFile(configFile, memoConfigFile)
+		return err
+	}
+
+	config, memoConfig := &cmd.GlobalConfig{}, &cmd.GlobalConfig{}
+	if err := config.ReadConfig(configFile); err != nil { return err }
+	if err := memoConfig.ReadConfig(memoConfigFile); err != nil { return err }
+
+	if config != memoConfig {
+		return fmt.Errorf("The variables in the config file '%s' do not " +
+			"match the varables used when creating the MemoDir, '%s.' These " +
+			"variables can be compared by inspecting '%s' and '%s'",
+			configFile, memoDir, configFile, memoConfigFile,
+		)
+	}
+	return nil
+}
+
+// copyFile copies a file from src to dst.
+func copyFile(dst, src string) error {
+	srcFile, err := os.Open(src)
+	if err != nil { return err }
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil { return err }
+	defer dstFile.Close()
+
+	if _, err = io.Copy(dstFile, srcFile); err != nil { return err }
+	return dstFile.Sync()
 }

@@ -87,7 +87,9 @@ func main() {
 		}
 	}
 
-	checkMemoDir(gConfig.MemoDir, gConfigName)
+	if err = checkMemoDir(gConfig.MemoDir, gConfigName); err != nil {
+		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+	}
 
 	e := &env.Environment{MemoDir: gConfig.MemoDir}
 	err = e.InitGotetra(
@@ -187,9 +189,10 @@ func isConfig(s string) bool {
 // one will be copied in.
 func checkMemoDir(memoDir, configFile string) error {
 	memoConfigFile := path.Join(memoDir, "memo.config")
+	
 	if _, err := os.Stat(memoConfigFile); err != nil {
 		// File doesn't exist, directory is clean.
-		err = copyFile(configFile, memoConfigFile)
+		err = copyFile(memoConfigFile, configFile)
 		return err
 	}
 
@@ -197,7 +200,7 @@ func checkMemoDir(memoDir, configFile string) error {
 	if err := config.ReadConfig(configFile); err != nil { return err }
 	if err := memoConfig.ReadConfig(memoConfigFile); err != nil { return err }
 
-	if config != memoConfig {
+	if *config != *memoConfig {
 		return fmt.Errorf("The variables in the config file '%s' do not " +
 			"match the varables used when creating the MemoDir, '%s.' These " +
 			"variables can be compared by inspecting '%s' and '%s'",

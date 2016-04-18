@@ -92,17 +92,13 @@ func main() {
 	}
 
 	e := &env.Environment{MemoDir: gConfig.MemoDir}
-	err = e.InitGotetra(
-		gConfig.SnapshotFormat, gConfig.SnapMin, gConfig.SnapMax,
-		gConfig.FormatMins, gConfig.FormatMaxes, gConfig.ValidateFormats,
-	)
+	initCatalogs(gConfig, e)
+	initHalos(args[1], gConfig, e)
+
 	if err != nil {
 		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 	}
 
-	err = e.InitRockstar(
-		gConfig.HaloDir, gConfig.SnapMin, gConfig.SnapMax,
-	)
 	if err != nil {
 		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 	}
@@ -247,4 +243,43 @@ func int64sEqual(xs, ys []int64) bool {
 		if xs[i] != ys[i] { return false }
 	}
 	return true
+}
+
+func initHalos(
+	mode string, gConfig *cmd.GlobalConfig, e *env.Environment,
+) error {
+	switch mode {
+	case "shell", "stats": return nil
+	}
+
+	switch gConfig.HaloType {
+	case "nil":
+		return fmt.Errorf("You may not use nil as a HaloType for the " +
+			"mode '%s.'\n", mode)
+	case "Rockstar":
+		return e.InitRockstar(gConfig.HaloDir, gConfig.SnapMin, gConfig.SnapMax)
+		if gConfig.TreeType != "consistent-trees"{
+			return fmt.Errorf("You're trying to use the '%s' TreeType with " +
+				"the 'Rockstar' HaloType.")
+		}
+	}
+	if gConfig.TreeType == "nil" {
+		return fmt.Errorf("You may not use nil as a TreeType for the " +
+			"mode '%s.'\n", mode)
+	}
+
+	panic("Impossible")
+}
+
+func initCatalogs(gConfig *cmd.GlobalConfig, e *env.Environment) error {
+	switch gConfig.SnapshotType {
+	case "gotetra":
+		return e.InitGotetra(
+			gConfig.SnapshotFormat, gConfig.SnapMin, gConfig.SnapMax,
+			gConfig.FormatMins, gConfig.FormatMaxes, gConfig.ValidateFormats,
+		)
+	case "LGadget-2":
+		panic("Not yet implemented.")
+	}
+	panic("Impossible.")
 }

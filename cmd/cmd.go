@@ -95,7 +95,7 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	switch config.SnapshotType {
-	case "LGadget-2":
+	case "gotetra", "LGadget-2":
 	case "":
 		return fmt.Errorf("The 'SnapshotType variable isn't set.'")
 	default:
@@ -104,7 +104,7 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	switch config.HaloType {
-	case "Rockstar":
+	case "Rockstar", "nil":
 	case "":
 		return fmt.Errorf("The 'HaloType variable isn't set.'")
 	default:
@@ -113,7 +113,7 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	switch config.TreeType {
-	case "consistent-trees":
+	case "consistent-trees", "nil":
 	case "":
 		return fmt.Errorf("The 'TreeType variable isn't set.'")
 	default:
@@ -142,11 +142,16 @@ func (config *GlobalConfig) validate() error {
 			config.MemoDir, err.Error())
 	}
 
-	if err = validateFormat(config); err != nil {
-		return err
+	switch config.Endianness {
+	case "":
+		return fmt.Errorf("The variable 'Endianness' was not set.")
+	case "LittleEndian", "BigEndian":
+	default:
+		return fmt.Errorf("The variable 'Endianness' must be sent to " +
+		"either 'LittleEndian' or 'BigEndian'.")
 	}
 
-	return nil
+	return validateFormat(config)
 }
 
 // validateDir returns an error if there are any problems with the given
@@ -192,15 +197,6 @@ func validateFormat(config *GlobalConfig) error {
 		)
 	}
 
-	switch config.Endianness {
-	case "":
-		return fmt.Errorf("The variable 'Endianness' was not set.")
-	case "LittleEndian", "BigEndian":
-	default:
-		return fmt.Errorf("The variable 'Endianness' must be sent to " +
-			"either 'LittleEndian' or 'BigEndian'.")
-	}
-
 	return nil
 }
 
@@ -219,9 +215,14 @@ Version = %s
 # request for support on https://github.com/phil-mansfield/shellfish/issues,
 # (or you can implement it yourself: Go is extremely similar to C and can be
 # learned in about an hour: http://tour.golang.org/).
-# Supported SnapshotTypes: LGadget-2
-# Supported HaloTypes: Rockstar
-# Supported TreeTypes: consistent-trees
+#
+# Supported SnapshotTypes: LGadget-2, gotetra
+# Supported HaloTypes: Rockstar, nil
+# Supported TreeTypes: consistent-trees, nil
+#
+# Note the 'nil' type. This is useful if you  have a halo or tree format that
+# you don't want to bother implementing in Go and don't plan on using the
+# 'id', 'tree', or 'coord' modes.
 SnapshotType = LGadget-2
 HaloType = Rockstar
 TreeType = consistent-trees

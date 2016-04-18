@@ -200,7 +200,7 @@ func checkMemoDir(memoDir, configFile string) error {
 	if err := config.ReadConfig(configFile); err != nil { return err }
 	if err := memoConfig.ReadConfig(memoConfigFile); err != nil { return err }
 
-	if *config != *memoConfig {
+	if !configEqual(config, memoConfig) {
 		return fmt.Errorf("The variables in the config file '%s' do not " +
 			"match the varables used when creating the MemoDir, '%s.' These " +
 			"variables can be compared by inspecting '%s' and '%s'",
@@ -222,4 +222,29 @@ func copyFile(dst, src string) error {
 
 	if _, err = io.Copy(dstFile, srcFile); err != nil { return err }
 	return dstFile.Sync()
+}
+
+func configEqual(m, c *cmd.GlobalConfig) bool {
+	return c.Version == m.Version &&
+		c.SnapshotFormat == m.SnapshotFormat &&
+		c.SnapshotType == m.SnapshotType &&
+		c.HaloDir == m.HaloDir &&
+		c.HaloType == m.HaloType &&
+		c.TreeDir == m.TreeDir &&
+		c.TreeType == m.TreeType &&
+		c.MemoDir == m.MemoDir &&
+		int64sEqual(c.FormatMins, m.FormatMins) &&
+		int64sEqual(c.FormatMaxes, m.FormatMaxes) &&
+		c.SnapMin == m.SnapMin &&
+		c.SnapMax == m.SnapMax &&
+		c.Endianness == m.Endianness &&
+		c.ValidateFormats == m.ValidateFormats
+}
+
+func int64sEqual(xs, ys []int64) bool {
+	if len(xs) != len(ys) { return false }
+	for i := range xs {
+		if xs[i] != ys[i] { return false }
+	}
+	return true
 }

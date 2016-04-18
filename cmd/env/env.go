@@ -7,6 +7,22 @@ import (
 	"path"
 )
 
+type (
+	CatalogType int
+	HaloType int
+	TreeType int
+)
+
+const (
+	Gotetra CatalogType = iota
+
+	Rockstar HaloType = iota
+	NilHalo
+
+	ConsistentTrees TreeType = iota
+	NilTree
+)
+
 type Environment struct {
 	Catalogs
 	Halos
@@ -19,6 +35,7 @@ type Environment struct {
 //////////////
 
 type Catalogs struct {
+	CatalogType
 	snapMin int
 	names [][]string
 }
@@ -36,6 +53,8 @@ func (cat *Catalogs) InitGotetra(
 	format string, snapMin, snapMax int64, blockMins, blockMaxes []int64,
 	validate bool,
 ) error {
+	cat.CatalogType = Gotetra
+
 	if len(blockMins) != 3 {
 		return fmt.Errorf(
 			"'BlockMins' had %d elements, but 3 are required for " +
@@ -79,6 +98,8 @@ func (cat *Catalogs) InitLGadget2(
 ///////////
 
 type Halos struct {
+	HaloType
+	TreeType
 	snapMin int
 	snapOffset int
 	names []string
@@ -93,6 +114,9 @@ func (h *Halos) SnapOffset() int {
 }
 
 func (h *Halos) InitRockstar(dir string, snapMin, snapMax int64) error {
+	h.HaloType = Rockstar
+	h.TreeType = ConsistentTrees
+
 	infos, err := ioutil.ReadDir(dir)
 	if err != nil { return err }
 
@@ -112,6 +136,13 @@ func (h *Halos) InitRockstar(dir string, snapMin, snapMax int64) error {
 		)
 	}
 	h.names = h.names[len(h.names) - int(snapMax - snapMin + 1):]
+
+	return nil
+}
+
+func (h *Halos) InitNilHalo(dir string, snapMin, snapMax int64) error {
+	h.HaloType = NilHalo
+	h.TreeType = NilTree
 
 	return nil
 }

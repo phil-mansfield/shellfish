@@ -182,7 +182,7 @@ Skeleton config files can be found for the other modes (if needed) by typing
 the help command followed by the file extension of the config file you want,
 i.e.
 
-	# shellfish help [ config | id.config | shell.config stats.config ]
+	$ shellfish help [ config | id.config | shell.config stats.config ]
 
 # Advanced Options
 

@@ -74,7 +74,8 @@ depending on the specifications supplied in `mw_halos.id.config`. This is
 passed to `shellfish coord`, which finds the location of the halos specified
 by these IDs. This is passed to `shellfish shell`, which identifies shells for
 each of these halos. The Penna coefficients corresponding to these shells are
-passed to `shellfish stats`, which uses them to calculate splashback radii, masses, and minimum/maximum radii.
+passed to `shellfish stats`, which uses them to calculate splashback radii, 
+masses, and minimum/maximum radii.
 
 I ran this command on the `L0063` simulation suite described in
 Diemer & Kravtsov 2014 and wrote `mw_halos.id.config` in a way that requested
@@ -113,7 +114,8 @@ would allow you to perform your own analysis on the shell:
         shellfish coord |
         shellfish shell > my_output.dat
 
-This is what typical call looks like, but to run this, we still need to 
+This is what typical call look like. But to run them, we still need to
+know how to write 
 
 ### Config File Input
 
@@ -125,7 +127,44 @@ Every Shellfish config file has the same basic form:
     var2 = list, of, values
 
 At a minimum, every user must write a "global" config file that tells Shellfish
-where to find snapshots, halo catalogs, etc.
+where to find snapshots, halo catalogs, etc. You can get a skeleton config file
+complete with comments explaining every variable by running
+
+	$ shellfish help config
+
+Go through that skeleton file line-by-line and set each variable to the values
+that correspond to your simulation. Below I've copied the global config file
+that I used in the previous example if you want to see what a working file looks
+like:
+
+	[config]
+	
+	# File formats
+	
+	SnapshotType = gotetra
+	HaloType = Rockstar
+	TreeType = consistent-trees
+	
+	# Directories
+	
+	HaloDir = /project/surph/diemer/Box_L0063_N1024_CBol/Rockstar200m/hlists
+	TreeDir = /project/surph/diemer/Box_L0063_N1024_CBol/Rockstar200m/trees
+	MemoDir = /project/surph/mansfield/data/sheet_segments/Box_L0063_N1024_G0008_CBol/gtet_memo
+	
+	# Snapshots
+	
+	SnapshotFormat = /project/surph/mansfield/data/sheet_segments/Box_L0063_N1024_G0008_CBol/snapdir_%03d/sheet%d%d%d.dat
+	FormatMins  = 0, 0, 0
+	FormatMaxes = 7, 7, 7
+	SnapMin = 6
+	SnapMax = 100
+
+The only confusing variable is `SnapshotFormat`, which is used to specify the
+names of your particle snapshots. This is a neccessary evil that comes from
+the wide range of file naming conventions that different simulations use. The
+idea is to write a format string (like the one used by `printf`) which will take
+a snapshot specifier and some arbitrary number of block identifcation indices
+as arguments, with the specifics depending on the exact simulation.
 
 # Advanced Options
 

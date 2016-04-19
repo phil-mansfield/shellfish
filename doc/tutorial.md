@@ -166,6 +166,24 @@ idea is to write a format string (like the one used by `printf`) which will take
 a snapshot specifier and some arbitrary number of block identifcation indices
 as arguments, with the specifics depending on the exact simulation.
 
+The other config file that most users will need to set is the
+`shellfish id`-specifc config file. Its sole purpose to concisely communicate to
+Shellfish what halos you want IDs from. A skeleton config file can be generated
+by typing the command `$ shellfish help id.config`. Here is the configuration
+file that I used in the example above:
+
+	[id.config]
+	
+	Snap = 100
+	IDs = 1005, 1006, 1009
+	ExclusionStrategy = overlap
+
+Skeleton config files can be found for the other modes (if needed) by typing
+the help command followed by the file extension of the config file you want,
+i.e.
+
+	# shellfish help [ config | id.config | shell.config stats.config ]
+
 # Advanced Options
 
 ### Selecting Halos Without `shellfish id`

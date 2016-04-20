@@ -188,12 +188,96 @@ i.e.
 
 ### Selecting Halos Without `shellfish id`
 
+Although the config file system is convenient for contiguous mass ranges and
+for small sets of IDs, in more complicated situations where one might want
+more control over the IDs supplied. Here are a few examples of why you might
+want to do this:
+
+* You want to run Shellfish on a subsample of the halos in a given mass range.
+* You want to look at the evolution of splashback shells, but some snapshots
+have corrupted catalogs or are otherwise missing.
+* You are writing your own user-level load balancer for Shellfish.
+
+This is easy to do because Shellfish takes input in the form of text. Simply
+create a text file which contains one line for every halo you want to analyze.
+The first column of each line should be the ID of halo and the second column
+should be the index of the snapshot that halo is in. Don't worry about spaces
+or empty lines or alignment or character counts: Shellfish will
+handle it cleanly. Next, pipe that text file into Shellfish in the place where
+the `shellfish id` call would have gone.
+
+So this call
+
+	$ shellfish id example.id.config | shellfish coord | shellfish shell | shellfish stats
+	
+could be replaced with this
+
+	$ cat my_id_file.txt | shellfish coord | shellfish shell | shellfish stats
+	
+where the contents of `my_id_file.txt` look something like this:
+
+	# Columns: ID(0), Snapshot(1)
+	5234987 100
+	 100772  55
+	6709823 100
+	
+The output halos will be in the same order as the halos in your original text file.
+
+*Caveat*: Don't pass Shellfish the IDs of subhalos. It will analyze them without
+crashing, but subhalos almost never have meaningful splashback shells, so you're
+unlikely to get useful results.
+
 ### Using Unsupported Halo Catalogs and/or Merger Trees
+
+Although Shellfish provides native support for certain types of halo catalogs and
+merger trees through the `shellfish id` and `shellfish tree` modes, it is possible
+to make it work on simulations which use unsupported halo catalogs with a small
+amount of work on the user end. The `shellfish shell` mode takes plaintext as input
+and makes no reference the underlying halo catalogs, so if you manually pass it the
+locations of halos you want to analyze everythign will work correctly.
+
+Specifically, create a text file which contains one line for each halo you
+want to analyze. Each line should have six columns. The first should be an
+identifying ID (Shellfish won't use it for anything, but it will help you
+cross-reference the output catalog), the second should be the index of the snapshot
+that the halo is in, the next three columns should be the x, y, and z coordinates
+in units of Mpc/h, and the last column should be R200m in units of Mpc/h.
+If you already have software which reads your halo catalogs, this type of file
+should be fairly painless to create. Don't worry about spaces or empty lines or
+alignment or character counts: Shellfish will handle it cleanly.
+
+Lastly, pipe that file into the `shellfish` toolchain in the same place where
+the `shellfish coord` comand would have gone.
+
+So this call
+
+	$ shellfish id example.id.config | shellfish coord | shellfish shell | shellfish stats
+	
+could be replaced with this
+
+	$ cat my_coord_file.txt | shellfish shell | shellfish stats
+	
+where the contents of `my_coord_file.txt` look something like this:
+
+	# Columns: ID(0), Snapshot(1)
+	5234987 100 
+	 100772  55
+	6709823 100
+	
+The output halos will be in the same order as the halos in your original text file.
+
+*Caveat*: Make sure you don't pass Shellfish the location of subhalos and if your
+simulation has periodic boundary conditions, make sure each corrdinate has been
+transformed back into the [0, L) range.
 
 ### Command Line Options
 
 Coming soon!
 
 ### Full Mode Specifcations
+
+Coming soon!
+
+### Multi-node paralellism
 
 Coming soon!

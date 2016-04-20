@@ -211,7 +211,8 @@ func (config *StatsConfig) Run(
 	)
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"},
-		[]string{"M_sp", "R_sp", "R_sp,min", "R_sp,max"},
+		[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
+			"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]"},
 		[]int{0, 1, 2, 3, 4, 5},
 	)
 

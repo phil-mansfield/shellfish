@@ -2,11 +2,13 @@ package halo
 
 import (
 	"encoding/binary"
+	"io/ioutil"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/phil-mansfield/shellfish/io"
-	"github.com/phil-mansfield/table"
+	"github.com/phil-mansfield/shellfish/cmd/catalog"
 )
 
 // halos allows for arrays of halo properties to be sorted simultaneously.
@@ -35,7 +37,7 @@ func ReadRockstar(
 	idCol, xCol, yCol, zCol := 1, 17, 18, 19
 	
 	colIdxs := []int{ idCol, xCol, yCol, zCol, rCol }
-	cols, err := table.ReadTable(file, colIdxs, nil)
+	cols, err := readTable(file, colIdxs)
 	if err != nil { return nil, nil, nil, nil, nil, nil, err }
 	
 	ids := cols[0]
@@ -133,7 +135,7 @@ const (
 func RockstarConvert(inFile, outFile string) error {
 	valIdxs := make([]int, valNum)
 	for i := range valIdxs { valIdxs[i] = i }
-	cols, err := table.ReadTable(inFile, valIdxs, nil)
+	cols, err := readTable(inFile, valIdxs)
 	if err != nil { return err }
 	
 	f, err := os.Create(outFile)
@@ -178,7 +180,7 @@ func idxSort(xs []float64) []int {
 func RockstarConvertTopN(inFile, outFile string, n int) error {
 	valIdxs := make([]int, valNum)
 	for i := range valIdxs { valIdxs[i] = i }
-	cols, err := table.ReadTable(inFile, valIdxs, nil)
+	cols, err := readTable(inFile, valIdxs)
 	if err != nil { return err }
 
 	if n > len(cols[0]) { n = len(cols[0]) }
@@ -264,7 +266,7 @@ func readRockstarVals(
 
 type colGetter func(file string, colIdxs []int) ([][]float64, error)
 func asciiColGetter(file string, colIdxs []int) ([][]float64, error) {
-	return table.ReadTable(file, colIdxs, nil)
+	return readTable(file, colIdxs)
 }
 func binaryColGetter(file string, colIdxs []int) ([][]float64, error) {
 	f, err := os.Open(file)
@@ -289,4 +291,14 @@ func binaryColGetter(file string, colIdxs []int) ([][]float64, error) {
 
 func init() {
 	if valNum != 62 { panic("Internal gotetra setup error.") }
+}
+
+func readTable(file string, colIdxs []int) ([][]float64, error ) {
+	// TODO: Heavily optimize this.
+	bs, err := ioutil.ReadFile(file)
+	if err != nil { return nil, err }
+	lines := strings.Split(string(bs), "\n")
+
+	_, floats, err := catalog.ParseCols(lines, nil, colIdxs)
+	return floats, err
 }

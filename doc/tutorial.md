@@ -32,7 +32,7 @@ If you know in advance that all your Shellfish analysis will be done on the
 same simulation for the forseable future (which will usually be the case), you
 can ellide the global config file from every call by setting the environment
 variable `$SHELLFISH_GLOBAL_CONFIG`. If done, the two calls from above
-become the more concise:
+become more concise:
 
     $ shellfish shell
     $ shellfish shell my.shell.config
@@ -114,9 +114,6 @@ would allow you to perform your own analysis on the shell:
         shellfish coord |
         shellfish shell > my_output.dat
 
-This is what typical call look like. But to run them, we still need to
-know how to write 
-
 ### Config File Input
 
 Every Shellfish config file has the same basic form:
@@ -154,10 +151,10 @@ like:
 	# Snapshots
 	
 	SnapshotFormat = /project/surph/mansfield/data/sheet_segments/Box_L0063_N1024_G0008_CBol/snapdir_%03d/sheet%d%d%d.dat
-	FormatMins  = 0, 0, 0
-	FormatMaxes = 7, 7, 7
 	SnapMin = 6
 	SnapMax = 100
+	FormatMins  = 0, 0, 0
+	FormatMaxes = 7, 7, 7
 
 The only confusing variable is `SnapshotFormat`, which is used to specify the
 names of your particle snapshots. This is a neccessary evil that comes from
@@ -182,7 +179,7 @@ Skeleton config files can be found for the other modes (if needed) by typing
 the help command followed by the file extension of the config file you want,
 i.e.
 
-	$ shellfish help [ config | id.config | shell.config stats.config ]
+	$ shellfish help [ config | id.config | shell.config | stats.config ]
 
 # Advanced Options
 

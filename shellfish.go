@@ -13,6 +13,7 @@ import (
 
 	"github.com/phil-mansfield/shellfish/cmd"
 	"github.com/phil-mansfield/shellfish/cmd/env"
+	"github.com/phil-mansfield/shellfish/version"
 )
 
 func modeDescriptions() string {
@@ -48,6 +49,9 @@ func main() {
 		fmt.Print(modeDescriptions())
 		os.Exit(0)
 		// TODO: Implement the help command.
+	} else if args[1] == "version" {
+		fmt.Printf("Shellfish version %s\n", version.SourceVersion)
+		os.Exit(0)
 	}
 
 	mode, ok := cmd.ModeNames[args[1]]

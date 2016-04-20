@@ -16,20 +16,38 @@ import (
 	"github.com/phil-mansfield/shellfish/version"
 )
 
-func modeDescriptions() string {
-	return "My help mode is:\n" +
-	"shellfish help\n\n" +
+var helpStrings = map[string]string {
+	"setup": `The setup mode isn't implemented yet.`,
+	"id": `Mode specifcations will be documented in version 0.3.0.`,
+	"tree": `Mode specifcations will be documented in version 0.3.0.`,
+	"coord": `Mode specifcations will be documented in version 0.3.0.`,
+	"shell": `Mode specifcations will be documented in version 0.3.0.`,
+	"stats": `Mode specifcations will be documented in version 0.3.0.`,
 
-	"My setup mode is:\n" +
-	"shellfish setup ____.setup.config\n\n" +
+	"config": new(cmd.GlobalConfig).ExampleConfig(),
+	"setup.config": `The setup mode does not have a non-global config file.`,
+	"id.config": cmd.ModeNames["id"].ExampleConfig(),
+	"tree.config": `The tree mode does not have a non-global config file.`,
+	"coord.config": `The coord mode does not have a non-global config file.`,
+	"shell.config": cmd.ModeNames["shell"].ExampleConfig(),
+	"stats.config": cmd.ModeNames["stats"].ExampleConfig(),
 
-	"My other modes are:\n" +
-	"shellfish id     [flags] ____.config [____.id.config]\n" +
-	"shellfish tree ____.config\n" +
-	"shellfish coord ____.config\n" +
-	"shellfish shell  [flags] ____.config [____.shell.config]\n" +
-	"shellfish stats  [flags] ____.config [____.stats.config]\n\n"
 }
+
+var modeDescriptions = `My help modes are:
+shellfish help
+shellfish help [ setup | id | tree | coord | shell | stats ]
+shellfish help [ config | id.config | shell.config | stats.config ]
+
+My setup mode is:
+shellfish setup ____.config
+
+My analysis modes are:
+shellfish id     [flags] ____.config [____.id.config]
+shellfish tree ____.config
+shellfish coord ____.config
+shellfish shell  [flags] ____.config [____.shell.config]
+shellfish stats  [flags] ____.config [____.stats.config]`
 
 func main() {
 	args := os.Args
@@ -46,7 +64,19 @@ func main() {
 		// TODO: Implement the setup command.
 		panic("NYI")
 	} else if args[1] == "help" {
-		fmt.Print(modeDescriptions())
+		switch len(args) - 2 {
+		case 0:
+			fmt.Println(modeDescriptions)
+		case 1:
+			text, ok := helpStrings[args[2]]
+			if !ok {
+				fmt.Printf("I don't recognize the help target '%s'\n", args[2])
+			} else {
+				fmt.Println(text)
+			}
+		case 2:
+			fmt.Println("The help mode can only take a single argument.")
+		}
 		os.Exit(0)
 		// TODO: Implement the help command.
 	} else if args[1] == "version" {

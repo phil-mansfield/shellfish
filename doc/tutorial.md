@@ -32,7 +32,7 @@ If you know in advance that all your Shellfish analysis will be done on the
 same simulation for the forseable future (which will usually be the case), you
 can ellide the global config file from every call by setting the environment
 variable `$SHELLFISH_GLOBAL_CONFIG`. If done, the two calls from above
-become the more concise:
+become more concise:
 
     $ shellfish shell
     $ shellfish shell my.shell.config

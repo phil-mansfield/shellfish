@@ -83,7 +83,7 @@ the 1005th, 1006th, and 1009th most massive halos in the z=0 snapshot of the
 simulation (I'll explain how to do that later). I got output that looked like
 this:
 
-    # Column contents: ID(0) Snapshot(1) M_sp(2) R_sp(3) R_sp,min(4) R_sp,max(5)
+    # Column contents: ID(0) Snapshot(1) M_sp [M_sun/h](2) R_sp [Mpc/h](3) R_sp,min [Mpc/h](4) R_sp,max [Mpc/h](5)
     169665239 100 1.373e+12 0.4084 0.3121 0.5297
     168208646 100 1.244e+12 0.3683 0.3129  0.429
     168863226 100 1.284e+12 0.3576 0.2613 0.4081
@@ -256,7 +256,8 @@ could be replaced with this
 	
 where the contents of `my_coord_file.txt` look something like this:
 
-	# Columns: ID(0), Snapshot(1), X(2), Y(3), Z(4), R200m(5)
+	# Columns: ID(0), Snapshot(1), X [Mpc/h](2),
+	# Y [Mpc/h](3), Z [Mpc/h](4), R200m[Mpc/h](5)
 	5234987 100 42.742 189.001   5.241 1.023
 	 100772  55  0.111 100.511 150.226 0.500
 	6709823 100 15.091   7.123  88.178 0.441

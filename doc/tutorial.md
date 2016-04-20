@@ -259,10 +259,10 @@ could be replaced with this
 	
 where the contents of `my_coord_file.txt` look something like this:
 
-	# Columns: ID(0), Snapshot(1)
-	5234987 100 
-	 100772  55
-	6709823 100
+	# Columns: ID(0), Snapshot(1), X(2), Y(3), Z(4), R200m(5)
+	5234987 100 42.742 189.001   5.241 1.023
+	 100772  55  0.111 100.511 150.226 0.500
+	6709823 100 15.091   7.123  88.178 0.441
 	
 The output halos will be in the same order as the halos in your original text file.
 

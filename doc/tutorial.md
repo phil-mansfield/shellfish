@@ -114,9 +114,6 @@ would allow you to perform your own analysis on the shell:
         shellfish coord |
         shellfish shell > my_output.dat
 
-This is what typical call look like. But to run them, we still need to
-know how to write 
-
 ### Config File Input
 
 Every Shellfish config file has the same basic form:

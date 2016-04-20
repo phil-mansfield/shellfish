@@ -279,9 +279,9 @@ Endianness = LittleEndian
 # ValidateFormats checks the the specified halo files and snapshot catalogs all
 # exist at startup before running any other code. Otherwise, these will be
 # checked only immediately before a particular file is opened. In general,
-# it's best to check this to false for short jobs because checking every file
-# is a lot of system calls and can take minutes, although it's generally a good
-# idea to check at least once after making the config file that you aren't
+# it's best to set this to false for short jobs because checking every file
+# is a lot of system calls and can take minutes. That said, it's generally a
+# good idea to check at least once after making the config file that you aren't
 # accidentally specifying nonexistent files.
 ValidateFormats = false`, version.SourceVersion)
 }

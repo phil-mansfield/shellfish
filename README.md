@@ -1,6 +1,6 @@
 # Shellfish
 
-Shellfish (*SHELL* *F*inding *I*n *S*pheroidal *H*alos) is a toolchain for finding
+Shellfish (**SHELL** **F**inding **I**n **S**pheroidal **H**alos) is a toolchain for finding
 the splashback shells of individual halos within cosmological simulations. Shellfish
 is written in the programming langue [Go](https://golang.org/).
 
@@ -27,7 +27,6 @@ and run the hello world program there.
 Once you've done this, its time to download and install Shellfish's dependencies. Type
 the following commands into your console:
 
-	$ go get github.com/phil-mansfield/table
 	$ go get github.com/phil-mansfield/consistent_trees
 	$ go get github.com/gonum/matrix
 	$ go get github.com/phil-mansfield/shellfish

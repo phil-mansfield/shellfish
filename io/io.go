@@ -51,16 +51,21 @@ The binary format used for phase sheets is as follows:
         sheet fragment.
     4 - ([][3]float32) Contiguous block of x, y, z coordinates. Given in Mpc.
  */
-type SheetHeader struct {
+type sheetHeader struct {
 	Cosmo CosmologyHeader
 	Count, CountWidth int64
-	N int64
+	segmentWidth, gridWidth, gridCount int64
 	Idx, Cells int64
 
 	Mass float64
 	TotalWidth float64
 
 	Origin, Width [3]float32
+}
+
+type SheetHeader struct {
+	sheetHeader
+	N int64
 }
 
 // CosmologyHeader contains information describing the cosmological
@@ -250,20 +255,21 @@ func readSheetHeaderAt(
 	order := endianness(readInt32(f, binary.LittleEndian))
 
 	headerSize := readInt32(f, order)
-	if headerSize != int32(unsafe.Sizeof(SheetHeader{})) {
+	if headerSize != int32(unsafe.Sizeof(sheetHeader{})) {
 		return nil, binary.LittleEndian, 
 		fmt.Errorf("Expected catalog.SheetHeader size of %d, found %d.",
-			unsafe.Sizeof(SheetHeader{}), headerSize,
+			unsafe.Sizeof(sheetHeader{}), headerSize,
 		)
 	}
 
 	_, err = f.Seek(4 + 4, 0)
 	if err != nil { return nil, binary.LittleEndian, err }
 
-	err = binary.Read(f, order, hdBuf)
+	err = binary.Read(f, order, &hdBuf.sheetHeader)
 	if err != nil { return nil, binary.LittleEndian, err }
 
 	hdBuf.Count = hdBuf.CountWidth*hdBuf.CountWidth*hdBuf.CountWidth
+	hdBuf.N = hdBuf.segmentWidth*hdBuf.segmentWidth*hdBuf.segmentWidth
 	return f, order, nil
 }
 

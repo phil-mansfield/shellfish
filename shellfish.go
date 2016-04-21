@@ -105,11 +105,11 @@ func main() {
 	}
 
 	flags := getFlags(args)
+	config, ok := getConfig(args)
 	gConfigName, gConfig, err := getGlobalConfig(args)
 	if err != nil {
 		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 	}
-	config, ok := getConfig(args)
 
 	if ok {
 		if err = mode.ReadConfig(config); err != nil {
@@ -168,15 +168,30 @@ func getFlags(args []string) ([]string) {
 // getGlobalConfig returns the name of the base config file from the command
 // line arguments.
 func getGlobalConfig(args []string) (string, *cmd.GlobalConfig, error) {
-	name := ""
+	name := os.Getenv("SHELLFISH_GLOBAL_CONFIG")
+	if name != "" {
+		if configNum(args) > 1 {
+			return "", nil, fmt.Errorf("$SHELLFISH_GLOBAL_CONFIG has been " +
+				"set, so you may only pass a single config file as a " +
+				"parameter.")
+		}
+
+		config := &cmd.GlobalConfig{}
+		err := config.ReadConfig(name)
+		if err != nil { return "", nil, err }
+		return name, config, nil
+	}
+
 	switch configNum(args) {
 	case 0:
 		return "", nil, fmt.Errorf("No config files provided in command " +
-			"line arguments")
+			"line arguments.")
 	case 1:
 		name = args[len(args) - 1]
 	case 2:
 		name = args[len(args) - 2]
+	default:
+		return "", nil, fmt.Errorf("Passed too many config files as arguments.")
 	}
 
 	config := &cmd.GlobalConfig{}
@@ -188,7 +203,11 @@ func getGlobalConfig(args []string) (string, *cmd.GlobalConfig, error) {
 // getConfig return the name of the mode-specific config file from the command
 // line arguments.
 func getConfig(args []string) (string, bool) {
-	if configNum(args) == 2 {
+	if os.Getenv("SHELLFISH_GLOBAL_CONFIG") != "" && configNum(args) == 1 {
+		return args[len(args) - 1], true
+	} else if os.Getenv("SHELLFISH_GLOBAL_CONFIG") == "" &&
+		configNum(args) == 2 {
+
 		return args[len(args) - 1], true
 	}
 	return "", false
@@ -198,7 +217,7 @@ func getConfig(args []string) (string, bool) {
 // argument list (up to 2).
 func configNum(args []string) int {
 	num := 0
-	for i := len(args) - 1; i >= 0 && i >= len(args) - 2; i-- {
+	for i := len(args) - 1; i >= 0 ; i-- {
 		if isConfig(args[i]) {
 			num++
 		} else {

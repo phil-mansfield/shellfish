@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
-
+	
 	"unsafe"
 )
 
@@ -84,6 +84,7 @@ type sheetHeader struct {
 	TotalWidth                         float64
 
 	Origin, Width                      [3]float32
+	VelocityOrigin, VelocityWidth      [3]float32
 }
 
 type SheetHeader struct {

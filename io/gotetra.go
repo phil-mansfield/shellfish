@@ -20,9 +20,10 @@ type GotetraBuffer struct {
 	hd SheetHeader
 }
 
-func NewGotetraBuffer(fname string) VectorBuffer {
+func NewGotetraBuffer(fname string) (VectorBuffer, error) {
 	hd := &SheetHeader{}
-	ReadSheetHeaderAt(fname, hd)
+	err := ReadSheetHeaderAt(fname, hd)
+	return nil, err
 
 	sw, gw := hd.segmentWidth, hd.gridWidth
 	buf := &GotetraBuffer{
@@ -32,7 +33,7 @@ func NewGotetraBuffer(fname string) VectorBuffer {
 		sw: int(sw), gw: int(gw),
 	}
 
-	return buf
+	return buf, nil
 }
 
 func (buf *GotetraBuffer) IsOpen() bool { return buf.open }
@@ -40,7 +41,7 @@ func (buf *GotetraBuffer) IsOpen() bool { return buf.open }
 func (buf *GotetraBuffer) Read(fname string) ([][3]float32, error) {
 	if buf.open { panic("Buffer already open.") }
 
-	err := ReadSheetPositionsAt(fname, buf.sheet)
+	err := readSheetPositionsAt(fname, buf.sheet)
 	if err != nil { return nil, err }
 
 	for z := 0; z < buf.sw; z++ {
@@ -140,7 +141,7 @@ func ReadSheetHeaderAt(file string, hdBuf *SheetHeader) error {
 }
 
 // ReadPositionsAt reads the velocities in the given file into a buffer.
-func ReadSheetPositionsAt(file string, xsBuf [][3]float32) error {
+func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
 	h := &SheetHeader{}
 	f, order, err := readSheetHeaderAt(file, h)
 	if err != nil { return nil }

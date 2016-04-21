@@ -245,7 +245,7 @@ func loop(
 	workers := runtime.NumCPU()
 	sphBuf := &sphBuffers{
 		intr: make([]bool, hds[0].N),
-		vecs: make([][3]float32, hds[0].N),
+		vecs: [][3]float32{},
 		sphWorkers: make([]los.Halo, workers - 1),
 	}
 
@@ -287,12 +287,15 @@ func sphereLoop(
 	hds, files, err := memo.ReadHeaders(snap, e)
 	if err != nil { return err }
 	intrBins := binIntersections(hds, halos)
-	
+
+	buf, err := io.NewGotetraBuffer(files[0])
+	if err != nil { return err }
+
 	for i := range hds {
 		runtime.GC()
 		if len(intrBins[i]) == 0 { continue }
-		
-		err := io.ReadSheetPositionsAt(files[i], sphBuf.vecs)
+
+		sphBuf.vecs, err = buf.Read(files[i])
 		if err != nil { return err }
 
 		binHs := intrBins[i]
@@ -300,6 +303,7 @@ func sphereLoop(
 			loadSphereVecs(binHs[j], sphBuf, &hds[i], c)
 		}
 
+		buf.Close()
 	}
 
 	return nil

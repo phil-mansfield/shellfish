@@ -185,13 +185,13 @@ func (config *StatsConfig) Run(
 			rLows[i], rHighs[i] = shell.RadialRange(10 * 1000)
 		}
 
-		xs := [][3]float32{}
+		buf, err := io.NewGotetraBuffer(files[0])
+		if err != nil { return nil, err }
+
 		for i := range hds {
 			if len(intrBins[i]) == 0 { continue }
-			hd := &hds[i]
 
-			if len(xs) == 0 { xs = make([][3]float32, hd.N) }
-			err := io.ReadSheetPositionsAt(files[i], xs)
+			xs, err := buf.Read(files[i])
 			if err != nil { return nil, err }
 
 			for j := range idxs {
@@ -200,6 +200,8 @@ func (config *StatsConfig) Run(
 					hBounds[j], rLows[j], rHighs[j],
 				)
 			}
+			
+			buf.Close()
 		}
 	}
 

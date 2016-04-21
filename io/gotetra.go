@@ -25,7 +25,7 @@ func NewGotetraBuffer(fname string) (VectorBuffer, error) {
 	err := ReadSheetHeaderAt(fname, hd)
 	return nil, err
 
-	sw, gw := hd.segmentWidth, hd.gridWidth
+	sw, gw := hd.SegmentWidth, hd.GridWidth
 	buf := &GotetraBuffer{
 		sheet: make([][3]float32, gw * gw * gw),
 		out: make([][3]float32, sw * sw * sw),
@@ -75,15 +75,15 @@ The binary format used for phase sheets is as follows:
     4 - ([][3]float32) Contiguous block of x, y, z coordinates. Given in Mpc.
  */
 type sheetHeader struct {
-	Cosmo CosmologyHeader
-	Count, CountWidth int64
-	segmentWidth, gridWidth, gridCount int64
-	Idx, Cells int64
+	Cosmo                              CosmologyHeader
+	Count, CountWidth                  int64
+	SegmentWidth, GridWidth, GridCount int64
+	Idx, Cells                         int64
 
-	Mass float64
-	TotalWidth float64
+	Mass                               float64
+	TotalWidth                         float64
 
-	Origin, Width [3]float32
+	Origin, Width                      [3]float32
 }
 
 type SheetHeader struct {
@@ -128,7 +128,7 @@ file string, hdBuf *SheetHeader,
 	if err != nil { return nil, binary.LittleEndian, err }
 
 	hdBuf.Count = hdBuf.CountWidth*hdBuf.CountWidth*hdBuf.CountWidth
-	hdBuf.N = hdBuf.segmentWidth*hdBuf.segmentWidth*hdBuf.segmentWidth
+	hdBuf.N = hdBuf.SegmentWidth *hdBuf.SegmentWidth *hdBuf.SegmentWidth
 	return f, order, nil
 }
 
@@ -146,9 +146,9 @@ func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
 	f, order, err := readSheetHeaderAt(file, h)
 	if err != nil { return nil }
 
-	if h.gridCount != int64(len(xsBuf)) {
+	if h.GridCount != int64(len(xsBuf)) {
 		return fmt.Errorf("Position buffer has length %d, but file %s has %d " +
-		"vectors.", len(xsBuf), file, h.gridCount)
+		"vectors.", len(xsBuf), file, h.GridCount)
 	}
 
 	// Go to block 4 in the file.

@@ -200,7 +200,7 @@ func (config *StatsConfig) Run(
 					hBounds[j], rLows[j], rHighs[j],
 				)
 			}
-			
+
 			buf.Close()
 		}
 	}

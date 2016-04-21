@@ -27,7 +27,7 @@ type Particle struct {
 }
 
 // CatalogHeader describes meta-information about the current catalog.
-type CatalogHeader struct {
+type LGadget2Header struct {
 	Cosmo CosmologyHeader
 
 	Mass       float64 // Mass of one particle
@@ -102,8 +102,8 @@ func readInt32(r io.Reader, order binary.ByteOrder) int32 {
 
 // Standardize returns a Header that corresponds to the source
 // Gadget 2 header.
-func (gh *gadgetHeader) Standardize() *CatalogHeader {
-	h := &CatalogHeader{}
+func (gh *gadgetHeader) Standardize() *LGadget2Header {
+	h := &LGadget2Header{}
 
 	h.Count = int64(gh.NPart[1] + gh.NPart[0]<<32)
 	h.TotalCount = int64(gh.NPartTotal[1] + gh.NPartTotal[0]<<32)
@@ -132,7 +132,7 @@ func (h *gadgetHeader) WrapDistance(x float64) float64 {
 
 // ReadGadgetHeader reads a Gadget catalog and returns a standardized
 // gotetra containing its information.
-func ReadGadgetHeader(path string, order binary.ByteOrder) *CatalogHeader {
+func ReadGadgetHeader(path string, order binary.ByteOrder) *LGadget2Header {
 	f, err := os.Open(path)
 	if err != nil {
 		panic(err)
@@ -220,7 +220,7 @@ func ReadGadgetParticlesAt(
 // are returned in a standardized format.
 func ReadGadget(
 	path string, order binary.ByteOrder,
-) (hd *CatalogHeader, xs, vs [][3]float32, ids []int64) {
+) (hd *LGadget2Header, xs, vs [][3]float32, ids []int64) {
 
 	hd = ReadGadgetHeader(path, order)
 	xs = make([][3]float32,  hd.Count)

@@ -27,7 +27,7 @@ type Particle struct {
 }
 
 // CatalogHeader describes meta-information about the current catalog.
-type LGadget2Header struct {
+type CatalogHeader struct {
 	Cosmo CosmologyHeader
 
 	Mass       float64 // Mass of one particle
@@ -77,7 +77,7 @@ type CosmologyHeader struct {
 
 
 // gadgetHeader is the formatting for meta-information used by Gadget 2.
-type gadgetHeader struct {
+type lGadget2Header struct {
 	NPart                                     [6]uint32
 	Mass                                      [6]float64
 	Time, Redshift                            float64
@@ -102,8 +102,8 @@ func readInt32(r io.Reader, order binary.ByteOrder) int32 {
 
 // Standardize returns a Header that corresponds to the source
 // Gadget 2 header.
-func (gh *gadgetHeader) Standardize() *LGadget2Header {
-	h := &LGadget2Header{}
+func (gh *lGadget2Header) Standardize() *CatalogHeader {
+	h := &CatalogHeader{}
 
 	h.Count = int64(gh.NPart[1] + gh.NPart[0]<<32)
 	h.TotalCount = int64(gh.NPartTotal[1] + gh.NPartTotal[0]<<32)
@@ -121,7 +121,7 @@ func (gh *gadgetHeader) Standardize() *LGadget2Header {
 
 // WrapDistance takes a value and interprets it as a position defined within
 // a periodic domain of width h.BoxSize.
-func (h *gadgetHeader) WrapDistance(x float64) float64 {
+func (h *lGadget2Header) WrapDistance(x float64) float64 {
 	if x < 0 {
 		return x + h.BoxSize
 	} else if x >= h.BoxSize {
@@ -132,14 +132,14 @@ func (h *gadgetHeader) WrapDistance(x float64) float64 {
 
 // ReadGadgetHeader reads a Gadget catalog and returns a standardized
 // gotetra containing its information.
-func ReadGadgetHeader(path string, order binary.ByteOrder) *LGadget2Header {
+func ReadGadgetHeader(path string, order binary.ByteOrder) *CatalogHeader {
 	f, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
 
-	gh := &gadgetHeader{}
+	gh := &lGadget2Header{}
 
 	_ = readInt32(f, order)
 	binary.Read(f, binary.LittleEndian, gh)
@@ -166,7 +166,7 @@ func ReadGadgetParticlesAt(
 		panic(err)
 	}
 	defer f.Close()
-	gh := &gadgetHeader{}
+	gh := &lGadget2Header{}
 
 	_ = readInt32(f, order)
 	binary.Read(f, binary.LittleEndian, gh)
@@ -220,7 +220,7 @@ func ReadGadgetParticlesAt(
 // are returned in a standardized format.
 func ReadGadget(
 	path string, order binary.ByteOrder,
-) (hd *LGadget2Header, xs, vs [][3]float32, ids []int64) {
+) (hd *CatalogHeader, xs, vs [][3]float32, ids []int64) {
 
 	hd = ReadGadgetHeader(path, order)
 	xs = make([][3]float32,  hd.Count)

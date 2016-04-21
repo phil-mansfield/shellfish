@@ -287,9 +287,9 @@ func ReadSheetPositionsAt(file string, xsBuf [][3]float32) error {
 	f, order, err := readSheetHeaderAt(file, h)
 	if err != nil { return nil }
 
-	if h.N != int64(len(xsBuf)) {
+	if h.gridCount != int64(len(xsBuf)) {
 		return fmt.Errorf("Position buffer has length %d, but file %s has %d " + 
-			"vectors.", len(xsBuf), file, h.N)
+			"vectors.", len(xsBuf), file, h.gridCount)
 	}
 
 	// Go to block 4 in the file.

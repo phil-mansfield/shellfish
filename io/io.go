@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"log"
 	"os"
 	"reflect"
 
@@ -51,12 +50,11 @@ The binary format used for phase sheets is as follows:
     3 - (sheet.Header) Header file containing meta-information about the
         sheet fragment.
     4 - ([][3]float32) Contiguous block of x, y, z coordinates. Given in Mpc.
-    5 - ([][3]float32) Contiguous block of v_x, v_y, v_z coordinates.
  */
 type SheetHeader struct {
 	Cosmo CosmologyHeader
 	Count, CountWidth int64
-	SegmentWidth, GridWidth, GridCount int64 // GridWidth = SegmentWidth + 1
+	N int64
 	Idx, Cells int64
 
 	Mass float64
@@ -283,9 +281,9 @@ func ReadSheetPositionsAt(file string, xsBuf [][3]float32) error {
 	f, order, err := readSheetHeaderAt(file, h)
 	if err != nil { return nil }
 
-	if h.GridCount != int64(len(xsBuf)) {
+	if h.N != int64(len(xsBuf)) {
 		return fmt.Errorf("Position buffer has length %d, but file %s has %d " + 
-			"vectors.", len(xsBuf), file, h.GridCount)
+			"vectors.", len(xsBuf), file, h.N)
 	}
 
 	// Go to block 4 in the file.
@@ -295,61 +293,6 @@ func ReadSheetPositionsAt(file string, xsBuf [][3]float32) error {
 
 	if err := f.Close(); err != nil { return err }
 	return nil
-}
-
-// ReadVelocitiesAt reads the velocities in the given file into a buffer.
-func ReadSheetVelocitiesAt(file string, vsBuf [][3]float32) error {
-	h := &SheetHeader{}
-	f, order, err := readSheetHeaderAt(file, h)
-	if err != nil { return err }
-	if h.GridCount != int64(len(vsBuf)) {
-		return fmt.Errorf("Velocity buffer has length %d, but file %s has %d " + 
-			"vectors.", len(vsBuf), file, h.GridCount)
-	}
-
-	f.Seek(int64(4 + 4 + int(unsafe.Sizeof(SheetHeader{})) +
-		3 * 4 * len(vsBuf)), 0)
-	if err := readVecAsByte(f, order, vsBuf); err != nil { return err }
-	if err := f.Close(); err != nil { return err }
-	return nil
-}
-
-// Write writes a grid of position and velocity vectors to a file, defined
-// by the given header.
-func WriteSheet(file string, h *SheetHeader, xs, vs [][3]float32) {
-	if int(h.GridCount) != len(xs) {
-		log.Fatalf("Header count %d for file %s does not match xs length, %d",
-			h.GridCount, file, len(xs))
-	} else if int(h.GridCount) != len(vs) {
-		log.Fatalf("Header count %d for file %s does not match vs length, %d",
-			h.GridCount, file, len(xs))
-	} else if h.GridWidth*h.GridWidth*h.GridWidth != h.GridCount {
-		log.Fatalf("Header CountWidth %d doesn't match Count %d",
-			h.GridWidth, h.GridCount)
-	}
-
-	f, err := os.Create(file)
-	endiannessFlag := int32(0)
-	order := endianness(endiannessFlag)
-
-	if err = binary.Write(f, order, endiannessFlag); err != nil {
-		log.Fatalf(err.Error())
-	}
-	if err = binary.Write(
-		f, order, int32(unsafe.Sizeof(SheetHeader{})),
-		); err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if err = binary.Write(f, order, h); err != nil {
-		log.Fatalf(err.Error())
-	}
-	if err = writeVecAsByte(f, order, xs); err != nil {
-		log.Fatalf(err.Error())
-	}
-	if err = writeVecAsByte(f, order, vs); err != nil {
-		log.Fatalf(err.Error())
-	}
 }
 
 type CellBounds struct {
@@ -393,33 +336,6 @@ func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {
 			}
 		}
 	}
-
-	hd.Len /= 12
-	hd.Cap /= 12
-
-	return nil
-}
-
-func writeVecAsByte(wr io.Writer, end binary.ByteOrder, buf [][3]float32) error {
-	bufLen := len(buf)
-
-	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))
-	hd.Len *= 12
-	hd.Cap *= 12
-	
-	byteBuf := *(*[]byte)(unsafe.Pointer(&hd))
-
-	if !isSysOrder(end) {
-		for i := 0; i < bufLen * 3; i++ {
-			for j := 0; j < 2; j++ {
-				idx1, idx2 := i*4 + j, i*4 + 3 - j
-				byteBuf[idx1], byteBuf[idx2] = byteBuf[idx2], byteBuf[idx1]
-			}
-		}
-	}
-
-	_, err := wr.Write(byteBuf)
-	if err != nil { return err }
 
 	hd.Len /= 12
 	hd.Cap /= 12

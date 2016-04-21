@@ -194,7 +194,10 @@ func ReadHeaders(
         f, err := os.Create(memoFile)
         if err != nil { return nil, nil, err }
         defer f.Close()
-        binary.Write(f, binary.LittleEndian, hds)
+
+		raws := make([]io.RawSheetHeader, len(hds))
+		for i := range raws { raws[i] = hds[i].RawSheetHeader }
+        binary.Write(f, binary.LittleEndian, raws)
 
 		return hds, files, nil
 	} else {
@@ -205,7 +208,9 @@ func ReadHeaders(
         defer f.Close()
 
 		hds := make([]io.SheetHeader, e.Blocks())
-        binary.Read(f, binary.LittleEndian, hds)
+		raws := make([]io.RawSheetHeader, e.Blocks())
+        binary.Read(f, binary.LittleEndian, raws)
+		for i := range hds { raws[i].Postprocess(&hds[i]) }
 		files := make([]string, e.Blocks())
 		for i := range files { files[i] = e.ParticleCatalog(snap, i) }
 

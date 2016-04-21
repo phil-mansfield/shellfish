@@ -74,7 +74,7 @@ The binary format used for phase sheets is as follows:
         sheet fragment.
     4 - ([][3]float32) Contiguous block of x, y, z coordinates. Given in Mpc.
  */
-type sheetHeader struct {
+type RawSheetHeader struct {
 	Cosmo                              CosmologyHeader
 	Count, CountWidth                  int64
 	SegmentWidth, GridWidth, GridCount int64
@@ -87,9 +87,16 @@ type sheetHeader struct {
 	VelocityOrigin, VelocityWidth      [3]float32
 }
 
+func (raw *RawSheetHeader) Postprocess(hd *SheetHeader) {
+	hd.RawSheetHeader = *raw
+	hd.Count = hd.CountWidth * hd.CountWidth * hd.CountWidth
+	hd.N = hd.SegmentWidth * hd.SegmentWidth * hd.SegmentWidth
+}
+
 type SheetHeader struct {
-	sheetHeader
+	RawSheetHeader
 	N int64
+	guard struct{} // Prevents accidentally trying to write/read this type.
 }
 
 
@@ -115,21 +122,20 @@ file string, hdBuf *SheetHeader,
 	order := endianness(readInt32(f, binary.LittleEndian))
 
 	headerSize := readInt32(f, order)
-	if headerSize != int32(unsafe.Sizeof(sheetHeader{})) {
+	if headerSize != int32(unsafe.Sizeof(RawSheetHeader{})) {
 		return nil, binary.LittleEndian,
 		fmt.Errorf("Expected catalog.SheetHeader size of %d, found %d.",
-			unsafe.Sizeof(sheetHeader{}), headerSize,
+			unsafe.Sizeof(RawSheetHeader{}), headerSize,
 		)
 	}
 
 	_, err = f.Seek(4 + 4, 0)
 	if err != nil { return nil, binary.LittleEndian, err }
 
-	err = binary.Read(f, order, &hdBuf.sheetHeader)
+	err = binary.Read(f, order, &hdBuf.RawSheetHeader)
 	if err != nil { return nil, binary.LittleEndian, err }
 
-	hdBuf.Count = hdBuf.CountWidth*hdBuf.CountWidth*hdBuf.CountWidth
-	hdBuf.N = hdBuf.SegmentWidth *hdBuf.SegmentWidth *hdBuf.SegmentWidth
+	hdBuf.RawSheetHeader.Postprocess(hdBuf)
 	return f, order, nil
 }
 

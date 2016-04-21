@@ -243,10 +243,9 @@ func loop(
 	if err != nil { return err }
 
 	workers := runtime.NumCPU()
-	gw := hds[0].GridWidth
 	sphBuf := &sphBuffers{
-		intr: make([]bool, gw * gw * gw),
-		vecs: make([][3]float32, gw * gw * gw),
+		intr: make([]bool, hds[0].N),
+		vecs: make([][3]float32, hds[0].N),
 		sphWorkers: make([]los.Halo, workers - 1),
 	}
 
@@ -329,17 +328,14 @@ func loadSphereVecs(
 	for i := range intr {
 		if intr[i] { numIntr++ }
 	}
-	
-	counts := zCounts(sphBuf.intr, int(hd.GridWidth))
-	zIdxs := zSplit(counts, workers)
 
 	h.Split(sphWorkers)
 
 	for i := range sphWorkers {
 		wh := &sphBuf.sphWorkers[i]
-		go chanLoadSphereVec(wh, vecs, intr, zIdxs[i], hd, c, sync)
+		go chanLoadSphereVec(wh, vecs, intr, i, workers, hd, c, sync)
 	}
-	chanLoadSphereVec(h, vecs, intr, zIdxs[workers-1], hd, c, sync)
+	chanLoadSphereVec(h, vecs, intr, workers - 1, workers, hd, c, sync)
 
 	for i := 0; i < workers; i++ { <-sync }
 
@@ -348,36 +344,26 @@ func loadSphereVecs(
 
 func chanLoadSphereVec(
 	h *los.Halo, vecs [][3]float32, intr []bool,
-	zIdxs []int, hd *io.SheetHeader, c *ShellConfig, sync chan bool,
+	offset, workers int,
+	hd *io.SheetHeader, c *ShellConfig, sync chan bool,
 ) {
-	gw, sw := int(hd.GridWidth), int(hd.SegmentWidth)
 
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
 	sphVol := 4*math.Pi/3*rad*rad*rad
 
-	pl := hd.TotalWidth / float64(int(hd.CountWidth) / int(c.subsampleFactor))
+	sf := c.subsampleFactor
+	pl := hd.TotalWidth / float64(hd.CountWidth / sf)
 	pVol := pl*pl*pl
 	
 	rho := pVol / sphVol
-	for _, z := range zIdxs {
-		if z >= sw { continue }
 
-		for y := 0; y < sw; y++ {
-			for x := 0; x < sw; x++ {
-
-				idx := x + y*gw + z*gw*gw
-				if intr[idx] {
-					insertCalls++
-					h.Insert(vecs[idx], rad, rho)
-				}
-			}
-		}
+	skip := workers*int(sf*sf*sf)
+	for i := offset*int(sf*sf*sf); i < int(hd.N); i += skip {
+		if intr[i] { h.Insert(vecs[i], rad, rho) }
 	}
 
 	sync <- true
 }
-
-var insertCalls = 0
 
 func haloAnalysis(
 	halos []*los.Halo, idxs []int, c *ShellConfig,
@@ -460,56 +446,6 @@ func normVecs(n int) [][3]float32 {
 type profileRange struct {
 	rMin, rMax float64
 	v0 [3]float32
-}
-
-// Used for load balancing.
-func zCounts(grid []bool, n int) []int {
-	counts := make([]int, n)
-
-	i := 0
-	for z := 0; z < n; z++ {
-		for y := 0; y < n; y++ {
-			for x := 0; x < n; x++ {
-				if grid[i] { counts[z]++ }
-				i++
-			}
-		}
-	}
-
-	return counts
-}
-
-// Used for load balanacing.
-func zSplit(zCounts []int, workers int) [][]int {
-	tot := 0
-	for _, n := range zCounts { tot += n }
-
-	splits := make([]int, workers + 1)
-	si := 1
-	splitWidth := tot / workers
-	if splitWidth * workers < tot { splitWidth++ }
-	target := splitWidth
-
-	sum := 0
-	for i, n := range zCounts {
-		sum += n
-		if sum > target {
-			splits[si] = i
-			for sum > target { target += splitWidth }
-			si++
-		}
-	}
-	for ; si < len(splits); si++ { splits[si] = len(zCounts) }
-
-	splitIdxs := make([][]int, workers)
-	for i := range splitIdxs {
-		jStart, jEnd := splits[i], splits[i + 1]
-		for j := jStart; j < jEnd; j++ {
-			if zCounts[j] > 0 { splitIdxs[i] = append(splitIdxs[i], j) }
-		}
-	}
-
-	return splitIdxs
 }
 
 func binIntersections(

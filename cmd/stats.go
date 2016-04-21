@@ -190,8 +190,7 @@ func (config *StatsConfig) Run(
 			if len(intrBins[i]) == 0 { continue }
 			hd := &hds[i]
 
-			n := hd.GridWidth*hd.GridWidth*hd.GridWidth
-			if len(xs) == 0 { xs = make([][3]float32, n) }
+			if len(xs) == 0 { xs = make([][3]float32, hd.N) }
 			err := io.ReadSheetPositionsAt(files[i], xs)
 			if err != nil { return nil, err }
 
@@ -321,22 +320,18 @@ func massContained(
 	hd *io.SheetHeader, xs [][3]float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
 ) float64 {
-	sw := hd.SegmentWidth
-
 
 	cpu := runtime.NumCPU()
 	workers := int64(runtime.GOMAXPROCS(cpu))
-	n := (sw*sw*sw) / workers
 	outChan := make(chan float64, workers)
 	for i := int64(0); i < workers - 1; i++ {
 		go massContainedChan(
-			hd, xs, coeffs, sphere, rLow, rHigh, n*i, n*(i+1), outChan,
+			hd, xs, coeffs, sphere, rLow, rHigh, i, workers, outChan,
 		)
 	}
 
 	massContainedChan(
-		hd, xs, coeffs, sphere, rLow, rHigh,
-		n*(workers - 1), sw*sw*sw, outChan,
+		hd, xs, coeffs, sphere, rLow, rHigh, workers - 1, workers, outChan,
 	)
 
 	sum := 0.0
@@ -350,7 +345,7 @@ func massContained(
 func massContainedChan(
 	hd *io.SheetHeader, xs [][3]float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
-	start, end int64, out chan float64,
+	offset, workers int64, out chan float64,
 ) {
 	c := &hd.Cosmo
 	rhoM := cosmo.RhoAverage(c.H100 * 100, c.OmegaM, c.OmegaL, c.Z )
@@ -363,10 +358,7 @@ func massContainedChan(
 	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
 
 	sum := 0.0
-	sw := hd.SegmentWidth
-	for si := start; si < end; si++ {
-		xi, yi, zi := coords(si, hd.SegmentWidth)
-		i := xi + yi*sw + zi*sw*sw
+	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		x, y, z = x - sphere.C[0], y - sphere.C[1], z - sphere.C[2]
 		x = wrap(x, tw2)

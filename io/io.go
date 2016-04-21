@@ -63,7 +63,6 @@ type SheetHeader struct {
 	TotalWidth float64
 
 	Origin, Width [3]float32
-	VelocityOrigin, VelocityWidth [3]float32
 }
 
 // CosmologyHeader contains information describing the cosmological

@@ -457,3 +457,5 @@ func (h *Halo) PlaneToVolume(ring int, px, py float64) (x, y, z float64) {
 
 // RMax returns maximum radius of the halo profiles.
 func (h *Halo) RMax() float64 { return h.rMax }
+
+func (h *Halo) Origin() [3]float64 { return h.origin }

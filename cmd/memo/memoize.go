@@ -167,9 +167,9 @@ func (f IntFinder) Find(rid int) (int, bool) {
 
 func readHeadersFromSheet(
 	snap int, e *env.Environment,
-) ([]io.SheetHeader, []string, error) {
+) ([]io.GotetraHeader, []string, error) {
 	files := make([]string, e.Blocks())
-	hds := make([]io.SheetHeader, e.Blocks())
+	hds := make([]io.GotetraHeader, e.Blocks())
 	for i := range files {
 		files[i] = e.ParticleCatalog(snap, i)
 		err := io.ReadSheetHeaderAt(files[i], &hds[i])
@@ -182,7 +182,7 @@ func readHeadersFromSheet(
 // the segments at a given snapshot.
 func ReadHeaders(
 	snap int, e *env.Environment,
-) ([]io.SheetHeader, []string, error) {
+) ([]io.GotetraHeader, []string, error) {
 	if _, err := os.Stat(e.MemoDir); err != nil { return nil, nil, err }
 	memoFile := path.Join(e.MemoDir, fmt.Sprintf(headerMemoFile, snap))
 
@@ -195,8 +195,9 @@ func ReadHeaders(
         if err != nil { return nil, nil, err }
         defer f.Close()
 
-		raws := make([]io.RawSheetHeader, len(hds))
-		for i := range raws { raws[i] = hds[i].RawSheetHeader }
+		raws := make([]io.RawGotetraHeader, len(hds))
+		for i := range raws { raws[i] = hds[i].RawGotetraHeader
+		}
         binary.Write(f, binary.LittleEndian, raws)
 
 		return hds, files, nil
@@ -207,8 +208,8 @@ func ReadHeaders(
         if err != nil { return nil, nil, err }
         defer f.Close()
 
-		hds := make([]io.SheetHeader, e.Blocks())
-		raws := make([]io.RawSheetHeader, e.Blocks())
+		hds := make([]io.GotetraHeader, e.Blocks())
+		raws := make([]io.RawGotetraHeader, e.Blocks())
         binary.Read(f, binary.LittleEndian, raws)
 		for i := range hds { raws[i].Postprocess(&hds[i]) }
 		files := make([]string, e.Blocks())

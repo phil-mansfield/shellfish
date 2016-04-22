@@ -271,7 +271,7 @@ func findOverlapSubs(
 	}
 
 	// Load each snapshot.
-	hd := &io.SheetHeader{}
+	hd := &io.GotetraHeader{}
 	for snap, group := range snapGroups {
 		err := io.ReadSheetHeaderAt(e.ParticleCatalog(snap, 0), hd)
 		if err != nil { return nil, err }

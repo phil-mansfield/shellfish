@@ -23,7 +23,7 @@ type GotetraBuffer struct {
 func NewGotetraBuffer(fname string) (VectorBuffer, error) {
 	hd := &SheetHeader{}
 	err := ReadSheetHeaderAt(fname, hd)
-	return nil, err
+	if err != nil { return nil, err }
 
 	sw, gw := hd.SegmentWidth, hd.GridWidth
 	buf := &GotetraBuffer{
@@ -40,10 +40,11 @@ func (buf *GotetraBuffer) IsOpen() bool { return buf.open }
 
 func (buf *GotetraBuffer) Read(fname string) ([][3]float32, error) {
 	if buf.open { panic("Buffer already open.") }
-
+	buf.open = true
+	
 	err := readSheetPositionsAt(fname, buf.sheet)
 	if err != nil { return nil, err }
-
+	
 	for z := 0; z < buf.sw; z++ {
 		for y := 0; y < buf.sw; y++ {
 			for x := 0; x < buf.sw; x++ {
@@ -53,7 +54,7 @@ func (buf *GotetraBuffer) Read(fname string) ([][3]float32, error) {
 			}
 		}
 	}
-
+	
 	return buf.out, nil
 }
 
@@ -160,7 +161,7 @@ func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
 
 	// Go to block 4 in the file.
 	// The file pointer should already be here, but let's just be safe, okay?
-	f.Seek(int64(4 + 4 + int(unsafe.Sizeof(SheetHeader{}))), 0)
+	f.Seek(int64(4 + 4 + int(unsafe.Sizeof(RawSheetHeader{}))), 0)
 	if err := readVecAsByte(f, order, xsBuf); err != nil { return err }
 
 	if err := f.Close(); err != nil { return err }

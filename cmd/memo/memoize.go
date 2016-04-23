@@ -29,7 +29,10 @@ func ReadSortedRockstarIDs(
 	snap, maxID int, e *env.Environment, flag halo.Val,
 ) ([]int, error) {
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
-	if err, _ := os.Stat(dir); err != nil { os.Mkdir(dir, 0777) }
+	if _, err := os.Stat(dir); err != nil {
+		err = os.Mkdir(dir, 0777)
+		if err != nil { return nil, err }
+	}
 
 	var (
 		vals [][]float64
@@ -89,7 +92,10 @@ func ReadRockstar(
 ) ([][]float64, error) {
 	// Find binFile.
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
-	if err, _ := os.Stat(dir); err != nil { os.Mkdir(dir, 0777) }
+	if _, err := os.Stat(dir); err != nil {
+		err = os.Mkdir(dir, 0777)
+		if err != nil { return nil, err }
+	}
 
 	binFile := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
 	shortBinFile := path.Join(dir, fmt.Sprintf(rockstarShortMemoFile, snap))
@@ -117,7 +123,6 @@ func readRockstar(
 			if err != nil { return nil, err}
 		}
 	}
-
 	hds, _, err := ReadHeaders(snap, e)
 	if err != nil { return nil, err }
 	hd := &hds[0]

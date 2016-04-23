@@ -91,6 +91,7 @@ func strToList(a string) []string {
 func intsConv(ptr *[]int64) conversionFunc {
 	return func(s string) bool {
 		toks := strToList(s)
+		*ptr = (*ptr)[:0]
 		for j := range toks {
 			i, err := strconv.Atoi(toks[j])
 			if err != nil { return false }

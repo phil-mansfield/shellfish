@@ -142,13 +142,19 @@ like:
 	HaloType = Rockstar
 	TreeType = consistent-trees
 	
+	# Indices of different quantities in the halo catalog
+	
+	HaloIDColumn = 1
+	HaloM200mColumn = 10
+	HaloPositionColumns = 17, 18, 19
+	
 	# Directories
 	
 	HaloDir = /project/surph/diemer/Box_L0063_N1024_CBol/Rockstar200m/hlists
 	TreeDir = /project/surph/diemer/Box_L0063_N1024_CBol/Rockstar200m/trees
 	MemoDir = /project/surph/mansfield/data/sheet_segments/Box_L0063_N1024_G0008_CBol/gtet_memo
 	
-	# Snapshots
+	# Snapshot specification
 	
 	SnapshotFormat = /project/surph/mansfield/data/sheet_segments/Box_L0063_N1024_G0008_CBol/snapdir_%03d/sheet%d%d%d.dat
 	SnapMin = 6

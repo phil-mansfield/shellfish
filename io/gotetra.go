@@ -10,18 +10,18 @@ import (
 )
 
 type GotetraBuffer struct {
-	open bool
+	open   bool
 
-	sheet [][3]float32
-	out [][3]float32
+	sheet  [][3]float32
+	out    [][3]float32
 
 	sw, gw int
 
-	hd SheetHeader
+	hd     GotetraHeader
 }
 
 func NewGotetraBuffer(fname string) (VectorBuffer, error) {
-	hd := &SheetHeader{}
+	hd := &GotetraHeader{}
 	err := ReadSheetHeaderAt(fname, hd)
 	if err != nil { return nil, err }
 
@@ -75,7 +75,7 @@ The binary format used for phase sheets is as follows:
         sheet fragment.
     4 - ([][3]float32) Contiguous block of x, y, z coordinates. Given in Mpc.
  */
-type RawSheetHeader struct {
+type RawGotetraHeader struct {
 	Cosmo                              CosmologyHeader
 	Count, CountWidth                  int64
 	SegmentWidth, GridWidth, GridCount int64
@@ -88,14 +88,14 @@ type RawSheetHeader struct {
 	VelocityOrigin, VelocityWidth      [3]float32
 }
 
-func (raw *RawSheetHeader) Postprocess(hd *SheetHeader) {
-	hd.RawSheetHeader = *raw
+func (raw *RawGotetraHeader) Postprocess(hd *GotetraHeader) {
+	hd.RawGotetraHeader = *raw
 	hd.Count = hd.CountWidth * hd.CountWidth * hd.CountWidth
 	hd.N = hd.SegmentWidth * hd.SegmentWidth * hd.SegmentWidth
 }
 
-type SheetHeader struct {
-	RawSheetHeader
+type GotetraHeader struct {
+	RawGotetraHeader
 	N int64
 	guard struct{} // Prevents accidentally trying to write/read this type.
 }
@@ -114,7 +114,7 @@ func endianness(flag int32) binary.ByteOrder {
 }
 
 func readSheetHeaderAt(
-file string, hdBuf *SheetHeader,
+file string, hdBuf *GotetraHeader,
 ) (*os.File, binary.ByteOrder, error) {
 	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
 	if err != nil { return nil, binary.LittleEndian, err }
@@ -123,25 +123,25 @@ file string, hdBuf *SheetHeader,
 	order := endianness(readInt32(f, binary.LittleEndian))
 
 	headerSize := readInt32(f, order)
-	if headerSize != int32(unsafe.Sizeof(RawSheetHeader{})) {
+	if headerSize != int32(unsafe.Sizeof(RawGotetraHeader{})) {
 		return nil, binary.LittleEndian,
 		fmt.Errorf("Expected catalog.SheetHeader size of %d, found %d.",
-			unsafe.Sizeof(RawSheetHeader{}), headerSize,
+			unsafe.Sizeof(RawGotetraHeader{}), headerSize,
 		)
 	}
 
 	_, err = f.Seek(4 + 4, 0)
 	if err != nil { return nil, binary.LittleEndian, err }
 
-	err = binary.Read(f, order, &hdBuf.RawSheetHeader)
+	err = binary.Read(f, order, &hdBuf.RawGotetraHeader)
 	if err != nil { return nil, binary.LittleEndian, err }
 
-	hdBuf.RawSheetHeader.Postprocess(hdBuf)
+	hdBuf.RawGotetraHeader.Postprocess(hdBuf)
 	return f, order, nil
 }
 
 // ReadHeaderAt reads the header in the given file into the target Header.
-func ReadSheetHeaderAt(file string, hdBuf *SheetHeader) error {
+func ReadSheetHeaderAt(file string, hdBuf *GotetraHeader) error {
 	f, _, err := readSheetHeaderAt(file, hdBuf)
 	if err != nil { return err }
 	if err = f.Close(); err != nil { return err }
@@ -150,7 +150,7 @@ func ReadSheetHeaderAt(file string, hdBuf *SheetHeader) error {
 
 // ReadPositionsAt reads the velocities in the given file into a buffer.
 func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
-	h := &SheetHeader{}
+	h := &GotetraHeader{}
 	f, order, err := readSheetHeaderAt(file, h)
 	if err != nil { return nil }
 
@@ -161,7 +161,7 @@ func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
 
 	// Go to block 4 in the file.
 	// The file pointer should already be here, but let's just be safe, okay?
-	f.Seek(int64(4 + 4 + int(unsafe.Sizeof(RawSheetHeader{}))), 0)
+	f.Seek(int64(4 + 4 + int(unsafe.Sizeof(RawGotetraHeader{}))), 0)
 	if err := readVecAsByte(f, order, xsBuf); err != nil { return err }
 
 	if err := f.Close(); err != nil { return err }
@@ -172,7 +172,7 @@ type CellBounds struct {
 	Origin, Width [3]int
 }
 
-func (hd *SheetHeader) CellBounds(cells int) *CellBounds {
+func (hd *GotetraHeader) CellBounds(cells int) *CellBounds {
 	cb := &CellBounds{}
 	cellWidth := hd.TotalWidth / float64(cells)
 

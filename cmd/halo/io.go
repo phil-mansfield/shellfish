@@ -17,6 +17,10 @@ type halos struct {
 	xs, ys, zs, ms, rs []float64
 }
 
+type VarColumns struct {
+	ID, X, Y, Z, M200m int
+}
+
 func (hs *halos) Len() int { return len(hs.rs) }
 func (hs *halos) Less(i, j int) bool { return hs.rs[i] < hs.rs[j] }
 func (hs *halos) Swap(i, j int) {
@@ -28,116 +32,16 @@ func (hs *halos) Swap(i, j int) {
 	hs.rids[i], hs.rids[j] = hs.rids[j], hs.rids[i]
 }
 
-// ReadRockstar reads halo information from the given Rockstar catalog, sorted
-// from largest to smallest.
-func ReadRockstar(
-	file string, rType Radius, cosmo *io.CosmologyHeader,
-) (rids []int, xs, ys, zs, ms, rs []float64, err error) {
-	rCol := rType.RockstarColumn()
-	idCol, xCol, yCol, zCol := 1, 17, 18, 19
-	
-	colIdxs := []int{ idCol, xCol, yCol, zCol, rCol }
-	cols, err := readTable(file, colIdxs)
-	if err != nil { return nil, nil, nil, nil, nil, nil, err }
-	
-	ids := cols[0]
-	xs, ys, zs = cols[1], cols[2], cols[3]
-	if rType.RockstarMass() {
-		ms = cols[4]
-		rs = make([]float64, len(ms))
-		rType.Radius(cosmo, ms, rs)
-	} else {
-		rs = cols[4]
-		ms = make([]float64, len(rs))
-		for i := range rs { rs[i] /= 1000 } // kpc -> Mpc
-		rType.Mass(cosmo, rs, ms)
-	}
+func RockstarConvert(
+	inFile, outFile string, vars *VarColumns, cosmo *io.CosmologyHeader,
+) error {
+	valIdxs := []int{vars.ID, vars.X, vars.Y, vars.Z, vars.M200m }
 
-	rids = make([]int, len(ids))
-	for i := range rids { rids[i] = int(ids[i]) }
-
-	sort.Sort(sort.Reverse(&halos{ rids, xs, ys, zs, ms, rs }))
-	return rids, xs, ys, zs, ms, rs, nil
-}
-
-type Val int
-const (
-	Scale Val = iota
-	ID
-	DescScale
-	DescID
-	NumProg
-	PID
-	UPID
-	DescPID
-	Phantom
-	SAMMVir
-	MVir
-	RVir
-	Rs
-	Vrms
-	MMP
-	ScaleOfLastMMP
-	VMax
-	X
-	Y
-	Z
-	Vx
-	Vy
-	Vz
-	Jx
-	Jy
-	Jz
-	Spin
-	BreadthFirstID
-	DepthFirstID
-	TreeRootID
-	OrigHaloID
-	SnapNum
-	NextCoprogenitorDepthFirstID
-	LastProgenitorDepthFirstID
-	RsKylpin
-	MVirAll
-	M200b
-	M200c
-	M500c
-	M2500c
-	XOff
-	Voff
-	SpinBullock
-	BToA
-	CToA
-	Ax
-	Ay
-	Az
-	BToA500c
-	CToA500c
-	Ax500c
-	Ay500c
-	Az500c
-	TU
-	MAcc
-	MPeak
-	VAcc
-	VPeak
-	HalfmassScale
-	AccRateInst
-	AccRate100Myr
-	AccRateTdyn
-	valNum
-	RadVir
-	Rad200b
-	Rad200c
-	Rad500c
-	Rad2500c
-)
-
-func RockstarConvert(inFile, outFile string) error {
-	valIdxs := make([]int, valNum)
-	for i := range valIdxs { valIdxs[i] = i }
 	cols, err := readTable(inFile, valIdxs)
 	if err != nil { return err }
-	
+
+	cols = genRadiiMasses(cols, vars, cosmo)
+
 	f, err := os.Create(outFile)
 	if err != nil { return err }
 	defer f.Close()
@@ -150,6 +54,18 @@ func RockstarConvert(inFile, outFile string) error {
 	}
 
 	return nil
+}
+
+func genRadiiMasses(
+	cols [][]float64, vars *VarColumns, cosmo *io.CosmologyHeader,
+) [][]float64 {
+	ms := cols[4]
+	rs := make([]float64, len(ms))
+	R200m.Radius(cosmo, ms, rs)
+
+	cols = append(cols, [][]float64{rs, ms}...)
+
+	return cols
 }
 
 type idxSet struct {
@@ -177,14 +93,18 @@ func idxSort(xs []float64) []int {
 	return idxs
 }
 
-func RockstarConvertTopN(inFile, outFile string, n int) error {
-	valIdxs := make([]int, valNum)
-	for i := range valIdxs { valIdxs[i] = i }
+func RockstarConvertTopN(
+	inFile, outFile string, n int, vars *VarColumns, cosmo *io.CosmologyHeader,
+) error {
+	valIdxs := []int{vars.ID, vars.X, vars.Y, vars.Z, vars.M200m }
+
 	cols, err := readTable(inFile, valIdxs)
 	if err != nil { return err }
 
+	cols = genRadiiMasses(cols, vars, cosmo)
+
 	if n > len(cols[0]) { n = len(cols[0]) }
-	idxs := idxSort(cols[M200b])[len(cols[0]) - n:]
+	idxs := idxSort(cols[4])[len(cols[0]) - n:]
 
 	outCols := make([][]float64, len(cols))
 	for i := range cols { outCols[i] = make([]float64, len(idxs)) }
@@ -209,65 +129,28 @@ func RockstarConvertTopN(inFile, outFile string, n int) error {
 	return nil
 }
 
-func ReadBinaryRockstarVals(
-	file string, cosmo *io.CosmologyHeader, valFlags ...Val,
-) (ids []int, vals[][]float64, err error) {
-	return readRockstarVals(file, cosmo, valFlags, binaryColGetter)
-}
-
-func ReadRockstarVals(
-	file string, cosmo *io.CosmologyHeader, valFlags ...Val,
-) (ids []int, vals[][]float64, err error) {
-	return readRockstarVals(file, cosmo, valFlags, asciiColGetter)
+func ReadBinaryRockstar(
+	file string,
+) (ids []int, xs, ys, zs, ms, rs []float64, err error) {
+	return readRockstarVals(file, binaryColGetter)
 }
 
 func readRockstarVals(
-	file string, cosmo *io.CosmologyHeader, valFlags []Val, getter colGetter,
-) (ids []int, vals[][]float64, err error) {
-	colIdxs := []int{ int(ID) }
-	for _, val := range valFlags {
-		switch val {
-		case RadVir: colIdxs = append(colIdxs, int(MVir))
-		case Rad200b: colIdxs = append(colIdxs, int(M200b))
-		case Rad200c: colIdxs = append(colIdxs, int(M200c))
-		case Rad500c: colIdxs = append(colIdxs, int(M500c))
-		case Rad2500c: colIdxs = append(colIdxs, int(M2500c))
-		default:
-			colIdxs = append(colIdxs, int(val))
-		}
-	}
-
-	vals, err = getter(file, colIdxs)
-	if err != nil { return nil, nil, err }
+	file string, getter colGetter,
+) (ids []int, xs, ys, zs, ms, rs []float64, err error) {
+	colIdxs := []int{ 0, 1, 2, 3, 4, 5 }
+	vals, err := getter(file, colIdxs)
+	if err != nil { return nil, nil, nil, nil, nil, nil, err }
+	xs, ys, zs, ms, rs = vals[1], vals[2], vals[3], vals[4], vals[5]
 
 	ids = make([]int, len(vals[0]))
-	for i := range vals[0] {
-		ids[i] = int(vals[0][i])
-	}
-	
-	for i, val := range valFlags {
-		switch val {
-		case RadVir: RVirial.Radius(cosmo, vals[i+1], vals[i+1])
-		case Rad200b: R200m.Radius(cosmo, vals[i+1], vals[i+1])
-		case Rad200c: R200c.Radius(cosmo, vals[i+1], vals[i+1])
-		case Rad500c: R500c.Radius(cosmo, vals[i+1], vals[i+1])
-		case Rad2500c: R2500c.Radius(cosmo, vals[i+1], vals[i+1])
-		case Rs, RVir, RsKylpin:
-			for j := range vals[i+1] { vals[i+1][j] /= 1000 }
-		}
-	}
+	for i := range vals[0] { ids[i] = int(vals[0][i]) }
 
-	if len(vals) == 1 {
-		return ids, [][]float64{}, nil
-	} else {
-		return ids, vals[1:], nil
-	}
+	return ids, xs, ys, zs, ms, rs, nil
 }
 
 type colGetter func(file string, colIdxs []int) ([][]float64, error)
-func asciiColGetter(file string, colIdxs []int) ([][]float64, error) {
-	return readTable(file, colIdxs)
-}
+
 func binaryColGetter(file string, colIdxs []int) ([][]float64, error) {
 	f, err := os.Open(file)
 	if err != nil { return nil, err }
@@ -280,17 +163,12 @@ func binaryColGetter(file string, colIdxs []int) ([][]float64, error) {
 	cols := make([][]float64, len(colIdxs))
 	for i := range cols { cols[i] = make([]float64, n) }
 	for i, colIdx := range colIdxs {
-		if colIdx > int(valNum) { panic("Impossibly large colIdx.") }
 		_, err = f.Seek(8 + jump * int64(colIdx), 0)
 		if err != nil { return nil, err }
 		err = binary.Read(f, binary.LittleEndian, cols[i])
 		if err != nil { return nil, err }
 	}
 	return cols, nil
-}
-
-func init() {
-	if valNum != 62 { panic("Internal gotetra setup error.") }
 }
 
 func readTable(file string, colIdxs []int) ([][]float64, error ) {

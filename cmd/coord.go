@@ -26,7 +26,15 @@ func (config *CoordConfig) Run(
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
 
-	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, e)
+	vars := &halo.VarColumns{
+		ID: int(gConfig.HaloIDColumn),
+		X: int(gConfig.HaloPositionColumns[0]),
+		Y: int(gConfig.HaloPositionColumns[1]),
+		Z: int(gConfig.HaloPositionColumns[2]),
+		M200m: int(gConfig.HaloM200mColumn),
+	}
+
+	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, vars, e)
 	if err != nil { return nil, err }
 
 	lines := catalog.FormatCols(
@@ -42,7 +50,7 @@ func (config *CoordConfig) Run(
 }
 
 func readHaloCoords(
-	ids, snaps []int, e *env.Environment,
+	ids, snaps []int, vars *halo.VarColumns, e *env.Environment,
 ) (xs, ys, zs, rs []float64, err error) {
 	snapBins, idxBins := binBySnap(snaps, ids)
 
@@ -51,20 +59,17 @@ func readHaloCoords(
 	zs = make([]float64, len(ids))
 	rs = make([]float64, len(ids))
 
-
 	for snap, _ := range snapBins {
 		if snap == -1 { continue }
 		snapIDs := snapBins[snap]
 		idxs := idxBins[snap]
 
-		vals, err := memo.ReadRockstar(
-			snap, snapIDs, e, halo.X, halo.Y, halo.Z, halo.Rad200b,
+		_, sxs, sys, szs, _, srs, err := memo.ReadRockstar(
+			snap, snapIDs, vars, e,
 		)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
 
-		sxs, sys, szs, srs := vals[0], vals[1], vals[2], vals[3]
+		if err != nil { return nil, nil, nil, nil, err }
+
 		for i, idx := range idxs {
 			xs[idx] = sxs[i]
 			ys[idx] = sys[i]

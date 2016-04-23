@@ -237,7 +237,7 @@ func inRange(x, r, low, width, tw float32) bool {
 
 // SheetIntersect returns true if the given halo and sheet intersect one another
 // and false otherwise.
-func sheetIntersect(s geom.Sphere, hd *io.SheetHeader) bool {
+func sheetIntersect(s geom.Sphere, hd *io.GotetraHeader) bool {
 	tw := float32(hd.TotalWidth)
 	return inRange(s.C[0], s.R, hd.Origin[0], hd.Width[0], tw) &&
 	inRange(s.C[1], s.R, hd.Origin[1], hd.Width[1], tw) &&
@@ -260,7 +260,7 @@ func binCoeffsBySnap(
 }
 
 func boundingSpheres(
-	coords [][]float64, hd *io.SheetHeader, c *StatsConfig, e *env.Environment,
+	coords [][]float64, hd *io.GotetraHeader, c *StatsConfig, e *env.Environment,
 ) ([]geom.Sphere, error) {
 	xs, ys, zs, rs := coords[0], coords[1], coords[2], coords[3]
 
@@ -319,7 +319,7 @@ func rangeSp(coeffs []float64) (rmin, rmax float64) {
 }
 
 func massContained(
-	hd *io.SheetHeader, xs [][3]float32, coeffs []float64,
+	hd *io.GotetraHeader, xs [][3]float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
 ) float64 {
 
@@ -345,7 +345,7 @@ func massContained(
 }
 
 func massContainedChan(
-	hd *io.SheetHeader, xs [][3]float32, coeffs []float64,
+	hd *io.GotetraHeader, xs [][3]float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
 	offset, workers int64, out chan float64,
 ) {
@@ -378,7 +378,7 @@ func massContainedChan(
 }
 
 func binSphereIntersections(
-	hds []io.SheetHeader, spheres []geom.Sphere,
+	hds []io.GotetraHeader, spheres []geom.Sphere,
 ) [][]geom.Sphere {
 	bins := make([][]geom.Sphere, len(hds))
 	for i := range hds {

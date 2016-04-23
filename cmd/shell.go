@@ -316,7 +316,7 @@ type sphBuffers struct {
 }
 
 func loadSphereVecs(
-	h *los.Halo, sphBuf *sphBuffers, hd *io.SheetHeader, c *ShellConfig,
+	h *los.Halo, sphBuf *sphBuffers, hd *io.GotetraHeader, c *ShellConfig,
 ) {
 	workers := runtime.NumCPU()
 	runtime.GOMAXPROCS(workers)
@@ -349,7 +349,7 @@ func loadSphereVecs(
 func chanLoadSphereVec(
 	h *los.Halo, vecs [][3]float32, intr []bool,
 	offset, workers int,
-	hd *io.SheetHeader, c *ShellConfig, sync chan bool,
+	hd *io.GotetraHeader, c *ShellConfig, sync chan bool,
 ) {
 
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
@@ -389,7 +389,7 @@ func haloAnalysis(
 }
 
 func createHalos(
-	coords [][]float64, hd *io.SheetHeader, c *ShellConfig, e *env.Environment,
+	coords [][]float64, hd *io.GotetraHeader, c *ShellConfig, e *env.Environment,
 ) ([]*los.Halo, error) {
 	halos := make([]*los.Halo, len(coords[0]))
 	for i, _ := range coords[0] {
@@ -453,7 +453,7 @@ type profileRange struct {
 }
 
 func binIntersections(
-	hds []io.SheetHeader, halos []*los.Halo,
+	hds []io.GotetraHeader, halos []*los.Halo,
 ) [][]*los.Halo {
 	bins := make([][]*los.Halo, len(hds))
 	for i := range hds {

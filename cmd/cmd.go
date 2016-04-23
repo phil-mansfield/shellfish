@@ -46,6 +46,10 @@ type GlobalConfig struct {
 	TreeDir, TreeType            string
 	MemoDir                      string
 
+	HaloIDColumn int64
+	HaloM200mColumn int64
+	HaloPositionColumns []int64
+
 	FormatMins, FormatMaxes      []int64
 	SnapMin, SnapMax             int64
 
@@ -68,6 +72,12 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.String(&config.TreeDir, "TreeDir", "")
 	vars.String(&config.TreeType, "TreeType", "")
 	vars.String(&config.MemoDir, "MemoDir", "")
+
+	vars.Int(&config.HaloIDColumn, "HaloIDColumn", -1)
+	vars.Int(&config.HaloM200mColumn, "HaloM200mColumn", -1)
+	vars.Ints(&config.HaloPositionColumns, "HaloPositionColumns",
+		[]int64{-1, -1, -1})
+
 	vars.Ints(&config.FormatMins, "FormatMins", []int64{})
 	vars.Ints(&config.FormatMaxes, "FormatMaxes", []int64{})
 	vars.Int(&config.SnapMin, "SnapMin", -1)
@@ -142,6 +152,19 @@ func (config *GlobalConfig) validate() error {
 			config.MemoDir, err.Error())
 	}
 
+	if config.HaloIDColumn == -1 {
+		return fmt.Errorf("The 'HaloIDColumn' variable isn't set.")
+	} else if config.HaloM200mColumn == -1 {
+		return fmt.Errorf("The 'HaloR200mColumn' variable isn't set.")
+	} else if len(config.HaloPositionColumns) != 3 {
+		return fmt.Errorf("The 'HaloPositionColumns' variable must have " +
+			"three elements.")
+	} else if config.HaloPositionColumns[0] == -1 ||
+		config.HaloPositionColumns[1] == -1 ||
+		config.HaloPositionColumns[2] == -1 {
+		return fmt.Errorf("The 'HaloPositionColumns' variable wasn't set.")
+	}
+
 	switch config.Endianness {
 	case "":
 		return fmt.Errorf("The variable 'Endianness' was not set.")
@@ -204,10 +227,8 @@ func validateFormat(config *GlobalConfig) error {
 func (config *GlobalConfig) ExampleConfig() string {
 	return fmt.Sprintf(`[config]
 # Target version of shellfish. This option merely allows Shellfish to notice
-# when its source an configuration files are not from the same version. It will
+# when its source and configuration files are not from the same version. It will
 # not allow previous versions to be run from earlier versions.
-#
-# This variable defaults to the source version if not included.
 Version = %s
 
 # These variables describe the formats used by the files which Shellfish reads.
@@ -221,11 +242,19 @@ Version = %s
 # Supported TreeTypes: consistent-trees, nil
 #
 # Note the 'nil' type. This is useful if you  have a halo or tree format that
-# you don't want to bother implementing in Go and don't plan on using the
-# 'id', 'tree', or 'coord' modes.
+# you don't want to bother implementing in Go and if you also don't plan on
+# using the 'id', 'tree', or 'coord' modes.
 SnapshotType = LGadget-2
 HaloType = Rockstar
 TreeType = consistent-trees
+
+# These variables specify which columns of your halo catalogs correspond to
+# the variables that Shellfish needs to read.
+HaloIDColumn = -1
+HaloR200mColumn = -1
+# HaloPositionColumns should correspond to the X, Y, and Z columns,
+# respectively.
+HaloPositionColumns = -1, -1, -1
 
 # These next five variables are neccessary evil due to the fact that there are
 # a wide range of directory structures used in different simulations. They will

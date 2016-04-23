@@ -13,6 +13,8 @@ import (
 	"github.com/phil-mansfield/shellfish/io"
 )
 
+// TODO: rewrite the six return values as a alice of slices.
+
 const (
 	rockstarMemoDir = "rockstar"
 	rockstarMemoFile = "halo_%d.dat"
@@ -26,7 +28,7 @@ const (
 // values of some quantity in a particular snapshot. maxID is the number of
 // halos to return.
 func ReadSortedRockstarIDs(
-	snap, maxID int, e *env.Environment, flag halo.Val,
+	snap, maxID int, vars *halo.VarColumns, e *env.Environment,
 ) ([]int, error) {
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
 	if _, err := os.Stat(dir); err != nil {
@@ -35,26 +37,23 @@ func ReadSortedRockstarIDs(
 	}
 
 	var (
-		vals [][]float64
+		ids []int
+		ms []float64
 		err error
 	)
 	if maxID >= rockstarShortMemoNum || maxID == -1 {
 		file := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
-		vals, err = readRockstar(
-			file, -1, snap, nil, e, halo.ID, flag,
+		ids, _, _, _, ms, _, err = readRockstar(
+			file, -1, snap, nil, vars, e,
 		)
 		if err != nil { return nil, err }
 	} else {
 		file := path.Join(dir, fmt.Sprintf(rockstarShortMemoFile, snap))
-		vals, err = readRockstar(
-			file, rockstarShortMemoNum, snap, nil, e, halo.ID, flag,
+		ids, _, _, _, ms, _, err = readRockstar(
+			file, rockstarShortMemoNum, snap, nil, vars, e,
 		)
 		if err != nil { return nil, err }
 	}
-	
-	fids, ms := vals[0], vals[1]
-	ids := make([]int, len(fids))
-	for i := range ids { ids[i] = int(fids[i]) }
 
 	if len(ids) < maxID {
 		return nil, fmt.Errorf(
@@ -88,13 +87,13 @@ func sortRockstar(ids []int, ms []float64) {
 // This function does fairly large heap allocations even when it doesn't need
 // to. Consider passing it a buffer.
 func ReadRockstar(
-	snap int, ids []int, e *env.Environment, valFlags ...halo.Val,
-) ([][]float64, error) {
+	snap int, ids []int, vars *halo.VarColumns, e *env.Environment,
+) (outIDs []int, xs, ys, zs, ms, rs []float64, err error) {
 	// Find binFile.
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
 	if _, err := os.Stat(dir); err != nil {
 		err = os.Mkdir(dir, 0777)
-		if err != nil { return nil, err }
+		if err != nil { return nil, nil, nil, nil, nil, nil, err }
 	}
 
 	binFile := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
@@ -102,50 +101,59 @@ func ReadRockstar(
 
 	// This wastes a read the first time it's called. You need to decide if you
 	// care. (Answer: probably.)
-	vals, err := readRockstar(
-		shortBinFile, rockstarShortMemoNum, snap, ids, e, valFlags...,
+	outIDs, xs, ys, zs, ms, rs, err = readRockstar(
+		shortBinFile, rockstarShortMemoNum, snap, ids, vars, e,
 	)
-	if err == nil { return vals, err }
-	return readRockstar(binFile, -1, snap, ids, e, valFlags...)
+	// TODO: Fix error handling here.
+	if err == nil { return outIDs, xs, ys, zs, ms, rs, err }
+	outIDs, xs, ys, zs, ms, rs, err = readRockstar(
+		binFile, -1, snap, ids, vars, e,
+	)
+	return outIDs, xs, ys, zs, ms, rs, nil
 }
 
 func readRockstar(
 	binFile string, n, snap int, ids []int,
-	e *env.Environment, valFlags ...halo.Val,
-) ([][]float64, error) {
+	vars *halo.VarColumns, e *env.Environment,
+) (outIDs []int, xs, ys, zs, ms, rs []float64, err error) {
+	hds, _, err := ReadHeaders(snap, e)
+	if err != nil { return nil, nil, nil, nil, nil, nil, err }
+	hd := &hds[0]
+
 	// If binFile doesn't exist, create it.
 	if _, err := os.Stat(binFile); err != nil {
 		if n == -1 {
-			err = halo.RockstarConvert(e.HaloCatalog(snap), binFile)
-			if err != nil { return nil, err }
+			err = halo.RockstarConvert(
+				e.HaloCatalog(snap), binFile, vars, &hd.Cosmo,
+			)
+			if err != nil { return nil, nil, nil, nil, nil, nil, err }
 		} else {
-			err = halo.RockstarConvertTopN(e.HaloCatalog(snap), binFile, n)
-			if err != nil { return nil, err}
+			err = halo.RockstarConvertTopN(
+				e.HaloCatalog(snap), binFile, n, vars, &hd.Cosmo,
+			)
+			if err != nil { return nil, nil, nil, nil, nil, nil, err }
 		}
 	}
-	hds, _, err := ReadHeaders(snap, e)
-	if err != nil { return nil, err }
-	hd := &hds[0]
+	
+	rids, xs, ys, zs, ms, rs, err := halo.ReadBinaryRockstar(binFile)
+	if err != nil { return nil, nil, nil, nil, nil, nil, err }
+	rvals := [][]float64{ xs, ys, zs, ms, rs }
 
-	
-	rids, rvals, err := halo.ReadBinaryRockstarVals(
-		binFile, &hd.Cosmo, valFlags...,
-	)	
-	if err != nil { return nil, err }
-	
 	// Select out only the IDs we want.
-	if ids == nil { return rvals, nil }
+	if ids == nil { return rids, xs, ys, zs, ms, rs, nil }
 	vals := make([][]float64, len(rvals))
 
 	for i := range vals { vals[i] = make([]float64, len(ids)) }
 	f := NewIntFinder(rids)
 	for i, id := range ids {
 		line, ok := f.Find(id)
-		if !ok { return nil, fmt.Errorf("Could not find ID %d", id) }
+		err = fmt.Errorf("Could not find ID %d", id)
+		if !ok { return nil, nil, nil, nil, nil, nil, err }
 		for vi := range vals { vals[vi][i] = rvals[vi][line] }
 	}
-	
-	return vals, nil
+	xs, ys, zs, ms, rs = vals[0], vals[1], vals[2], vals[3], vals[4]
+
+	return ids, xs, ys, zs, ms, rs, nil
 }
 
 // A quick generic wrapper for doing those one-to-one mappings I need to do so
@@ -172,9 +180,9 @@ func (f IntFinder) Find(rid int) (int, bool) {
 
 func readHeadersFromSheet(
 	snap int, e *env.Environment,
-) ([]io.SheetHeader, []string, error) {
+) ([]io.GotetraHeader, []string, error) {
 	files := make([]string, e.Blocks())
-	hds := make([]io.SheetHeader, e.Blocks())
+	hds := make([]io.GotetraHeader, e.Blocks())
 	for i := range files {
 		files[i] = e.ParticleCatalog(snap, i)
 		err := io.ReadSheetHeaderAt(files[i], &hds[i])
@@ -187,7 +195,7 @@ func readHeadersFromSheet(
 // the segments at a given snapshot.
 func ReadHeaders(
 	snap int, e *env.Environment,
-) ([]io.SheetHeader, []string, error) {
+) ([]io.GotetraHeader, []string, error) {
 	if _, err := os.Stat(e.MemoDir); err != nil { return nil, nil, err }
 	memoFile := path.Join(e.MemoDir, fmt.Sprintf(headerMemoFile, snap))
 
@@ -200,8 +208,9 @@ func ReadHeaders(
         if err != nil { return nil, nil, err }
         defer f.Close()
 
-		raws := make([]io.RawSheetHeader, len(hds))
-		for i := range raws { raws[i] = hds[i].RawSheetHeader }
+		raws := make([]io.RawGotetraHeader, len(hds))
+		for i := range raws { raws[i] = hds[i].RawGotetraHeader
+		}
         binary.Write(f, binary.LittleEndian, raws)
 
 		return hds, files, nil
@@ -212,8 +221,8 @@ func ReadHeaders(
         if err != nil { return nil, nil, err }
         defer f.Close()
 
-		hds := make([]io.SheetHeader, e.Blocks())
-		raws := make([]io.RawSheetHeader, e.Blocks())
+		hds := make([]io.GotetraHeader, e.Blocks())
+		raws := make([]io.RawGotetraHeader, e.Blocks())
         binary.Read(f, binary.LittleEndian, raws)
 		for i := range hds { raws[i].Postprocess(&hds[i]) }
 		files := make([]string, e.Blocks())

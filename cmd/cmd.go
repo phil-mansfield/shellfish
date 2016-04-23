@@ -47,7 +47,7 @@ type GlobalConfig struct {
 	MemoDir                      string
 
 	HaloIDColumn int64
-	HaloR200mColumn int64
+	HaloM200mColumn int64
 	HaloPositionColumns []int64
 
 	FormatMins, FormatMaxes      []int64
@@ -74,7 +74,7 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.String(&config.MemoDir, "MemoDir", "")
 
 	vars.Int(&config.HaloIDColumn, "HaloIDColumn", -1)
-	vars.Int(&config.HaloR200mColumn, "HaloR200mColumn", -1)
+	vars.Int(&config.HaloM200mColumn, "HaloM200mColumn", -1)
 	vars.Ints(&config.HaloPositionColumns, "HaloPositionColumns",
 		[]int64{-1, -1, -1})
 
@@ -154,7 +154,7 @@ func (config *GlobalConfig) validate() error {
 
 	if config.HaloIDColumn == -1 {
 		return fmt.Errorf("The 'HaloIDColumn' variable isn't set.")
-	} else if config.HaloR200mColumn == -1 {
+	} else if config.HaloM200mColumn == -1 {
 		return fmt.Errorf("The 'HaloR200mColumn' variable isn't set.")
 	} else if len(config.HaloPositionColumns) != 3 {
 		return fmt.Errorf("The 'HaloPositionColumns' variable must have " +

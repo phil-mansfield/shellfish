@@ -166,7 +166,15 @@ func (config *IDConfig) Run(
 	// Get IDs and snapshots
 
 	rawIds := getIDs(config.idStart, config.idEnd, config.ids)
-	
+
+	vars := &halo.VarColumns{
+		ID: int(gConfig.HaloIDColumn),
+		X: int(gConfig.HaloPositionColumns[0]),
+		Y: int(gConfig.HaloPositionColumns[1]),
+		Z: int(gConfig.HaloPositionColumns[2]),
+		M200m: int(gConfig.HaloM200mColumn),
+	}
+
 	var ids, snaps []int
 	switch config.idType {
 	case "halo-id":
@@ -178,7 +186,7 @@ func (config *IDConfig) Run(
 		for i := range snaps { snaps[i] = int(config.snap) }
 
 		var err error
-		ids, err = convertSortedIDs(rawIds, int(config.snap), e)
+		ids, err = convertSortedIDs(rawIds, int(config.snap), vars, e)
 		if err != nil { return nil, err }
 	default:
 		panic("Impossible")
@@ -192,7 +200,7 @@ func (config *IDConfig) Run(
 		panic("subhalo is not implemented")
 	case "overlap":
 		var err error
-		exclude, err = findOverlapSubs(ids, snaps, e, config)
+		exclude, err = findOverlapSubs(ids, snaps, vars, e, config)
 		if err != nil { return nil, err }
 	}
 
@@ -241,14 +249,14 @@ func getIDs(idStart, idEnd int64, ids []int64) []int {
 }
 
 func convertSortedIDs(
-	rawIDs []int, snap int, e *env.Environment,
+	rawIDs []int, snap int, vars *halo.VarColumns, e *env.Environment,
 ) ([]int, error) {
 	maxID := 0
 	for _, id := range rawIDs {
 		if id > maxID { maxID = id }
 	}
 
-	rids, err := memo.ReadSortedRockstarIDs(snap, maxID, e, halo.M200b)
+	rids, err := memo.ReadSortedRockstarIDs(snap, maxID, vars, e)
 	if err != nil { return nil, err }
 
 	ids := make([]int, len(rawIDs))
@@ -257,7 +265,8 @@ func convertSortedIDs(
 }
 
 func findOverlapSubs(
-	rawIDs, snaps []int, e *env.Environment, config *IDConfig,
+	rawIDs, snaps []int, vars *halo.VarColumns,
+	e *env.Environment, config *IDConfig,
 ) ([]bool, error) {
 	isSub := make([]bool, len(rawIDs))
 
@@ -276,12 +285,9 @@ func findOverlapSubs(
 		err := io.ReadSheetHeaderAt(e.ParticleCatalog(snap, 0), hd)
 		if err != nil { return nil, err }
 
-		rids, err := memo.ReadSortedRockstarIDs(snap, -1, e, halo.M200b)
+		rids, err := memo.ReadSortedRockstarIDs(snap, -1, vars, e)
 		if err != nil { return nil, err }
-		vals, err := memo.ReadRockstar(
-			snap, rids, e, halo.X, halo.Y, halo.Z, halo.Rad200b,
-		)
-		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
+		_, xs, ys, zs, _, rs, err := memo.ReadRockstar(snap, rids, vars, e)
 
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
 		g.Insert(xs, ys, zs)

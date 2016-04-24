@@ -3,15 +3,26 @@ package io
 import (
 	"encoding/binary"
 	"io"
+	"math"
 	"reflect"
 
 	"unsafe"
 )
 
+// Not threadsafe, obviously.
 type VectorBuffer interface {
 	Read(fname string) ([][3]float32, error)
 	Close()
 	IsOpen() bool
+	ReadHeader(fname string, out *Header) error
+}
+
+type Header struct {
+	Cosmo CosmologyHeader
+	N int64
+	Count int64
+	TotalWidth float64
+	Origin, Width [3]float32
 }
 
 func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {
@@ -78,4 +89,26 @@ func isSysOrder(end binary.ByteOrder) bool {
 		return binary.LittleEndian == end
 	}
 	return binary.BigEndian == end
+}
+
+type CellBounds struct {
+	Origin, Width [3]int
+}
+
+func (hd *Header) CellBounds(cells int) *CellBounds {
+	cb := &CellBounds{}
+	cellWidth := hd.TotalWidth / float64(cells)
+
+	for j := 0; j < 3; j++ {
+		cb.Origin[j] = int(
+			math.Floor(float64(hd.Origin[j]) / cellWidth),
+		)
+		cb.Width[j] = 1 + int(
+			math.Floor(float64(hd.Origin[j] + hd.Width[j]) / cellWidth),
+		)
+
+		cb.Width[j] -= cb.Origin[j]
+	}
+
+	return cb
 }

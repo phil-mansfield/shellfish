@@ -3,7 +3,6 @@ package io
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 	"os"
 	
 	"unsafe"
@@ -17,12 +16,14 @@ type GotetraBuffer struct {
 
 	sw, gw int
 
-	hd     GotetraHeader
+	hd     gotetraHeader
 }
 
 func NewGotetraBuffer(fname string) (VectorBuffer, error) {
-	hd := &GotetraHeader{}
-	err := ReadSheetHeaderAt(fname, hd)
+	hd := &gotetraHeader{}
+	f, _, err := loadSheetHeader(fname, hd)
+	if err != nil { return nil, err }
+	err = f.Close()
 	if err != nil { return nil, err }
 
 	sw, gw := hd.SegmentWidth, hd.GridWidth
@@ -75,7 +76,7 @@ The binary format used for phase sheets is as follows:
         sheet fragment.
     4 - ([][3]float32) Contiguous block of x, y, z coordinates. Given in Mpc.
  */
-type RawGotetraHeader struct {
+type rawGotetraHeader struct {
 	Cosmo                              CosmologyHeader
 	Count, CountWidth                  int64
 	SegmentWidth, GridWidth, GridCount int64
@@ -88,14 +89,16 @@ type RawGotetraHeader struct {
 	VelocityOrigin, VelocityWidth      [3]float32
 }
 
-func (raw *RawGotetraHeader) Postprocess(hd *GotetraHeader) {
-	hd.RawGotetraHeader = *raw
-	hd.Count = hd.CountWidth * hd.CountWidth * hd.CountWidth
-	hd.N = hd.SegmentWidth * hd.SegmentWidth * hd.SegmentWidth
+func (raw *rawGotetraHeader) postprocess(hd *Header) {
+	hd.Cosmo = raw.Cosmo
+	hd.Count = raw.Count
+	hd.N = raw.SegmentWidth * raw.SegmentWidth * raw.SegmentWidth
+	hd.TotalWidth = raw.TotalWidth
+	hd.Origin, hd.Width = raw.Origin, raw.Width
 }
 
-type GotetraHeader struct {
-	RawGotetraHeader
+type gotetraHeader struct {
+	rawGotetraHeader
 	N int64
 	guard struct{} // Prevents accidentally trying to write/read this type.
 }
@@ -113,8 +116,8 @@ func endianness(flag int32) binary.ByteOrder {
 	}
 }
 
-func readSheetHeaderAt(
-file string, hdBuf *GotetraHeader,
+func loadSheetHeader(
+	file string, hdBuf *gotetraHeader,
 ) (*os.File, binary.ByteOrder, error) {
 	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
 	if err != nil { return nil, binary.LittleEndian, err }
@@ -123,35 +126,36 @@ file string, hdBuf *GotetraHeader,
 	order := endianness(readInt32(f, binary.LittleEndian))
 
 	headerSize := readInt32(f, order)
-	if headerSize != int32(unsafe.Sizeof(RawGotetraHeader{})) {
+	if headerSize != int32(unsafe.Sizeof(rawGotetraHeader{})) {
 		return nil, binary.LittleEndian,
 		fmt.Errorf("Expected catalog.SheetHeader size of %d, found %d.",
-			unsafe.Sizeof(RawGotetraHeader{}), headerSize,
+			unsafe.Sizeof(rawGotetraHeader{}), headerSize,
 		)
 	}
 
 	_, err = f.Seek(4 + 4, 0)
 	if err != nil { return nil, binary.LittleEndian, err }
 
-	err = binary.Read(f, order, &hdBuf.RawGotetraHeader)
+	err = binary.Read(f, order, &hdBuf.rawGotetraHeader)
 	if err != nil { return nil, binary.LittleEndian, err }
 
-	hdBuf.RawGotetraHeader.Postprocess(hdBuf)
 	return f, order, nil
 }
 
-// ReadHeaderAt reads the header in the given file into the target Header.
-func ReadSheetHeaderAt(file string, hdBuf *GotetraHeader) error {
-	f, _, err := readSheetHeaderAt(file, hdBuf)
+func (buf *GotetraBuffer) ReadHeader(fname string, out *Header) error {
+	f, _, err := loadSheetHeader(fname, &buf.hd)
 	if err != nil { return err }
 	if err = f.Close(); err != nil { return err }
+
+	buf.hd.postprocess(out)
+
 	return nil
 }
 
 // ReadPositionsAt reads the velocities in the given file into a buffer.
 func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
-	h := &GotetraHeader{}
-	f, order, err := readSheetHeaderAt(file, h)
+	h := &gotetraHeader{}
+	f, order, err := loadSheetHeader(file, h)
 	if err != nil { return nil }
 
 	if h.GridCount != int64(len(xsBuf)) {
@@ -161,31 +165,9 @@ func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
 
 	// Go to block 4 in the file.
 	// The file pointer should already be here, but let's just be safe, okay?
-	f.Seek(int64(4 + 4 + int(unsafe.Sizeof(RawGotetraHeader{}))), 0)
+	f.Seek(int64(4 + 4 + int(unsafe.Sizeof(rawGotetraHeader{}))), 0)
 	if err := readVecAsByte(f, order, xsBuf); err != nil { return err }
 
 	if err := f.Close(); err != nil { return err }
 	return nil
-}
-
-type CellBounds struct {
-	Origin, Width [3]int
-}
-
-func (hd *GotetraHeader) CellBounds(cells int) *CellBounds {
-	cb := &CellBounds{}
-	cellWidth := hd.TotalWidth / float64(cells)
-
-	for j := 0; j < 3; j++ {
-		cb.Origin[j] = int(
-			math.Floor(float64(hd.Origin[j]) / cellWidth),
-		)
-		cb.Width[j] = 1 + int(
-			math.Floor(float64(hd.Origin[j] + hd.Width[j]) / cellWidth),
-		)
-
-		cb.Width[j] -= cb.Origin[j]
-	}
-
-	return cb
 }

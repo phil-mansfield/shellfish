@@ -23,15 +23,6 @@ type CatalogHeader struct {
 	TotalWidth float64 // Width of the sim's bounding box
 }
 
-// CosmologyHeader contains information describing the cosmological
-// context in which the simulation was run.
-type CosmologyHeader struct {
-	Z      float64
-	OmegaM float64
-	OmegaL float64
-	H100   float64
-}
-
 
 // gadgetHeader is the formatting for meta-information used by Gadget 2.
 type lGadget2Header struct {
@@ -45,16 +36,6 @@ type lGadget2Header struct {
 	FlagStellarAge, HashTabSize               int32
 
 	Padding [88]byte
-}
-
-// readInt32 returns single 32-bit interger from the given file using the
-// given endianness.
-func readInt32(r io.Reader, order binary.ByteOrder) int32 {
-	var n int32
-	if err := binary.Read(r, order, &n); err != nil {
-		panic(err)
-	}
-	return n
 }
 
 // Standardize returns a Header that corresponds to the source
@@ -76,114 +57,146 @@ func (gh *lGadget2Header) Standardize() *CatalogHeader {
 	return h
 }
 
-// WrapDistance takes a value and interprets it as a position defined within
-// a periodic domain of width h.BoxSize.
-func (h *lGadget2Header) WrapDistance(x float64) float64 {
-	if x < 0 {
-		return x + h.BoxSize
-	} else if x >= h.BoxSize {
-		return x - h.BoxSize
+func (gh *lGadget2Header) postprocess(xs [][3]float32, out *Header) {
+	// Assumes the catalog has already been checked for corruption.
+
+	out.N = int64(gh.NPart[1] + gh.NPart[0]<<32)
+	out.Count = int64(gh.NPartTotal[1] + gh.NPartTotal[0]<<32)
+	out.TotalWidth = gh.BoxSize
+
+	out.Cosmo.Z = gh.Redshift
+	out.Cosmo.OmegaM = gh.Omega0
+	out.Cosmo.OmegaL = gh.OmegaLambda
+	out.Cosmo.H100 = gh.HubbleParam
+
+	out.Origin, out.Width = boundingBox(xs, gh.BoxSize)
+}
+
+// readInt32 returns single 32-bit interger from the given file using the
+// given endianness.
+func readInt32(r io.Reader, order binary.ByteOrder) int32 {
+	var n int32
+	if err := binary.Read(r, order, &n); err != nil {
+		panic(err)
 	}
-	return x
+	return n
 }
 
 // ReadGadgetHeader reads a Gadget catalog and returns a standardized
 // gotetra containing its information.
-func ReadGadgetHeader(path string, order binary.ByteOrder) *CatalogHeader {
+func readLGadget2Header(
+	path string, order binary.ByteOrder, out *lGadget2Header,
+) error {
 	f, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
+	if err != nil { return err }
 	defer f.Close()
 
-	gh := &lGadget2Header{}
-
 	_ = readInt32(f, order)
-	binary.Read(f, binary.LittleEndian, gh)
-	h := gh.Standardize()
-
-	return h
+	err = binary.Read(f, binary.LittleEndian, out)
+	return err
 }
 
 // ReadGadgetParticlesAt reads a Gadget file and writes all the particles within
 // it to the given particle buffer, ps. floatBuf and intBuf are used internally.
 // The length of all three buffers must be equal to  the number of particles in
 // the catalog.
-//
-// This call signature, and espeically the Particle type are all a consequence
-// of soem shockingly poor early design decisions.
-func ReadGadgetParticlesAt(
-path string,
-order binary.ByteOrder,
-xs, vs [][3]float32,
-ids []int64,
-) {
+func readLGadget2Positions(
+	path string,
+	order binary.ByteOrder,
+	buf [][3]float32,
+) (out [][3]float32, err error) {
 	f, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
+	if err != nil { return nil, err }
 	defer f.Close()
+
 	gh := &lGadget2Header{}
 
 	_ = readInt32(f, order)
 	binary.Read(f, binary.LittleEndian, gh)
 	_ = readInt32(f, order)
-
-	h := gh.Standardize()
-
-	if int64(len(xs)) != h.Count {
-		panic(fmt.Sprintf(
-			"Incorrect length for xs buffer. Found %d, expected %d",
-			len(xs), h.Count,
-		))
-	} else if int64(len(vs)) != h.Count {
-		panic(fmt.Sprintf(
-			"Incorrect length for vs buffer. Found %d, expected %d",
-			len(vs), h.Count,
-		))
-	} else if int64(len(ids)) != h.Count {
-		panic(fmt.Sprintf(
-			"Incorrect length for int buffer. Found %d, expected %d",
-			len(ids), h.Count,
-		))
-	}
+	count := int(gh.NPartTotal[1] + gh.NPartTotal[0]<<32)
+	out = expandVectors(out[:0], count)
 
 	_ = readInt32(f, order)
-	readVecAsByte(f, order, xs)
-	_ = readInt32(f, order)
-	_ = readInt32(f, order)
-	readVecAsByte(f, order, vs)
-	_ = readInt32(f, order)
-	_ = readInt32(f, order)
-	readInt64AsByte(f, order, ids)
+	readVecAsByte(f, order, out)
 	//_ = readInt32(f, order)
 
-	fmt.Printf("%.3g\n", xs[:20])
-	fmt.Printf("%.3g\n", vs[:20])
-	fmt.Printf("%d\n", ids[:20])
-	fmt.Printf("%x\n", ids[:20])
-
-	rootA := float32(math.Sqrt(float64(gh.Time)))
-	for i := range xs {
+	tw := float32(gh.BoxSize)
+	for i := range out {
 		for j := 0; j < 3; j++ {
-			xs[i][j] = float32(gh.WrapDistance(float64(xs[i][j])))
-			vs[i][j] = vs[i][j] * rootA
+			if out[i][j] < 0 {
+				out[i][j] += tw
+			} else if out[i][j] >= tw {
+				out[i][j] -= tw
+			}
+
+			if math.IsNaN(float64(out[i][j])) ||
+				math.IsInf(float64(out[i][j]), 0) ||
+				out[i][j] < -tw || out[i][j] > 2*tw {
+
+				return nil, fmt.Errorf(
+					"Corruption detected in the file %s. I can't analyze it.",
+					path,
+				)
+			}
 		}
+	}
+
+	return out, nil
+}
+
+func expandVectors(vecs [][3]float32, n int) [][3]float32 {
+	switch {
+	case cap(vecs) <= n:
+		return vecs[:n]
+	case int(float64(cap(vecs)) * 1.5) > n:
+		return append(vecs[:cap(vecs)],
+			make([][3]float32, n - cap(vecs))...)
+	default:
+		return make([][3]float32, n)
 	}
 }
 
-// ReadGadget reads the gadget particle catalog located at the given location
-// and written with the given endianness. Its header and particle sequence
-// are returned in a standardized format.
-func ReadGadget(
-path string, order binary.ByteOrder,
-) (hd *CatalogHeader, xs, vs [][3]float32, ids []int64) {
+type LGadget2Buffer struct {
+	open bool
+	hd lGadget2Header
+	xs [][3]float32
+}
 
-	hd = ReadGadgetHeader(path, order)
-	xs = make([][3]float32,  hd.Count)
-	vs = make([][3]float32,  hd.Count)
-	ids = make([]int64, hd.Count)
+func NewLGadget2Buffer() VectorBuffer {
+	return &LGadget2Buffer{}
+}
 
-	ReadGadgetParticlesAt(path, order, xs, vs, ids)
-	return hd, xs, vs, ids
+func (buf *LGadget2Buffer) Read(fname string) ([][3]float32, error) {
+	if buf.open { panic("Buffer already open.") }
+	buf.open = true
+
+	var order binary.ByteOrder = binary.LittleEndian
+	if !isSysOrder(order) { order = binary.BigEndian }
+
+	var err error
+	buf.xs, err = readLGadget2Positions(fname, order, buf.xs)
+	return buf.xs, err
+}
+
+func (buf *LGadget2Buffer) Close() {
+	if !buf.open { panic("Buffer not open.") }
+	buf.open = false
+}
+
+func (buf *LGadget2Buffer) IsOpen() bool {
+	return buf.open
+}
+func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
+	var order binary.ByteOrder = binary.LittleEndian
+	if !isSysOrder(order) { order = binary.BigEndian }
+
+	err := readLGadget2Header(fname, order, &buf.hd)
+	if err != nil { return err }
+	_, err = buf.Read(fname)
+	if err != nil { return err }
+
+	buf.hd.postprocess(buf.xs, out)
+
+	return nil
 }

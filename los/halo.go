@@ -438,7 +438,7 @@ func inRange(x, r, low, width, tw float64) bool {
 
 // SheetIntersect returns true if the given halo and sheet intersect one another
 // and false otherwise.
-func (h *Halo) SheetIntersect(hd *io.GotetraHeader) bool {
+func (h *Halo) SheetIntersect(hd *io.Header) bool {
 	return inRange(h.origin[0], h.rMax, float64(hd.Origin[0]),
 		float64(hd.Width[0]), hd.TotalWidth) &&
 			inRange(h.origin[1], h.rMax, float64(hd.Origin[1]),

@@ -91,7 +91,8 @@ type rawGotetraHeader struct {
 
 func (raw *rawGotetraHeader) postprocess(hd *Header) {
 	hd.Cosmo = raw.Cosmo
-	hd.Count = raw.Count
+	hd.Count = raw.CountWidth*raw.CountWidth*raw.CountWidth
+	
 	hd.N = raw.SegmentWidth * raw.SegmentWidth * raw.SegmentWidth
 	hd.TotalWidth = raw.TotalWidth
 	hd.Origin, hd.Width = raw.Origin, raw.Width

@@ -54,13 +54,13 @@ RadialBins = 256
 # Spokes is the number of lines of sight per ring.
 Spokes = 256
 
-# Rings is the number of rungs per halo.
+# Rings is the number of rings per halo.
 Rings = 24
 
 # RMaxMult is the maximum radius of a line of sight as a multiplier of R200m.
 RMaxMult = 3.0
 
-# RMaxMult is the minimum radius of a line of sight as a multiplier of R200m.
+# RMinMult is the minimum radius of a line of sight as a multiplier of R200m.
 RMinMult = 0.5
 
 # KernelRadiusMult is the radius of the spherical kernels around every

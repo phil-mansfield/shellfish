@@ -31,6 +31,9 @@ var _ Mode = &StatsConfig{}
 func (config *StatsConfig) ExampleConfig() string {
 	return `[stats.config]
 
+
+# WARNING: Changing the settings in this file currently does nothing.
+
 #####################
 ## Required Fields ##
 #####################

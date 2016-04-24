@@ -241,9 +241,8 @@ Version = %s
 # Supported HaloTypes: Rockstar, nil
 # Supported TreeTypes: consistent-trees, nil
 #
-# Note the 'nil' type. This is useful if you  have a halo or tree format that
-# you don't want to bother implementing in Go and if you also don't plan on
-# using the 'id', 'tree', or 'coord' modes.
+# Note the 'nil' type. This allows you to use unsupported halo types by piping
+# coordinates directly into 'shellfish shell'.
 SnapshotType = LGadget-2
 HaloType = Rockstar
 TreeType = consistent-trees

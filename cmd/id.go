@@ -51,8 +51,8 @@ IDs = 10, 11, 12, 13, 14
 # Defaults to m200m if not set.
 # IDType = m200m
 
-# An alternative way fo specifying IDs is to select a start and end (inclusive)
-# ID value. If IDs is not set, both of these values must be set.
+# An alternative way of specifying IDs is to select start and end (inclusive)
+# ID values. If the IDs variable is not set, both of these values must be set.
 #
 # IDStart = 10
 # IDEnd = 15
@@ -65,9 +65,9 @@ IDs = 10, 11, 12, 13, 14
 # overlap - Halos which have an R200m shell that overlaps with a larger halo's
 #           R200m shell are removed
 #
-# ExclusionStrategy defaults to subhalo if not set.
+# ExclusionStrategy defaults to overlap if not set.
 #
-# ExclusionStrategy = subhalo
+# ExclusionStrategy = overlap
 
 # ExclusionRadiusMult is a multiplier of R200m applied for the sake of
 # determining exclusions.

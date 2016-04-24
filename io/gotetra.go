@@ -10,12 +10,9 @@ import (
 
 type GotetraBuffer struct {
 	open   bool
-
 	sheet  [][3]float32
 	out    [][3]float32
-
 	sw, gw int
-
 	hd     gotetraHeader
 }
 

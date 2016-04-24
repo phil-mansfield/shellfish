@@ -16,6 +16,15 @@ type VectorBuffer interface {
 	ReadHeader(fname string, out *Header) error
 }
 
+// CosmologyHeader contains information describing the cosmological
+// context in which the simulation was run.
+type CosmologyHeader struct {
+	Z      float64
+	OmegaM float64
+	OmegaL float64
+	H100   float64
+}
+
 type Header struct {
 	Cosmo CosmologyHeader
 	N int64
@@ -88,4 +97,33 @@ func isSysOrder(end binary.ByteOrder) bool {
 		return binary.LittleEndian == end
 	}
 	return binary.BigEndian == end
+}
+
+func boundingBox(
+	xs [][3]float32, totalWidth float64,
+) (origin, width [3]float32) {
+	// Assumes that the slice has already been checked for corruption.
+	origin = xs[0]
+	width = [3]float32{ 0, 0, 0 }
+	tw, tw2 := float32(totalWidth), float32(totalWidth) / 2
+
+	for i := range xs {
+		for j := 0; j < 3; j++ {
+			x, x0, w :=  xs[i][j], origin[j], width[j]
+
+			if x - x0 > tw2 {
+				x -= tw
+			} else if x0 - x > tw2 {
+				x += tw
+			}
+
+			if x < x0 {
+				origin[j] = x
+			} else if x - x0 > w {
+			 width[j] = x - x0
+			}
+		}
+	}
+
+	return origin, width
 }

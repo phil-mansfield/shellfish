@@ -316,7 +316,7 @@ type sphBuffers struct {
 }
 
 func loadSphereVecs(
-	h *los.Halo, sphBuf *sphBuffers, hd *io.GotetraHeader, c *ShellConfig,
+	h *los.Halo, sphBuf *sphBuffers, hd *io.Header, c *ShellConfig,
 ) {
 	workers := runtime.NumCPU()
 	runtime.GOMAXPROCS(workers)
@@ -349,14 +349,14 @@ func loadSphereVecs(
 func chanLoadSphereVec(
 	h *los.Halo, vecs [][3]float32, intr []bool,
 	offset, workers int,
-	hd *io.GotetraHeader, c *ShellConfig, sync chan bool,
+	hd *io.Header, c *ShellConfig, sync chan bool,
 ) {
 
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
 	sphVol := 4*math.Pi/3*rad*rad*rad
 
-	sf := c.subsampleFactor
-	pl := hd.TotalWidth / float64(hd.CountWidth / sf)
+	sf, tw := c.subsampleFactor, hd.TotalWidth
+	pl := (tw * tw * tw) / float64(hd.Count / sf*sf*sf)
 	pVol := pl*pl*pl
 	
 	rho := pVol / sphVol
@@ -389,7 +389,7 @@ func haloAnalysis(
 }
 
 func createHalos(
-	coords [][]float64, hd *io.GotetraHeader, c *ShellConfig, e *env.Environment,
+	coords [][]float64, hd *io.Header, c *ShellConfig, e *env.Environment,
 ) ([]*los.Halo, error) {
 	halos := make([]*los.Halo, len(coords[0]))
 	for i, _ := range coords[0] {
@@ -404,7 +404,8 @@ func createHalos(
 		rad := r*c.rKernelMult
 
 		sphVol := 4*math.Pi/3*rad*rad*rad
-		pl := hd.TotalWidth/float64(int(hd.CountWidth)/int(c.subsampleFactor))
+		sf, tw := c.subsampleFactor, hd.TotalWidth
+		pl := (tw * tw * tw) / float64(hd.Count / sf*sf*sf)
 		pVol := pl*pl*pl
 		rho := pVol / sphVol
 		defaultRho := rho * c.backgroundRhoMult
@@ -453,7 +454,7 @@ type profileRange struct {
 }
 
 func binIntersections(
-	hds []io.GotetraHeader, halos []*los.Halo,
+	hds []io.Header, halos []*los.Halo,
 ) [][]*los.Halo {
 	bins := make([][]*los.Halo, len(hds))
 	for i := range hds {

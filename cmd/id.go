@@ -280,9 +280,12 @@ func findOverlapSubs(
 	}
 
 	// Load each snapshot.
-	hd := &io.GotetraHeader{}
+	hd := &io.Header{}
+	buf, err := io.NewGotetraBuffer(e.ParticleCatalog(0, 0))
+	if err != nil { return nil, err }
+
 	for snap, group := range snapGroups {
-		err := io.ReadSheetHeaderAt(e.ParticleCatalog(snap, 0), hd)
+		err := buf.ReadHeader(e.ParticleCatalog(snap, 0), hd)
 		if err != nil { return nil, err }
 
 		rids, err := memo.ReadSortedRockstarIDs(snap, -1, vars, e)

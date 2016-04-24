@@ -9,7 +9,6 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 
 	"github.com/phil-mansfield/shellfish/cmd/halo"
-	"github.com/phil-mansfield/shellfish/io"
 )
 
 const finderCells = 150
@@ -280,14 +279,11 @@ func findOverlapSubs(
 	}
 
 	// Load each snapshot.
-	hd := &io.Header{}
-	buf, err := io.NewGotetraBuffer(e.ParticleCatalog(snaps[0], 0))
+	hds, _, err := memo.ReadHeaders(snaps[0], e)
 	if err != nil { return nil, err }
+	hd := hds[0]
 
 	for snap, group := range snapGroups {
-		err := buf.ReadHeader(e.ParticleCatalog(snap, 0), hd)
-		if err != nil { return nil, err }
-
 		rids, err := memo.ReadSortedRockstarIDs(snap, -1, vars, e)
 		if err != nil { return nil, err }
 		_, xs, ys, zs, _, rs, err := memo.ReadRockstar(snap, rids, vars, e)

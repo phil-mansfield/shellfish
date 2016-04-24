@@ -281,7 +281,7 @@ func findOverlapSubs(
 
 	// Load each snapshot.
 	hd := &io.Header{}
-	buf, err := io.NewGotetraBuffer(e.ParticleCatalog(0, 0))
+	buf, err := io.NewGotetraBuffer(e.ParticleCatalog(snaps[0], 0))
 	if err != nil { return nil, err }
 
 	for snap, group := range snapGroups {

@@ -159,23 +159,29 @@ func expandVectors(vecs [][3]float32, n int) [][3]float32 {
 
 type LGadget2Buffer struct {
 	open bool
+	order binary.ByteOrder
 	hd lGadget2Header
 	xs [][3]float32
 }
 
-func NewLGadget2Buffer() VectorBuffer {
-	return &LGadget2Buffer{}
+func NewLGadget2Buffer(orderFlag string) VectorBuffer {
+	var order binary.ByteOrder = binary.LittleEndian
+	switch orderFlag {
+	case "LittleEndian":
+	case "BigEndian":
+		order = binary.BigEndian
+	case "SystemOrder":
+		if !IsSysOrder(order) { order = binary.BigEndian }
+	}
+	return &LGadget2Buffer{ order: order }
 }
 
 func (buf *LGadget2Buffer) Read(fname string) ([][3]float32, error) {
 	if buf.open { panic("Buffer already open.") }
 	buf.open = true
 
-	var order binary.ByteOrder = binary.LittleEndian
-	if !isSysOrder(order) { order = binary.BigEndian }
-
 	var err error
-	buf.xs, err = readLGadget2Positions(fname, order, buf.xs)
+	buf.xs, err = readLGadget2Positions(fname, buf.order, buf.xs)
 	return buf.xs, err
 }
 
@@ -188,10 +194,9 @@ func (buf *LGadget2Buffer) IsOpen() bool {
 	return buf.open
 }
 func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
-	var order binary.ByteOrder = binary.LittleEndian
-	if !isSysOrder(order) { order = binary.BigEndian }
 
-	err := readLGadget2Header(fname, order, &buf.hd)
+
+	err := readLGadget2Header(fname, buf.order, &buf.hd)
 	if err != nil { return err }
 	_, err = buf.Read(fname)
 	if err != nil { return err }

@@ -44,7 +44,7 @@ func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {
 	_, err := rd.Read(byteBuf)
 	if err != nil { return err }
 
-	if !isSysOrder(end) {
+	if !IsSysOrder(end) {
 		for i := 0; i < bufLen * 3; i++ {
 			for j := 0; j < 2; j++ {
 				idx1, idx2 := i*4 + j, i*4 + 3 - j
@@ -70,7 +70,7 @@ func readInt64AsByte(rd io.Reader, end binary.ByteOrder, buf []int64) error {
 	_, err := rd.Read(byteBuf)
 	if err != nil { return err }
 
-	if !isSysOrder(end) {
+	if !IsSysOrder(end) {
 		for i := 0; i < bufLen; i++ {
 			for j := 0; j < 4; j++ {
 				idx1, idx2 := i*8 + j, i*8 + 7 - j
@@ -85,7 +85,7 @@ func readInt64AsByte(rd io.Reader, end binary.ByteOrder, buf []int64) error {
 	return nil
 }
 
-func isSysOrder(end binary.ByteOrder) bool {
+func IsSysOrder(end binary.ByteOrder) bool {
 	buf32 := []int32{1}
 
 	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf32))

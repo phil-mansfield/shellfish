@@ -136,6 +136,10 @@ func (config *GlobalConfig) validate() error {
 		"which I don't recognize.", config.HaloType)
 	}
 
+	config.HaloPositionUnits = strings.Join(
+		strings.Split(config.HaloPositionUnits, " "), "",
+	)
+
 	switch config.HaloPositionUnits {
 	case "Mpc/h":
 	case "":
@@ -144,6 +148,10 @@ func (config *GlobalConfig) validate() error {
 		return fmt.Errorf("The 'HaloPositionUnits variable is set to '%s', " +
 		"which I don't understand.", config.HaloPositionUnits)
 	}
+
+	config.HaloMassUnits = strings.Join(
+		strings.Split(config.HaloMassUnits, " "), "",
+	)
 
 	switch config.HaloMassUnits {
 	case "Msun/h":

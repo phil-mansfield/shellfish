@@ -4,8 +4,10 @@ package cmd
 
 import (
 	"fmt"
+	//"io/ioutil"
 	"os"
 	"strings"
+	"strconv"
 
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/version"
@@ -41,7 +43,8 @@ type Mode interface {
 type GlobalConfig struct {
 	Version                      string
 
-	SnapshotFormat, SnapshotType string
+	SnapshotFormat string
+	SnapshotType string
 	HaloDir, HaloType            string
 	TreeDir, TreeType            string
 	MemoDir                      string
@@ -50,6 +53,11 @@ type GlobalConfig struct {
 	HaloM200mColumn int64
 	HaloPositionColumns []int64
 
+	HaloPositionUnits string
+	HaloMassUnits string
+
+	SnapshotFormatMeanings       []string
+	ScaleFactorFile string
 	FormatMins, FormatMaxes      []int64
 	SnapMin, SnapMax             int64
 
@@ -78,6 +86,12 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Ints(&config.HaloPositionColumns, "HaloPositionColumns",
 		[]int64{-1, -1, -1})
 
+	vars.String(&config.HaloPositionUnits, "HaloPositionUnits", "")
+	vars.String(&config.HaloMassUnits, "HaloMassUnits", "Msun/h")
+
+	vars.Strings(&config.SnapshotFormatMeanings,
+		"SnapshotFormatMeanings", []string{})
+	vars.String(&config.ScaleFactorFile, "ScaleFactorFile", "")
 	vars.Ints(&config.FormatMins, "FormatMins", []int64{})
 	vars.Ints(&config.FormatMaxes, "FormatMaxes", []int64{})
 	vars.Int(&config.SnapMin, "SnapMin", -1)
@@ -114,12 +128,30 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	switch config.HaloType {
-	case "Rockstar", "nil":
+	case "Text", "nil":
 	case "":
-		return fmt.Errorf("The 'HaloType variable isn't set.'")
+		return fmt.Errorf("The 'HaloType' variable isn't set.'")
 	default:
 		return fmt.Errorf("The 'HaloType' variable is set to '%s', " +
 		"which I don't recognize.", config.HaloType)
+	}
+
+	switch config.HaloPositionUnits {
+	case "Mpc/h":
+	case "":
+		return fmt.Errorf("The 'HaloPositionUnits' variable isn't set.")
+	default:
+		return fmt.Errorf("The 'HaloPositionUnits variable is set to '%s', " +
+		"which I don't understand.", config.HaloPositionUnits)
+	}
+
+	switch config.HaloMassUnits {
+	case "Msun/h":
+	case "":
+		return fmt.Errorf("The 'HaloMassUnits' variable isn't set.")
+	default:
+		return fmt.Errorf("The 'HaloMassUnits variable is set to '%s', " +
+		"which I don't understand.", config.HaloPositionUnits)
 	}
 
 	switch config.TreeType {
@@ -168,10 +200,10 @@ func (config *GlobalConfig) validate() error {
 	switch config.Endianness {
 	case "":
 		return fmt.Errorf("The variable 'Endianness' was not set.")
-	case "LittleEndian", "BigEndian":
+	case "LittleEndian", "BigEndian", "SystemOrder":
 	default:
 		return fmt.Errorf("The variable 'Endianness' must be sent to " +
-		"either 'LittleEndian' or 'BigEndian'.")
+		"either 'SystemOrder', 'LittleEndian', or 'BigEndian'.")
 	}
 
 	return validateFormat(config)
@@ -212,12 +244,38 @@ func validateFormat(config *GlobalConfig) error {
 	if config.SnapMin > config.SnapMax {
 		return fmt.Errorf("'SnapMin' is larger than 'SnapMax'")
 	}
+	for i := range config.FormatMins {
+		if config.FormatMins[i] > config.FormatMaxes[i] {
+			return fmt.Errorf(
+				"'FormatMins'[%d] is larger than 'FormatMaxes'[%d]", i, i,
+			)
+		}
+	}
 
-	if len(config.FormatMins) + 1 != specifiers {
-		return fmt.Errorf("The length of 'FormatMins' is %d, but there " +
-		"are %d '%%' specifiers in the format string '%s'.",
-			len(config.FormatMins), specifiers, config.SnapshotFormat,
-		)
+	if specifiers != len(config.SnapshotFormatMeanings) {
+		return fmt.Errorf("The length of 'SnapshotFormatMeanings' is not " +
+			"equal to the number of specifiers in 'SnapshotFormat'.")
+	}
+
+	for i, meaning := range config.SnapshotFormatMeanings {
+		switch {
+		case meaning == "ScaleFactor":
+		case meaning == "Snapshot":
+		case meaning == "Block":
+		case len(meaning) > 5 && meaning[:5] == "Block":
+			ending := meaning[5:]
+			n, err := strconv.Atoi(ending)
+			if err != nil { goto nextCase }
+			if n < 0 || n >= len(config.FormatMaxes) {
+				return fmt.Errorf("'SnapshotFormatMeaning'[%d] specifies an " +
+					"invalid block range.", i)
+			}
+		nextCase:
+			fallthrough
+		default:
+			return fmt.Errorf("I don't understand '%s' from " +
+				"'SnapshotFormatMeaning'[%d]", meaning, i)
+		}
 	}
 
 	return nil
@@ -238,14 +296,17 @@ Version = %s
 # learned in about an hour: http://tour.golang.org/).
 #
 # Supported SnapshotTypes: LGadget-2, gotetra
-# Supported HaloTypes: Rockstar, nil
+# Supported HaloTypes: Text, nil
 # Supported TreeTypes: consistent-trees, nil
 #
 # Note the 'nil' type. This allows you to use unsupported halo types by piping
 # coordinates directly into 'shellfish shell'.
 SnapshotType = LGadget-2
-HaloType = Rockstar
+HaloType = Text
 TreeType = consistent-trees
+
+# HaloPositionUnits = Mpc/h
+# HaloMassUnits = Msun/h
 
 # These variables specify which columns of your halo catalogs correspond to
 # the variables that Shellfish needs to read.
@@ -255,33 +316,31 @@ HaloR200mColumn = -1
 # respectively.
 HaloPositionColumns = -1, -1, -1
 
-# These next five variables are neccessary evil due to the fact that there are
-# a wide range of directory structures used in different simulations. They will
-# be sufficient to specify the location of snapshots in the vast majority of
-# cases.
-# SnapshotFormat is a format string (a la printf()) which can be passed a
-# snapshot index and an arbitrary number of block IDs. For example, if your
-# directory structure was
-#
-# path/to/snapshots/
-#     snap000/
-#         file0_1.dat
-#         file0_2.dat
-#         file0_3.dat
-#         file1_1.dat
-#         file1_2.dat
-#         file1_3.dat
-#     snap001/
-#         ...
-#     snap250/
-#         ...
-#
-# It could be specified with the following values:
-SnapshotFormat = path/to/snapshots/snap%%03d/file%%d_%%d.dat
-FormatMins = 0, 1
-FormtMaxes = 1, 3
+# These next couple of variables are neccessarys evil due to the fact that there
+# are a wide range of directory structures used in different simulations. They
+# will be sufficient to specify the location of snapshots in the vast majority
+# of cases.
+
+# SnapshotFormat is a format string (a la printf()) which can be passed
+# snapshot indices, scale factors, and an arbitrary number of block IDs.
+SnapshotFormat = path/to/snapshots/snapdir_%%03d/snapshot_%%03d.%%d
+# Use one of [Snapshot | ScaleFactor | Block | Block<format_range> ] for each
+# element. ScaleFactor should correspond to a '%%s' specifier, and the others
+# should correspond to some type of integer specifier.
+SnapshotFormatMeanings = Snapshot, Snapshot, Block
+# FormatMins and FormatMaxes can be lists if your filenames use multiple
+# bock IDs.
+FormatMins = 0
+FormtMaxes = 511
 SnapMin = 0
-SnapMax = 250
+SnapMax = 100
+
+# ScaleFactorFile should only be set if one of the elements of
+# SnapshotFormatMeanings is 'ScaleFactor'. This should point to a file which
+# contains the scale factors of your files. A file like this can usually be
+# generated in a few lines of Python: look in doc/example_scale_factor_getter.py
+# for an example.
+# ScaleFactorFile = path/to/file.txt
 
 # Directory containing halo catalogs.
 HaloDir = path/to/halos/dir/
@@ -295,14 +354,12 @@ TreeDir = path/to/merger/tree/dir/
 MemoDir = path/to/memo/dir/
 
 # Endianness of any external binary files read by Shellfish. It should be set
-# to either LittleEndian or BigEndian (this will almost always correspond to the
-# endianness of your system). If you don't know the endianness of your system,
-# you can find it under the "Byte Order" field of the output of the 'lscpu'
-# command on unix systems.
+# to either SystemOrder, LittleEndian, BigEndian. This variable defaults to
+# SystemOrder.
 #
-# (Note that any _internal binaries_ written by Shellfish will ignore this
-# variable.)
-Endianness = LittleEndian
+# (Any _internal binaries_ written by Shellfish will ignore this variable and
+# will be written in little endian order.)
+Endianness = SystemOrder
 
 # ValidateFormats checks the the specified halo files and snapshot catalogs all
 # exist at startup before running any other code. Otherwise, these will be
@@ -321,3 +378,72 @@ func (config *GlobalConfig) Run(
 ) ([]string, error) {
 	panic("GlobalConfig.Run() should never be executed.")
 }
+
+/*
+func (config *GlobalConfig) SnapshotFileNames() ([][]string, error) {
+	cols := []interface{}{}
+	for i := range config.SnapshotFormatMeanings {
+		col, err := config.snapshotInputVars(i)
+		if err != nil { return nil, err }
+		cols = append(cols, col)
+	}
+	rows := interleave(cols)
+	out := []string{}
+	for _, row := range rows {
+		out = append(out, fmt.Sprintf(config.SnapshotFormat, row...))
+	}
+
+	return out, nil
+}
+
+func (config *GlobalConfig) snapshotInputVars(i int) ([]interface{}, error) {
+	meaning := config.SnapshotFormatMeanings[i]
+	switch {
+	case meaning == "ScaleFactor":
+		text, err := string(ioutil.ReadFile(config.ScaleFactorFile))
+		if err != nil { return nil, err }
+		lines := strings.Split(text, "\n")
+		for i := range lines { lines[i] = strings.Trim(lines[i], " \t") }
+		out := make([]interface{}, len(lines))
+		for i := range out { out[i] = lines[i] }
+
+	case meaning == "Snapshot":
+		out := []interface{}{}
+		for snap := config.SnapMin; snap <= config.SnapMax; snap++ {
+			out = append(out, snap)
+
+		}
+	case meaning == "Block":
+		out := []interface{}{}
+		for block := config.FormatMins[0];
+			block < config.FormatMaxes[0]; block++ {
+			out = append(out, block)
+		}
+
+	case len(meaning) > 5 && meaning[:5] == "Block":
+		ending := meaning[5:]
+		n, err := strconv.Atoi(ending)
+		if err != nil { return nil, err }
+
+		out := []interface{}{}
+		for block := config.FormatMins[n];
+			block < config.FormatMaxes[n]; block++ {
+			out = append(out, block)
+		}
+
+	}
+	panic("Impossible.")
+}
+
+func interleave(cols []interface{}) [][]interface{} {
+	out := make([][]interface{}, len(cols[0]))
+	for i := range out { out[i] = make([]interface{}, len(cols)) }
+
+	for y := range cols[0] {
+		for x := range cols {
+			cols[x][y] = out[y][x]
+		}
+	}
+	return out
+}
+*/

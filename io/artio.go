@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/phil-mansfield/shellfish/cosmo"
 	artio "github.com/phil-mansfield/go-artio"
 )
 
@@ -72,6 +73,17 @@ func (buf *ARTIOBuffer) Read(fileNumStr string) ([][3]float32, error) {
 		}
 	}
 
+	if !h.HasKey("hubble") {
+		return nil, fmt.Errorf("ARTIO header does not contain 'hubble field.'")
+	}
+	h100 := h.GetDouble(h.Key("hubble"))[0]
+	units := float32(h100) / (cosmo.MpcMks * 100)
+	for i := range buf.buf {
+		buf.buf[i][0] *= units
+		buf.buf[i][1] *= units
+		buf.buf[i][2] *= units
+	}
+
 	return buf.buf, nil
 }
 
@@ -108,7 +120,12 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 	if err != nil { return err }
 	defer h.Close()
 
-	out.TotalWidth = h.GetDouble(h.Key("box_size"))[0]
+	if !h.HasKey("hubble") {
+		return fmt.Errorf("ARTIO header does not contain 'hubble' field.")
+	}
+
+	out.TotalWidth = h.GetDouble(h.Key("box_size"))[0] *
+		(h.GetDouble(h.Key("hubble"))[0] / (cosmo.MpcMks * 100))
 	out.Origin, out.Width = boundingBox(xs, out.TotalWidth)
 	out.N = int64(len(xs))
 	out.Count = -1
@@ -121,14 +138,20 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 		return fmt.Errorf("ARTIO header does not contain 'OmegaM' field.")
 	case !h.HasKey("OmegaL"):
 		return fmt.Errorf("ARTIO header does not contain 'OmegaL' field.")
-	case !h.HasKey("hubble"):
-		return fmt.Errorf("ARTIO header does not contain 'hubble' field.")
+
 	}
 
 	out.Cosmo.Z = 1/h.GetDouble(h.Key("auni"))[0] - 1
 	out.Cosmo.OmegaM = h.GetDouble(h.Key("OmegaM"))[0]
 	out.Cosmo.OmegaL = h.GetDouble(h.Key("OmegaL"))[0]
 	out.Cosmo.H100 = h.GetDouble(h.Key("hubble"))[0]
+
+	if out.Cosmo.H100 > 10 {
+		panic("Oops, Phil misunderstood the meaning of an ARTIO field. " +
+		"Please submit an issue.")
+	}
+
+	panic("Debugging")
 
 	return nil
 }

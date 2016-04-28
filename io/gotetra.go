@@ -42,7 +42,7 @@ func NewGotetraBuffer(fname string) (VectorBuffer, error) {
 
 // Returned units are Msun/h.
 func calcUniformMass(count int64, tw float64, c CosmologyHeader) float32 {
-	rhoM0 := cosmo.RhoAverage(c.H100, c.OmegaM, c.OmegaL, 0)
+	rhoM0 := cosmo.RhoAverage(c.H100*100, c.OmegaM, c.OmegaL, 0)
 	mTot := (tw*tw*tw) * rhoM0
 	return float32(mTot / float64(count))
 }

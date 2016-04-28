@@ -10,7 +10,10 @@ import (
 
 const (
 	// emulateHubble is used for debugging purposes. I've never had access to
-	// a cosmological simulation, so this is necessary.
+	// a cosmological simulation, so this is necessary. Don't worry: even if
+	// this flag is set, an error will still be returned if called on invalid
+	// header contents. It will just occur late enough to allow for illustrative
+	// logging.
 	emulateHubble = true
 )
 

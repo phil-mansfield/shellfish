@@ -193,8 +193,8 @@ func (buf *LGadget2Buffer) Close() {
 func (buf *LGadget2Buffer) IsOpen() bool {
 	return buf.open
 }
-func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
 
+func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
 
 	err := readLGadget2Header(fname, buf.order, &buf.hd)
 	if err != nil { return err }

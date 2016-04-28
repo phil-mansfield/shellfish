@@ -4,15 +4,19 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
-	
+
+	"github.com/phil-mansfield/shellfish/cosmo"
+
 	"unsafe"
 )
 
 type GotetraBuffer struct {
 	open   bool
 	sheet  [][3]float32
-	out    [][3]float32
+	xs     [][3]float32
+	ms     []float32
 	sw, gw int
+	mass   float32
 	hd     gotetraHeader
 }
 
@@ -25,35 +29,48 @@ func NewGotetraBuffer(fname string) (VectorBuffer, error) {
 
 	sw, gw := hd.SegmentWidth, hd.GridWidth
 	buf := &GotetraBuffer{
-		sheet: make([][3]float32, gw * gw * gw),
-		out: make([][3]float32, sw * sw * sw),
+		sheet: make([][3]float32, gw*gw*gw),
+		xs: make([][3]float32, sw*sw*sw),
+		ms: make([]float32, sw*sw*sw),
 		open: false,
 		sw: int(sw), gw: int(gw),
+		mass: calcUniformMass(hd.Count, hd.TotalWidth, hd.Cosmo),
 	}
 
 	return buf, nil
 }
 
+// Returned units are Msun/h.
+func calcUniformMass(count int64, tw float64, c CosmologyHeader) float32 {
+	rhoM0 := cosmo.RhoAverage(c.H100, c.OmegaM, c.OmegaL, 0)
+	mTot := (tw*tw*tw) * rhoM0
+	return float32(mTot / float64(count))
+}
+
 func (buf *GotetraBuffer) IsOpen() bool { return buf.open }
 
-func (buf *GotetraBuffer) Read(fname string) ([][3]float32, error) {
+func (buf *GotetraBuffer) Read(fname string) ([][3]float32, []float32, error) {
 	if buf.open { panic("Buffer already open.") }
 	buf.open = true
 	
 	err := readSheetPositionsAt(fname, buf.sheet)
-	if err != nil { return nil, err }
-	
+	if err != nil { return nil, nil, err }
+
+	si := 0
 	for z := 0; z < buf.sw; z++ {
 		for y := 0; y < buf.sw; y++ {
 			for x := 0; x < buf.sw; x++ {
-				si := x + y*buf.sw + z*buf.sw*buf.sw
+				// if it ever matters, this calculation can be sped up
+				// significantly.
 				gi := x + y*buf.gw + z*buf.gw*buf.gw
-				buf.out[si] = buf.sheet[gi]
+				buf.xs[si] = buf.sheet[gi]
+				buf.ms[si] = buf.mass
+				si++
 			}
 		}
 	}
 	
-	return buf.out, nil
+	return buf.xs, buf.ms, nil
 }
 
 func (buf *GotetraBuffer) Close() {
@@ -88,7 +105,6 @@ type rawGotetraHeader struct {
 
 func (raw *rawGotetraHeader) postprocess(hd *Header) {
 	hd.Cosmo = raw.Cosmo
-	hd.Count = raw.CountWidth*raw.CountWidth*raw.CountWidth
 	
 	hd.N = raw.SegmentWidth * raw.SegmentWidth * raw.SegmentWidth
 	hd.TotalWidth = raw.TotalWidth

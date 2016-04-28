@@ -10,7 +10,8 @@ import (
 
 // Not threadsafe, obviously.
 type VectorBuffer interface {
-	Read(fname string) ([][3]float32, error)
+	// Positions in Mpc/h and masses in Msun/h.
+	Read(fname string) (xs [][3]float32,  ms []float32, err error)
 	Close()
 	IsOpen() bool
 	ReadHeader(fname string, out *Header) error
@@ -28,7 +29,6 @@ type CosmologyHeader struct {
 type Header struct {
 	Cosmo CosmologyHeader
 	N int64
-	Count int64
 	TotalWidth float64
 	Origin, Width [3]float32
 }

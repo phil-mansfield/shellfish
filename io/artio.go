@@ -8,10 +8,19 @@ import (
 	artio "github.com/phil-mansfield/go-artio"
 )
 
+const (
+	// emulateHubble is used for debugging purposes. I've never had access to
+	// a cosmological simulation, so this is necessary.
+	emulateHubble = true
+)
+
 type ARTIOBuffer struct {
 	open bool
-	buf [][3]float32
-	sBufs [][][3]float32
+	xsBuf [][3]float32
+	msBuf []float32
+	xsBufs [][][3]float32
+	msBufs [][]float32
+	sMasses []float32
 	fileset string
 }
 
@@ -22,10 +31,33 @@ func NewARTIOBuffer(fileset string) (VectorBuffer, error) {
 
 	numSpecies := h.GetInt(h.Key("num_particle_species"))[0]
 
-	return &ARTIOBuffer{ sBufs: make([][][3]float32, numSpecies) }, nil
+	sMasses := h.GetFloat(h.Key("particle_species_mass"))
+
+	var h100 float64
+	if !h.HasKey("hubble") {
+		if emulateHubble {
+			h100 = 0.7
+		} else {
+			return nil, fmt.Errorf(
+				"ARTIO header does not contain 'hubble' field.",
+			)
+		}
+	} else {
+		h100 = h.GetDouble(h.Key("hubble"))[0]
+	}
+	massUnit := (h100 / cosmo.MSunMks * 1000) *
+		h.GetDouble(h.Key("mass_unit"))[0]
+	for i := range sMasses { sMasses[i] *= float32(massUnit) }
+
+	return &ARTIOBuffer{
+		xsBufs: make([][][3]float32, numSpecies),
+		sMasses: sMasses,
+	}, nil
 }
 
-func (buf *ARTIOBuffer) Read(fileNumStr string) ([][3]float32, error) {
+func (buf *ARTIOBuffer) Read(
+	fileNumStr string,
+) ([][3]float32, []float32, error) {
 	// Open the file.
 	if buf.open { panic("Buffer already open.") }
 	buf.open = true
@@ -33,18 +65,18 @@ func (buf *ARTIOBuffer) Read(fileNumStr string) ([][3]float32, error) {
 	h, err := artio.FilesetOpen(
 		buf.fileset, artio.OpenHeader, artio.NullContext,
 	)
-	if err != nil { return nil, err  }
+	if err != nil { return nil, nil, err  }
 	defer h.Close()
 
 	// I'm not sure if this can just be replaced with putting an
 	// artio.OpenParticles flag in artio.FilesetOpen(). Someone with more
 	// knowledge about ARTIO than me should figure this out.
 	err = h.OpenParticles()
-	if err != nil { return nil, err}
+	if err != nil { return nil, nil, err}
 
 	// Flag N_BODY particles.
 	flags, err := nBodyFlags(h, buf.fileset)
-	if err != nil { return nil, err }
+	if err != nil { return nil, nil, err }
 
 	// Get SFC range.
 	fIdx, err := strconv.Atoi(fileNumStr)
@@ -57,34 +89,50 @@ func (buf *ARTIOBuffer) Read(fileNumStr string) ([][3]float32, error) {
 	for i := range sCounts {
 		if flags[i] {
 			totCount += sCounts[i]
-			expandVectors(buf.sBufs[i], int(sCounts[i]))
-			err = h.GetPositionsAt(i, sfcStart, sfcEnd, buf.sBufs[i])
-			if err != nil { return nil, err }
+			expandVectors(buf.xsBufs[i][:0], int(sCounts[i]))
+			err = h.GetPositionsAt(i, sfcStart, sfcEnd, buf.xsBufs[i])
+			if err != nil { return nil, nil, err }
+
+			expandScalars(buf.msBufs[i][:0], int(sCounts[i]))
+			for j := range buf.msBufs[i] {
+				buf.msBufs[i][j] = buf.sMasses[i]
+			}
 		}
 	}
 
 	// Copy to output buffer.
-	expandVectors(buf.buf, int(totCount))
+	expandVectors(buf.xsBuf, int(totCount))
+	expandScalars(buf.msBuf, int(totCount))
 	k := 0
-	for j := range buf.sBufs {
-		for i := range buf.sBufs[j] {
-			buf.buf[i] = buf.sBufs[j][k]
+	for j := range buf.xsBufs {
+		for i := range buf.xsBufs[j] {
+			buf.xsBuf[k] = buf.xsBufs[j][i]
+			buf.msBuf[k] = buf.msBufs[j][i]
 			k++
 		}
 	}
 
+	var h100 float32
 	if !h.HasKey("hubble") {
-		return nil, fmt.Errorf("ARTIO header does not contain 'hubble field.'")
-	}
-	h100 := h.GetDouble(h.Key("hubble"))[0]
-	units := float32(h100) / (cosmo.MpcMks * 100)
-	for i := range buf.buf {
-		buf.buf[i][0] *= units
-		buf.buf[i][1] *= units
-		buf.buf[i][2] *= units
+		if emulateHubble {
+			h100 = 0.7
+		} else {
+			return nil, nil, fmt.Errorf(
+				"ARTIO header does not contain 'hubble' field.",
+			)
+		}
+	} else {
+		h100 = float32(h.GetDouble(h.Key("hubble"))[0])
 	}
 
-	return buf.buf, nil
+	lengthUnit := float32(h100) / (cosmo.MpcMks * 100)
+	for i := range buf.xsBuf {
+		buf.xsBuf[i][0] *= lengthUnit
+		buf.xsBuf[i][1] *= lengthUnit
+		buf.xsBuf[i][2] *= lengthUnit
+	}
+
+	return buf.xsBuf, buf.msBuf, nil
 }
 
 func nBodyFlags(h artio.Fileset, fname string) ([]bool, error) {
@@ -112,7 +160,7 @@ func (buf *ARTIOBuffer) IsOpen() bool {
 }
 
 func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
-	xs, err := buf.Read(fileNumStr)
+	xs, _, err := buf.Read(fileNumStr)
 
 	h, err := artio.FilesetOpen(
 		buf.fileset, artio.OpenHeader, artio.NullContext,
@@ -120,17 +168,24 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 	if err != nil { return err }
 	defer h.Close()
 
+	var h100 float64
 	if !h.HasKey("hubble") {
-		return fmt.Errorf("ARTIO header does not contain 'hubble' field.")
+		if emulateHubble {
+			h100 = 0.7
+		} else {
+			return fmt.Errorf(
+				"ARTIO header does not contain 'hubble' field.",
+			)
+		}
+	} else {
+		h100 = h.GetDouble(h.Key("hubble"))[0]
 	}
 
 	out.TotalWidth = h.GetDouble(h.Key("box_size"))[0] *
-		(h.GetDouble(h.Key("hubble"))[0] / (cosmo.MpcMks * 100))
+		(h100 / (cosmo.MpcMks * 100))
 	out.Origin, out.Width = boundingBox(xs, out.TotalWidth)
 	out.N = int64(len(xs))
-	out.Count = -1
 
-	// I get the cosmology afterwards to aid in debugging.
 	switch {
 	case !h.HasKey("auni"):
 		return fmt.Errorf("ARTIO header does not contain 'auni' field.")
@@ -150,8 +205,6 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 		panic("Oops, Phil misunderstood the meaning of an ARTIO field. " +
 		"Please submit an issue.")
 	}
-
-	panic("Debugging")
 
 	return nil
 }

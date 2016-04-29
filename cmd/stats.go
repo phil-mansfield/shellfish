@@ -194,9 +194,6 @@ func (config *StatsConfig) Run(
 			rLows[i], rHighs[i] = shell.RadialRange(10 * 1000)
 		}
 
-		buf, err := io.NewGotetraBuffer(files[0])
-		if err != nil { return nil, err }
-
 		for i := range hds {
 			if len(intrBins[i]) == 0 { continue }
 

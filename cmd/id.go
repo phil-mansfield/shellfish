@@ -207,7 +207,7 @@ func (config *IDConfig) Run(
 	default:
 		panic("Impossible")
 	}
-	
+
 	// Tag subhalos, if neccessary.
 	exclude := make([]bool, len(ids))
 	switch config.exclusionStrategy {

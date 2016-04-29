@@ -141,7 +141,7 @@ type LGadget2Buffer struct {
 	ms []float32
 }
 
-func NewLGadget2Buffer(path, orderFlag string) VectorBuffer {
+func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
 	var order binary.ByteOrder = binary.LittleEndian
 	switch orderFlag {
 	case "LittleEndian":
@@ -152,7 +152,8 @@ func NewLGadget2Buffer(path, orderFlag string) VectorBuffer {
 	}
 
 	buf := &LGadget2Buffer{ order: order }
-	readLGadget2Header(path, order, &buf.hd)
+	err := readLGadget2Header(path, order, &buf.hd)
+	if err != nil { return nil, err }
 
 	c := CosmologyHeader{
 		Z: buf.hd.Redshift, OmegaM: buf.hd.Omega0,
@@ -161,7 +162,7 @@ func NewLGadget2Buffer(path, orderFlag string) VectorBuffer {
 	totCount := int64(buf.hd.NPartTotal[1] + buf.hd.NPartTotal[0]<<32)
 	buf.mass = calcUniformMass(totCount, buf.hd.BoxSize, c)
 
-	return buf
+	return buf, nil
 }
 
 func (buf *LGadget2Buffer) Read(fname string) ([][3]float32, []float32, error) {

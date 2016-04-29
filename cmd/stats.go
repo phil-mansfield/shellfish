@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"sort"
 
-	"github.com/phil-mansfield/shellfish/cosmo"
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/los/analyze"
@@ -194,12 +193,12 @@ func (config *StatsConfig) Run(
 		for i := range hds {
 			if len(intrBins[i]) == 0 { continue }
 
-			xs, err := buf.Read(files[i])
+			xs, ms, err := buf.Read(files[i])
 			if err != nil { return nil, err }
 
 			for j := range idxs {
 				masses[idxs[j]] += massContained(
-					&hds[i], xs, snapCoeffs[j],
+					&hds[i], xs, ms, snapCoeffs[j],
 					hBounds[j], rLows[j], rHighs[j],
 				)
 			}
@@ -322,7 +321,7 @@ func rangeSp(coeffs []float64) (rmin, rmax float64) {
 }
 
 func massContained(
-	hd *io.Header, xs [][3]float32, coeffs []float64,
+	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
 ) float64 {
 
@@ -331,12 +330,13 @@ func massContained(
 	outChan := make(chan float64, workers)
 	for i := int64(0); i < workers - 1; i++ {
 		go massContainedChan(
-			hd, xs, coeffs, sphere, rLow, rHigh, i, workers, outChan,
+			hd, xs, ms, coeffs, sphere, rLow, rHigh, i, workers, outChan,
 		)
 	}
 
 	massContainedChan(
-		hd, xs, coeffs, sphere, rLow, rHigh, workers - 1, workers, outChan,
+		hd, xs, ms, coeffs, sphere, rLow, rHigh,
+		workers - 1, workers, outChan,
 	)
 
 	sum := 0.0
@@ -348,16 +348,10 @@ func massContained(
 }
 
 func massContainedChan(
-	hd *io.Header, xs [][3]float32, coeffs []float64,
+	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
 	offset, workers int64, out chan float64,
 ) {
-	c := &hd.Cosmo
-	rhoM := cosmo.RhoAverage(c.H100 * 100, c.OmegaM, c.OmegaL, c.Z )
-
-	tw := hd.TotalWidth
-	dV := (tw*tw*tw) / float64(hd.Count) / math.Pow(1 + c.Z, 3)
-	ptMass := rhoM * dV
 	tw2 := float32(hd.TotalWidth) / 2
 
 	order := findOrder(coeffs)
@@ -376,7 +370,7 @@ func massContainedChan(
 
 		if r2 < low2 || ( r2 < high2 &&
 		shell.Contains(float64(x), float64(y), float64(z))) {
-			sum += ptMass
+			sum += float64(ms[i])
 		}
 	}
 	out <- sum

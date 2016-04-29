@@ -11,7 +11,7 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
-
+	"github.com/phil-mansfield/shellfish/cosmo"
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 
@@ -184,7 +184,7 @@ func (config *ShellConfig) Run(
 		out[i] = make([]float64, rowLength)
 	}
 
-	err = loop(ids, snaps, coords, config, e, out)
+	err = loop(ids, snaps, coords, config, gConfig, e, out)
 	if err != nil { return nil, err }
 
 	intNames := []string{"ID", "Snapshot"}
@@ -226,8 +226,8 @@ func transpose(in [][]float64) [][]float64 {
 }
 
 func loop(
-	ids, snaps []int, coords [][]float64,
-	c *ShellConfig, e *env.Environment, out [][]float64,
+	ids, snaps []int, coords [][]float64, c *ShellConfig,
+	gConfig *GlobalConfig, e *env.Environment, out [][]float64,
 ) error {
 	snapBins, idxBins := binBySnap(snaps, ids)
 	ringBuf := make([]analyze.RingBuffer, c.rings)
@@ -239,13 +239,19 @@ func loop(
 	}
 	sort.Ints(sortedSnaps)
 
-	hds, _, err := memo.ReadHeaders(sortedSnaps[0], e)
+	hds, files, err := memo.ReadHeaders(sortedSnaps[0], e)
 	if err != nil { return err }
+
+	buf, err := getVectorBuffer(
+		files[0], gConfig.SnapshotType, gConfig.Endianness,
+	)
+	minMass := buf.MinMass()
 
 	workers := runtime.NumCPU()
 	sphBuf := &sphBuffers{
 		intr: make([]bool, hds[0].N),
-		vecs: [][3]float32{},
+		xs: [][3]float32{},
+		ms: []float32{},
 		sphWorkers: make([]los.Halo, workers - 1),
 	}
 
@@ -265,11 +271,11 @@ func loop(
 
 		// Create Halos
 		runtime.GC()
-		halos, err := createHalos(snapCoords, &hds[0], c, e)
+		halos, err := createHalos(snapCoords, &hds[0], c, e, minMass)
 		if err != nil { return err }
 
-		if err = sphereLoop(snap, ids, idxs, halos, c, e, sphBuf, out);
-			err != nil { return err }
+		if err = sphereLoop(snap, ids, idxs, halos, c,
+			gConfig, e, sphBuf, out); err != nil { return err }
 
 		// Analysis
 		if err = haloAnalysis(halos, idxs, c, ringBuf, out); err != nil {
@@ -280,22 +286,28 @@ func loop(
 	return nil
 }
 
+// TODO: Refactor this monstrosity of a call signature.
+
 func sphereLoop(
 	snap int, IDs, ids []int, halos []*los.Halo, c *ShellConfig,
-	e *env.Environment, sphBuf *sphBuffers, out [][]float64,
+	gConfig *GlobalConfig, e *env.Environment, sphBuf *sphBuffers,
+	out [][]float64,
 ) error {
 	hds, files, err := memo.ReadHeaders(snap, e)
 	if err != nil { return err }
 	intrBins := binIntersections(hds, halos)
 
-	buf, err := io.NewGotetraBuffer(files[0])
+	//buf, err := io.NewGotetraBuffer(files[0])
+	buf, err := getVectorBuffer(
+		files[0], gConfig.SnapshotType, gConfig.Endianness,
+	)
 	if err != nil { return err }
 
 	for i := range hds {
 		runtime.GC()
 		if len(intrBins[i]) == 0 { continue }
 
-		sphBuf.vecs, err = buf.Read(files[i])
+		sphBuf.xs, sphBuf.ms, err = buf.Read(files[i])
 		if err != nil { return err }
 
 		binHs := intrBins[i]
@@ -309,9 +321,25 @@ func sphereLoop(
 	return nil
 }
 
+func getVectorBuffer(
+	fname, typeString, endiannessString string,
+) (io.VectorBuffer, error) {
+	switch typeString {
+	case "gotetra":
+		return io.NewGotetraBuffer(fname)
+	case "LGadget-2":
+		return io.NewLGadget2Buffer(fname, endiannessString)
+	case "ARTIO":
+		return io.NewARTIOBuffer(fname)
+	}
+	// Impossible, but worth doing anyway.
+	return nil, fmt.Errorf("SnapshotType '%s' not recognized.", typeString)
+}
+
 type sphBuffers struct {
 	sphWorkers []los.Halo
-	vecs [][3]float32
+	xs [][3]float32
+	ms []float32
 	intr []bool
 }
 
@@ -320,14 +348,15 @@ func loadSphereVecs(
 ) {
 	workers := runtime.NumCPU()
 	runtime.GOMAXPROCS(workers)
-	sphWorkers, vecs, intr := sphBuf.sphWorkers, sphBuf.vecs, sphBuf.intr
+	sphWorkers, xs := sphBuf.sphWorkers, sphBuf.xs
+	ms, intr := sphBuf.ms, sphBuf.intr
 	if len(sphWorkers) + 1 != workers { panic("impossible")}
 
 	sync := make(chan bool, workers)
 
-	h.Transform(vecs, hd.TotalWidth)
+	h.Transform(xs, hd.TotalWidth)
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
-	h.Intersect(vecs, rad, intr)
+	h.Intersect(xs, rad, intr)
 	numIntr := 0
 	for i := range intr {
 		if intr[i] { numIntr++ }
@@ -337,9 +366,9 @@ func loadSphereVecs(
 
 	for i := range sphWorkers {
 		wh := &sphBuf.sphWorkers[i]
-		go chanLoadSphereVec(wh, vecs, intr, i, workers, hd, c, sync)
+		go chanLoadSphereVec(wh, xs, ms, intr, i, workers, hd, c, sync)
 	}
-	chanLoadSphereVec(h, vecs, intr, workers - 1, workers, hd, c, sync)
+	chanLoadSphereVec(h, xs, ms, intr, workers - 1, workers, hd, c, sync)
 
 	for i := 0; i < workers; i++ { <-sync }
 
@@ -347,23 +376,23 @@ func loadSphereVecs(
 }
 
 func chanLoadSphereVec(
-	h *los.Halo, vecs [][3]float32, intr []bool,
-	offset, workers int,
+	h *los.Halo, xs [][3]float32, ms []float32,
+	intr []bool, offset, workers int,
 	hd *io.Header, c *ShellConfig, sync chan bool,
 ) {
-
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
 	sphVol := 4*math.Pi/3*rad*rad*rad
 
-	sf, tw := c.subsampleFactor, hd.TotalWidth
-	pl := (tw * tw * tw) / float64(hd.Count / sf*sf*sf)
-	pVol := pl*pl*pl
-	
-	rho := pVol / sphVol
+	rhoM := cosmo.RhoAverage(hd.Cosmo.H100 * 100,
+		hd.Cosmo.OmegaM, hd.Cosmo.OmegaL, hd.Cosmo.Z)
 
+	sf := c.subsampleFactor
 	skip := workers*int(sf*sf*sf)
 	for i := offset*int(sf*sf*sf); i < int(hd.N); i += skip {
-		if intr[i] { h.Insert(vecs[i], rad, rho) }
+		if intr[i] {
+			h.Insert(xs[i], rad, (float64(ms[i])*float64(sf*sf*sf) /
+				sphVol) / rhoM)
+		}
 	}
 
 	sync <- true
@@ -390,7 +419,9 @@ func haloAnalysis(
 
 func createHalos(
 	coords [][]float64, hd *io.Header, c *ShellConfig, e *env.Environment,
+	minMass float32,
 ) ([]*los.Halo, error) {
+
 	halos := make([]*los.Halo, len(coords[0]))
 	for i, _ := range coords[0] {
 		x, y, z, r := coords[0][i], coords[1][i], coords[2][i], coords[3][i]
@@ -404,10 +435,10 @@ func createHalos(
 		rad := r*c.rKernelMult
 
 		sphVol := 4*math.Pi/3*rad*rad*rad
-		sf, tw := c.subsampleFactor, hd.TotalWidth
-		pl := (tw * tw * tw) / float64(hd.Count / sf*sf*sf)
-		pVol := pl*pl*pl
-		rho := pVol / sphVol
+		sf := c.subsampleFactor
+		rhoM := cosmo.RhoAverage(hd.Cosmo.H100 * 100,
+			hd.Cosmo.OmegaM, hd.Cosmo.OmegaL, hd.Cosmo.Z)
+		rho := ((float64(minMass) * float64(sf*sf*sf)) / sphVol) / rhoM
 		defaultRho := rho * c.backgroundRhoMult
 
 		halo := &los.Halo{}

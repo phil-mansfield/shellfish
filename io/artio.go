@@ -2,7 +2,9 @@ package io
 
 import (
 	"fmt"
+	"math"
 	"strconv"
+	"strings"
 
 	"github.com/phil-mansfield/shellfish/cosmo"
 	artio "github.com/phil-mansfield/go-artio"
@@ -24,6 +26,7 @@ type ARTIOBuffer struct {
 	xsBufs [][][3]float32
 	msBufs [][]float32
 	sMasses []float32
+	sFlags []bool // True if the species is "N-BODY" type.
 	fileset string
 }
 
@@ -52,10 +55,33 @@ func NewARTIOBuffer(fileset string) (VectorBuffer, error) {
 		h.GetDouble(h.Key("mass_unit"))[0]
 	for i := range sMasses { sMasses[i] *= float32(massUnit) }
 
+	sFlags, err := nBodyFlags(h, fileset)
+	if err != nil { return nil, err }
+
 	return &ARTIOBuffer{
 		xsBufs: make([][][3]float32, numSpecies),
 		sMasses: sMasses,
+		sFlags: sFlags,
 	}, nil
+}
+
+func parseARTIOFilename(fname string) (fileset string, block int, err error) {
+	split := strings.LastIndex(fname, ".")
+	if split == -1 || split == len(fname) - 1 {
+		return "", -1, fmt.Errorf(
+			"'%s' is not the name of an ARTIO block.", fname,
+		)
+	}
+
+	fileset, blockString := fname[:split], fname[split+1:]
+	block, err = strconv.Atoi(blockString)
+	if err != nil {
+		return "", -1, fmt.Errorf(
+			"'%s' is not the name of an ARTIO block.", fname,
+		)
+	}
+
+	return fileset, block, nil
 }
 
 func (buf *ARTIOBuffer) Read(
@@ -150,7 +176,6 @@ func nBodyFlags(h artio.Fileset, fname string) ([]bool, error) {
 		"particle species of type 'N-BODY'.", fname)
 	}
 	return isNBody, nil
-
 }
 
 func (buf *ARTIOBuffer) Close() {
@@ -210,4 +235,14 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 	}
 
 	return nil
+}
+
+func (buf *ARTIOBuffer) MinMass() float32 {
+	minMass := float32(math.Inf(+1))
+	for i := range buf.sMasses {
+		if buf.sFlags[i] && buf.sMasses[i] < minMass {
+			minMass = buf.sMasses[i]
+		}
+	}
+	return minMass
 }

@@ -47,6 +47,8 @@ func calcUniformMass(count int64, tw float64, c CosmologyHeader) float32 {
 	return float32(mTot / float64(count))
 }
 
+func (buf *GotetraBuffer) MinMass() float32 { return buf.mass }
+
 func (buf *GotetraBuffer) IsOpen() bool { return buf.open }
 
 func (buf *GotetraBuffer) Read(fname string) ([][3]float32, []float32, error) {

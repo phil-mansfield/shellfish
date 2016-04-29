@@ -59,7 +59,7 @@ func readLGadget2Header(
 	return err
 }
 
-func readLGadget2Particles(
+func (buf *LGadget2Buffer) readLGadget2Particles(
 	path string,
 	order binary.ByteOrder,
 	xsBuf [][3]float32,
@@ -102,14 +102,8 @@ func readLGadget2Particles(
 		}
 	}
 
-	c := CosmologyHeader{
-		Z: gh.Redshift, OmegaM: gh.Omega0,
-		OmegaL: gh.OmegaLambda, H100: gh.HubbleParam,
-	}
-	totCount := int64(gh.NPartTotal[1] + gh.NPartTotal[0]<<32)
-	mass := calcUniformMass(totCount, gh.BoxSize, c)
 	msBuf = expandScalars(msBuf, count)
-	for i := range msBuf { msBuf[i] = mass }
+	for i := range msBuf { msBuf[i] = buf.mass }
 
 	return xsBuf, msBuf, nil
 }
@@ -142,11 +136,12 @@ type LGadget2Buffer struct {
 	open bool
 	order binary.ByteOrder
 	hd lGadget2Header
+	mass float32
 	xs [][3]float32
 	ms []float32
 }
 
-func NewLGadget2Buffer(orderFlag string) VectorBuffer {
+func NewLGadget2Buffer(path, orderFlag string) VectorBuffer {
 	var order binary.ByteOrder = binary.LittleEndian
 	switch orderFlag {
 	case "LittleEndian":
@@ -155,7 +150,18 @@ func NewLGadget2Buffer(orderFlag string) VectorBuffer {
 	case "SystemOrder":
 		if !IsSysOrder(order) { order = binary.BigEndian }
 	}
-	return &LGadget2Buffer{ order: order }
+
+	buf := &LGadget2Buffer{ order: order }
+	readLGadget2Header(path, order, &buf.hd)
+
+	c := CosmologyHeader{
+		Z: buf.hd.Redshift, OmegaM: buf.hd.Omega0,
+		OmegaL: buf.hd.OmegaLambda, H100: buf.hd.HubbleParam,
+	}
+	totCount := int64(buf.hd.NPartTotal[1] + buf.hd.NPartTotal[0]<<32)
+	buf.mass = calcUniformMass(totCount, buf.hd.BoxSize, c)
+
+	return buf
 }
 
 func (buf *LGadget2Buffer) Read(fname string) ([][3]float32, []float32, error) {
@@ -163,7 +169,7 @@ func (buf *LGadget2Buffer) Read(fname string) ([][3]float32, []float32, error) {
 	buf.open = true
 
 	var err error
-	buf.xs, buf.ms, err = readLGadget2Particles(
+	buf.xs, buf.ms, err = buf.readLGadget2Particles(
 		fname, buf.order, buf.xs, buf.ms,
 	)
 
@@ -190,3 +196,5 @@ func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
 
 	return nil
 }
+
+func (buf *LGadget2Buffer) MinMass() float32 { return buf.mass }

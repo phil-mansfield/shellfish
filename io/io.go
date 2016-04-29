@@ -15,6 +15,8 @@ type VectorBuffer interface {
 	Close()
 	IsOpen() bool
 	ReadHeader(fname string, out *Header) error
+	// The minimum mass of all the particles in the simulation.
+	MinMass() float32
 }
 
 // CosmologyHeader contains information describing the cosmological

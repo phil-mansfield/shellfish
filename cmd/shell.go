@@ -184,7 +184,12 @@ func (config *ShellConfig) Run(
 		out[i] = make([]float64, rowLength)
 	}
 
-	err = loop(ids, snaps, coords, config, gConfig, e, out)
+	buf, err := getVectorBuffer(
+		e.ParticleCatalog(snaps[0], 0),
+		gConfig.SnapshotType, gConfig.Endianness,
+	)
+
+	err = loop(ids, snaps, coords, config, buf, e, out)
 	if err != nil { return nil, err }
 
 	intNames := []string{"ID", "Snapshot"}
@@ -227,7 +232,7 @@ func transpose(in [][]float64) [][]float64 {
 
 func loop(
 	ids, snaps []int, coords [][]float64, c *ShellConfig,
-	gConfig *GlobalConfig, e *env.Environment, out [][]float64,
+	buf io.VectorBuffer, e *env.Environment, out [][]float64,
 ) error {
 	snapBins, idxBins := binBySnap(snaps, ids)
 	ringBuf := make([]analyze.RingBuffer, c.rings)
@@ -239,12 +244,8 @@ func loop(
 	}
 	sort.Ints(sortedSnaps)
 
-	hds, files, err := memo.ReadHeaders(sortedSnaps[0], e)
+	hds, _, err := memo.ReadHeaders(sortedSnaps[0], buf, e)
 	if err != nil { return err }
-
-	buf, err := getVectorBuffer(
-		files[0], gConfig.SnapshotType, gConfig.Endianness,
-	)
 	minMass := buf.MinMass()
 
 	workers := runtime.NumCPU()
@@ -275,7 +276,10 @@ func loop(
 		if err != nil { return err }
 
 		if err = sphereLoop(snap, ids, idxs, halos, c,
-			gConfig, e, sphBuf, out); err != nil { return err }
+			buf, e, sphBuf, out); err != nil {
+
+			return err
+		}
 
 		// Analysis
 		if err = haloAnalysis(halos, idxs, c, ringBuf, out); err != nil {
@@ -290,18 +294,12 @@ func loop(
 
 func sphereLoop(
 	snap int, IDs, ids []int, halos []*los.Halo, c *ShellConfig,
-	gConfig *GlobalConfig, e *env.Environment, sphBuf *sphBuffers,
+	buf io.VectorBuffer, e *env.Environment, sphBuf *sphBuffers,
 	out [][]float64,
 ) error {
-	hds, files, err := memo.ReadHeaders(snap, e)
+	hds, files, err := memo.ReadHeaders(snap, buf, e)
 	if err != nil { return err }
 	intrBins := binIntersections(hds, halos)
-
-	//buf, err := io.NewGotetraBuffer(files[0])
-	buf, err := getVectorBuffer(
-		files[0], gConfig.SnapshotType, gConfig.Endianness,
-	)
-	if err != nil { return err }
 
 	for i := range hds {
 		runtime.GC()
@@ -319,21 +317,6 @@ func sphereLoop(
 	}
 
 	return nil
-}
-
-func getVectorBuffer(
-	fname, typeString, endiannessString string,
-) (io.VectorBuffer, error) {
-	switch typeString {
-	case "gotetra":
-		return io.NewGotetraBuffer(fname)
-	case "LGadget-2":
-		return io.NewLGadget2Buffer(fname, endiannessString)
-	case "ARTIO":
-		return io.NewARTIOBuffer(fname)
-	}
-	// Impossible, but worth doing anyway.
-	return nil, fmt.Errorf("SnapshotType '%s' not recognized.", typeString)
 }
 
 type sphBuffers struct {

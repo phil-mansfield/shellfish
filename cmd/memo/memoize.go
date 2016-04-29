@@ -28,7 +28,8 @@ const (
 // values of some quantity in a particular snapshot. maxID is the number of
 // halos to return.
 func ReadSortedRockstarIDs(
-	snap, maxID int, vars *halo.VarColumns, e *env.Environment,
+	snap, maxID int, vars *halo.VarColumns,
+	buf io.VectorBuffer, e *env.Environment,
 ) ([]int, error) {
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
 	if _, err := os.Stat(dir); err != nil {
@@ -44,13 +45,13 @@ func ReadSortedRockstarIDs(
 	if maxID >= rockstarShortMemoNum || maxID == -1 {
 		file := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
 		ids, _, _, _, ms, _, err = readRockstar(
-			file, -1, snap, nil, vars, e,
+			file, -1, snap, nil, vars, buf, e,
 		)
 		if err != nil { return nil, err }
 	} else {
 		file := path.Join(dir, fmt.Sprintf(rockstarShortMemoFile, snap))
 		ids, _, _, _, ms, _, err = readRockstar(
-			file, rockstarShortMemoNum, snap, nil, vars, e,
+			file, rockstarShortMemoNum, snap, nil, vars, buf, e,
 		)
 		if err != nil { return nil, err }
 	}
@@ -87,7 +88,8 @@ func sortRockstar(ids []int, ms []float64) {
 // This function does fairly large heap allocations even when it doesn't need
 // to. Consider passing it a buffer.
 func ReadRockstar(
-	snap int, ids []int, vars *halo.VarColumns, e *env.Environment,
+	snap int, ids []int, vars *halo.VarColumns,
+	buf io.VectorBuffer, e *env.Environment,
 ) (outIDs []int, xs, ys, zs, ms, rs []float64, err error) {
 	// Find binFile.
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
@@ -102,21 +104,21 @@ func ReadRockstar(
 	// This wastes a read the first time it's called. You need to decide if you
 	// care. (Answer: probably.)
 	outIDs, xs, ys, zs, ms, rs, err = readRockstar(
-		shortBinFile, rockstarShortMemoNum, snap, ids, vars, e,
+		shortBinFile, rockstarShortMemoNum, snap, ids, vars, buf, e,
 	)
 	// TODO: Fix error handling here.
 	if err == nil { return outIDs, xs, ys, zs, ms, rs, err }
 	outIDs, xs, ys, zs, ms, rs, err = readRockstar(
-		binFile, -1, snap, ids, vars, e,
+		binFile, -1, snap, ids, vars, buf, e,
 	)
 	return outIDs, xs, ys, zs, ms, rs, nil
 }
 
 func readRockstar(
 	binFile string, n, snap int, ids []int,
-	vars *halo.VarColumns, e *env.Environment,
+	vars *halo.VarColumns, buf io.VectorBuffer, e *env.Environment,
 ) (outIDs []int, xs, ys, zs, ms, rs []float64, err error) {
-	hds, _, err := ReadHeaders(snap, e)
+	hds, _, err := ReadHeaders(snap, buf, e)
 	if err != nil { return nil, nil, nil, nil, nil, nil, err }
 	hd := &hds[0]
 
@@ -178,13 +180,12 @@ func (f IntFinder) Find(rid int) (int, bool) {
 	return line, ok
 }
 
-func readHeadersFromSheet(
-	snap int, e *env.Environment,
+func readUnmemoizedHeaders(
+	snap int, buf io.VectorBuffer, e *env.Environment,
 ) ([]io.Header, []string, error) {
 	files := make([]string, e.Blocks())
 	hds := make([]io.Header, e.Blocks())
-	buf, err := io.NewGotetraBuffer(e.ParticleCatalog(snap, 0))
-	if err != nil { return nil, nil , err }
+
 	for i := range files {
 		files[i] = e.ParticleCatalog(snap, i)
 		err := buf.ReadHeader(files[i], &hds[i])
@@ -196,14 +197,14 @@ func readHeadersFromSheet(
 // ReadHeaders returns all the segment headers and segment file names for all
 // the segments at a given snapshot.
 func ReadHeaders(
-	snap int, e *env.Environment,
+	snap int, buf io.VectorBuffer, e *env.Environment,
 ) ([]io.Header, []string, error) {
 	if _, err := os.Stat(e.MemoDir); err != nil { return nil, nil, err }
 	memoFile := path.Join(e.MemoDir, fmt.Sprintf(headerMemoFile, snap))
 
 	if _, err := os.Stat(memoFile); err != nil {
 		// File not written yet.
-		hds, files, err := readHeadersFromSheet(snap, e)
+		hds, files, err := readUnmemoizedHeaders(snap, buf, e)
 		if err != nil { return nil, nil, err }
 		
         f, err := os.Create(memoFile)

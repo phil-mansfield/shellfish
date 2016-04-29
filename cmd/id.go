@@ -7,8 +7,8 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
-
 	"github.com/phil-mansfield/shellfish/cmd/halo"
+	"github.com/phil-mansfield/shellfish/io"
 )
 
 const finderCells = 150
@@ -174,18 +174,35 @@ func (config *IDConfig) Run(
 		M200m: int(gConfig.HaloM200mColumn),
 	}
 
-	var ids, snaps []int
+	var (
+		ids, snaps []int
+		buf io.VectorBuffer
+	)
+
 	switch config.idType {
 	case "halo-id":
 		snaps = make([]int, len(rawIds))
 		for i := range snaps { snaps[i] = int(config.snap) }
 		ids = rawIds
+
+		var err error
+		buf, err = getVectorBuffer(
+			e.ParticleCatalog(snaps[0], 0),
+			gConfig.SnapshotType, gConfig.Endianness,
+		)
+		if err != nil { return nil, err }
 	case "m200m":
 		snaps = make([]int, len(rawIds))
 		for i := range snaps { snaps[i] = int(config.snap) }
 
 		var err error
-		ids, err = convertSortedIDs(rawIds, int(config.snap), vars, e)
+		buf, err = getVectorBuffer(
+			e.ParticleCatalog(snaps[0], 0),
+			gConfig.SnapshotType, gConfig.Endianness,
+		)
+		if err != nil { return nil, err }
+
+		ids, err = convertSortedIDs(rawIds, int(config.snap), vars, buf, e)
 		if err != nil { return nil, err }
 	default:
 		panic("Impossible")
@@ -199,7 +216,7 @@ func (config *IDConfig) Run(
 		panic("subhalo is not implemented")
 	case "overlap":
 		var err error
-		exclude, err = findOverlapSubs(ids, snaps, vars, e, config)
+		exclude, err = findOverlapSubs(ids, snaps, vars, buf, e, config)
 		if err != nil { return nil, err }
 	}
 
@@ -248,14 +265,15 @@ func getIDs(idStart, idEnd int64, ids []int64) []int {
 }
 
 func convertSortedIDs(
-	rawIDs []int, snap int, vars *halo.VarColumns, e *env.Environment,
+	rawIDs []int, snap int, vars *halo.VarColumns,
+	buf io.VectorBuffer, e *env.Environment,
 ) ([]int, error) {
 	maxID := 0
 	for _, id := range rawIDs {
 		if id > maxID { maxID = id }
 	}
 
-	rids, err := memo.ReadSortedRockstarIDs(snap, maxID, vars, e)
+	rids, err := memo.ReadSortedRockstarIDs(snap, maxID, vars, buf, e)
 	if err != nil { return nil, err }
 
 	ids := make([]int, len(rawIDs))
@@ -265,7 +283,7 @@ func convertSortedIDs(
 
 func findOverlapSubs(
 	rawIDs, snaps []int, vars *halo.VarColumns,
-	e *env.Environment, config *IDConfig,
+	buf io.VectorBuffer, e *env.Environment, config *IDConfig,
 ) ([]bool, error) {
 	isSub := make([]bool, len(rawIDs))
 
@@ -279,14 +297,14 @@ func findOverlapSubs(
 	}
 
 	// Load each snapshot.
-	hds, _, err := memo.ReadHeaders(snaps[0], e)
+	hds, _, err := memo.ReadHeaders(snaps[0], buf, e)
 	if err != nil { return nil, err }
 	hd := hds[0]
 
 	for snap, group := range snapGroups {
-		rids, err := memo.ReadSortedRockstarIDs(snap, -1, vars, e)
+		rids, err := memo.ReadSortedRockstarIDs(snap, -1, vars, buf, e)
 		if err != nil { return nil, err }
-		_, xs, ys, zs, _, rs, err := memo.ReadRockstar(snap, rids, vars, e)
+		_, xs, ys, zs, _, rs, err := memo.ReadRockstar(snap, rids, vars, buf, e)
 
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
 		g.Insert(xs, ys, zs)

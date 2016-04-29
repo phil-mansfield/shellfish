@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/cmd/halo"
+	"github.com/phil-mansfield/shellfish/io"
 )
 
 type CoordConfig struct {
@@ -26,6 +29,8 @@ func (config *CoordConfig) Run(
 	if err != nil { return nil, err }
 	ids, snaps := intCols[0], intCols[1]
 
+	if len(ids) == 0 { return nil, fmt.Errorf("In input IDs.") }
+
 	vars := &halo.VarColumns{
 		ID: int(gConfig.HaloIDColumn),
 		X: int(gConfig.HaloPositionColumns[0]),
@@ -34,7 +39,13 @@ func (config *CoordConfig) Run(
 		M200m: int(gConfig.HaloM200mColumn),
 	}
 
-	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, vars, e)
+	buf, err := getVectorBuffer(
+		e.ParticleCatalog(snaps[0], 0),
+		gConfig.SnapshotType, gConfig.Endianness,
+	)
+	if err != nil { return nil, err }
+
+	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, vars, buf, e)
 	if err != nil { return nil, err }
 
 	lines := catalog.FormatCols(
@@ -50,7 +61,8 @@ func (config *CoordConfig) Run(
 }
 
 func readHaloCoords(
-	ids, snaps []int, vars *halo.VarColumns, e *env.Environment,
+	ids, snaps []int, vars *halo.VarColumns,
+	buf io.VectorBuffer, e *env.Environment,
 ) (xs, ys, zs, rs []float64, err error) {
 	snapBins, idxBins := binBySnap(snaps, ids)
 
@@ -65,7 +77,7 @@ func readHaloCoords(
 		idxs := idxBins[snap]
 
 		_, sxs, sys, szs, _, srs, err := memo.ReadRockstar(
-			snap, snapIDs, vars, e,
+			snap, snapIDs, vars, buf, e,
 		)
 
 		if err != nil { return nil, nil, nil, nil, err }

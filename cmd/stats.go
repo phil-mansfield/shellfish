@@ -152,6 +152,13 @@ func (config *StatsConfig) Run(
 	}
 	sort.Ints(sortedSnaps)
 
+
+	buf, err := getVectorBuffer(
+		e.ParticleCatalog(snaps[0], 0),
+		gConfig.SnapshotType, gConfig.Endianness,
+	)
+	if err != nil { return nil, err }
+
 	for _, snap := range sortedSnaps {
 		if snap == -1 { continue }
 		snapCoeffs := coeffBins[snap]
@@ -173,7 +180,7 @@ func (config *StatsConfig) Run(
 			rmins[idxs[j]], rmaxes[idxs[j]] = rangeSp(snapCoeffs[j])
 		}
 
-		hds, files, err := memo.ReadHeaders(snap, e)
+		hds, files, err := memo.ReadHeaders(snap, buf, e)
 		if err != nil { return nil, err }
 		hBounds, err := boundingSpheres(snapCoords, &hds[0], config, e)
 		if err != nil { return nil, err }

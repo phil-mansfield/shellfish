@@ -424,7 +424,7 @@ func (config *GlobalConfig) snapshotInputVars(i int) ([]interface{}, error) {
 	case meaning == "Block":
 		out := []interface{}{}
 		for block := config.FormatMins[0];
-			block < config.FormatMaxes[0]; block++ {
+		block < config.FormatMaxes[0]; block++ {
 			out = append(out, block)
 		}
 
@@ -435,7 +435,7 @@ func (config *GlobalConfig) snapshotInputVars(i int) ([]interface{}, error) {
 
 		out := []interface{}{}
 		for block := config.FormatMins[n];
-			block < config.FormatMaxes[n]; block++ {
+		block < config.FormatMaxes[n]; block++ {
 			out = append(out, block)
 		}
 

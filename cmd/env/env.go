@@ -1,5 +1,13 @@
 package env
 
+import (
+	"fmt"
+)
+
+///////////
+// Types //
+///////////
+
 type (
 	CatalogType int
 	HaloType int
@@ -81,4 +89,60 @@ func (h *Halos) InitNilHalo(dir string, snapMin, snapMax int64) error {
 	h.TreeType = NilTree
 
 	return nil
+}
+
+//////////////////////////////////
+// Format Argument Manipulation //
+//////////////////////////////////
+
+// interleave is a bit hard to explain. It will be easier to understand
+// what it's supposed to do by reading the source than it would be to read prose
+// trying to explain it precisely.
+func interleave(cols [][]interface{}, snapAligned []bool) [][][]interface{} {
+	// Check that all snap-aligned columns are same length.
+	snaps, nonSnaps := -1, 1
+	for i := range cols {
+		if snapAligned[i] {
+			if snaps == -1 {
+				snaps= len(cols[i])
+			} else if snaps != len(cols[i]) {
+				// This is safe to think of as an internal error.
+				panic(fmt.Sprintf("Column %d is snapAligned, but has height " +
+					"%d instead of %d.", i, len(cols[i]), snaps))
+			}
+		} else {
+			nonSnaps *= len(cols[i])
+		}
+	}
+
+	// This is safe to think of as an internal error.
+	if snaps == 1 { panic("All values in snapAligned are false.") }
+
+	out := make([][][]interface{}, snaps)
+
+	for snap := 0; snap < snaps; snap++ {
+		snapRows := make([][]interface{}, nonSnaps)
+		for i := range snapRows { snapRows[i] = make([]interface{}, len(cols)) }
+
+		divSize, modSize := 1, 1
+
+		for col := range cols {
+			if snapAligned[col] {
+				for row := range snapRows {
+					snapRows[row][col] = cols[col][snap]
+				}
+			} else {
+				divSize *= modSize
+				modSize = len(cols[col])
+
+				for row := range snapRows {
+					snapRows[row][col] = cols[col][(row / divSize) % modSize]
+				}
+			}
+		}
+
+		out = append(out, snapRows)
+	}
+
+	return out
 }

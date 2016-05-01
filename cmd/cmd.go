@@ -41,29 +41,29 @@ type Mode interface {
 // GlobalConfig is a config file used by every mode. It contains information on
 // the directories that various files are stored in.
 type GlobalConfig struct {
-	Version                 string
+	Version                string
 
-	SnapshotFormat          string
-	SnapshotType            string
-	HaloDir, HaloType       string
-	TreeDir, TreeType       string
-	MemoDir                 string
+	SnapshotFormat         string
+	SnapshotType           string
+	HaloDir, HaloType      string
+	TreeDir, TreeType      string
+	MemoDir                string
 
-	HaloIDColumn            int64
-	HaloM200mColumn         int64
-	HaloPositionColumns     []int64
+	HaloIDColumn           int64
+	HaloM200mColumn        int64
+	HaloPositionColumns    []int64
 
-	HaloPositionUnits       string
-	HaloMassUnits           string
+	HaloPositionUnits      string
+	HaloMassUnits          string
 
-	SnapshotFormatMeanings  []string
-	ScaleFactorFile         string
-	FormatMins, FormatMaxes []int64
-	SnapMin, SnapMax        int64
+	SnapshotFormatMeanings []string
+	ScaleFactorFile        string
+	BlockMins, BlockMaxes  []int64
+	SnapMin, SnapMax       int64
 
-	Endianness              string
+	Endianness             string
 
-	ValidateFormats         bool
+	ValidateFormats        bool
 }
 
 var _ Mode = &GlobalConfig{}
@@ -92,8 +92,8 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Strings(&config.SnapshotFormatMeanings,
 		"SnapshotFormatMeanings", []string{})
 	vars.String(&config.ScaleFactorFile, "ScaleFactorFile", "")
-	vars.Ints(&config.FormatMins, "FormatMins", []int64{})
-	vars.Ints(&config.FormatMaxes, "FormatMaxes", []int64{})
+	vars.Ints(&config.BlockMins, "BlockMins", []int64{})
+	vars.Ints(&config.BlockMaxes, "BlockMaxes", []int64{})
 	vars.Int(&config.SnapMin, "SnapMin", -1)
 	vars.Int(&config.SnapMax, "SnapMax", -1)
 	vars.String(&config.Endianness, "Endianness", "")
@@ -237,7 +237,7 @@ func validateFormat(config *GlobalConfig) error {
 	// This is wrong because of "%%" specifiers.
 	specifiers := strings.Count(config.SnapshotFormat, "%")
 
-	if len(config.FormatMins) != len(config.FormatMaxes) {
+	if len(config.BlockMins) != len(config.BlockMaxes) {
 		return fmt.Errorf("The lengths of the variables 'FormatMins' and" +
 			"'FormatMaxes' are not equal")
 	}
@@ -252,8 +252,8 @@ func validateFormat(config *GlobalConfig) error {
 	if config.SnapMin > config.SnapMax {
 		return fmt.Errorf("'SnapMin' is larger than 'SnapMax'")
 	}
-	for i := range config.FormatMins {
-		if config.FormatMins[i] > config.FormatMaxes[i] {
+	for i := range config.BlockMins {
+		if config.BlockMins[i] > config.BlockMaxes[i] {
 			return fmt.Errorf(
 				"'FormatMins'[%d] is larger than 'FormatMaxes'[%d]", i, i,
 			)
@@ -274,7 +274,7 @@ func validateFormat(config *GlobalConfig) error {
 			ending := meaning[5:]
 			n, err := strconv.Atoi(ending)
 			if err != nil { goto nextCase }
-			if n < 0 || n >= len(config.FormatMaxes) {
+			if n < 0 || n >= len(config.BlockMaxes) {
 				return fmt.Errorf("'SnapshotFormatMeaning'[%d] specifies an " +
 					"invalid block range.", i)
 			}
@@ -336,10 +336,10 @@ SnapshotFormat = path/to/snapshots/snapdir_%%03d/snapshot_%%03d.%%d
 # element. ScaleFactor should correspond to a '%%s' specifier, and the others
 # should correspond to some type of integer specifier.
 SnapshotFormatMeanings = Snapshot, Snapshot, Block
-# FormatMins and FormatMaxes can be lists if your filenames use multiple
+# BlockMins and FormatBlock can be lists if your filenames use multiple
 # bock IDs.
-FormatMins = 0
-FormtMaxes = 511
+BlockMins = 0
+BlockMaxes = 511
 SnapMin = 0
 SnapMax = 100
 

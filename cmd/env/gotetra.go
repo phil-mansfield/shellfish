@@ -6,10 +6,10 @@ import (
 
 func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
 
-	if len(info.FormatMins) != 3 {
+	if len(info.BlockMins) != 3 {
 		return fmt.Errorf(
 			"'BlockMins' had %d elements, but 3 are required for " +
-			"gotetra catalogs.", len(info.FormatMins),
+			"gotetra catalogs.", len(info.BlockMins),
 		)
 	}
 

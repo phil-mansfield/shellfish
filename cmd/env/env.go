@@ -40,13 +40,13 @@ type Environment struct {
 //////////////////
 
 type ParticleInfo struct {
-	SnapshotFormat          string
-	MemoDir                 string
+	SnapshotFormat         string
+	MemoDir                string
 
-	SnapshotFormatMeanings  []string
-	ScaleFactorFile         string
-	FormatMins, FormatMaxes []int64
-	SnapMin, SnapMax        int64
+	SnapshotFormatMeanings []string
+	ScaleFactorFile        string
+	BlockMins, BlockMaxes  []int64
+	SnapMin, SnapMax       int64
 }
 
 type HaloInfo struct {
@@ -93,8 +93,8 @@ func (info *ParticleInfo) GetColumn(
 			idx, err = strconv.Atoi(m[5:])
 			if err != nil { return nil, false, err }
 		}
-		out := make([]int, info.FormatMaxes[idx] - info.FormatMins[idx] + 1)
-		for i := range out { out[i] = i + int(info.FormatMins[idx]) + 1 }
+		out := make([]int, info.BlockMaxes[idx] - info.BlockMins[idx] + 1)
+		for i := range out { out[i] = i + int(info.BlockMins[idx]) + 1 }
 		return anonymize(out), false, nil
 	}
 	panic("Impossible")

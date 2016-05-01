@@ -261,7 +261,7 @@ func validateFormat(config *GlobalConfig) error {
 	}
 
 	if len(config.SnapshotFormatMeanings) == 0{
-		return fmt.Errorf("'SnapshotFormatmeanings' was not set.")
+		return fmt.Errorf("'SnapshotFormatMeanings' was not set.")
 	}
 
 	if specifiers != len(config.SnapshotFormatMeanings) {

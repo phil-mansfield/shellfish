@@ -27,8 +27,9 @@ and run the hello world program there.
 Once you've done this, its time to download and install Shellfish's dependencies. Type
 the following commands into your console:
 
-	$ go get github.com/phil-mansfield/consistent_trees
 	$ go get github.com/gonum/matrix
+	$ go get github.com/phil-mansfield/consistent_trees
+	$ go get github.com/phil-mansfield/go-artio
 	$ go get github.com/phil-mansfield/shellfish
 	
 Lastly, type
@@ -49,13 +50,13 @@ You can submit an issue by clicking the green button titled "New Issue"
 in the upper right corner of the issues page. This will open a submission
 form where you can describe the problem you are encountering. Feel free to
 select descriptive tags from the panels on the right of the form, but if
-you don't, a project contributor will handle it for you.
+you don't, I will handle it for you.
 
-The standard guidelines for reporting software bugs/problems applies:
+The standard suggestions for reporting software bugs/problems applies:
 * Check beforehand to see if someone else already encountered your problem.
 (Look [here](https://github.com/phil-mansfield/shellfish/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
 for bugs, [here](https://github.com/phil-mansfield/shellfish/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement)
-for feature requests, and [here](https://github.com/phil-mansfield/shellfish/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22help+wanted%22) for generic help requests and [here](https://github.com/phil-mansfield/shellfish/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3Aquestion+) for questions)
+for feature requests, [here](https://github.com/phil-mansfield/shellfish/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22help+wanted%22) for generic help requests and [here](https://github.com/phil-mansfield/shellfish/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3Aquestion+) for questions)
 * Make sure you are using the most up to date version of Shellfish (check your
 version by typing the command `$ shellfish version`).
 * Provide all information relevant to your problem (shell commands, config files, manual
@@ -74,6 +75,10 @@ configuration while also allowing advanced users to do more complicated tasks.
 You can find a tutorial on using Shellfish [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md).
 It typically takes about 10 minutes to read through.
 
+Future versions of Shellfish (0.3.0 and up) will be packaged with a
+`simple_shellfish` tool which will perform the most common sequences of commands
+automatically.
+
 ### List of Supported File Formats
 
 Currently supported particle catalog types:
@@ -82,7 +87,7 @@ Currently supported particle catalog types:
 
 Currently supported halo catalog types:
 
-* Rockstar
+* All text column-based catalogs
 
 Currently supported merger tree types:
 

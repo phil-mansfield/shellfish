@@ -43,6 +43,16 @@ func NewKDETree(
 	kt := new(KDETree)
 	rn := 100
 
+	if len(rs) == 0 {
+		panic("No input r and phi seuqences to NewKDETree. This can " +
+			"sometimes happen if incorrect halo positions are given (e.g. " +
+			"using a halo catalog from the wrong simulation suite, mistyping " +
+			"a coordinate, etc). " +
+			"If you are sure that your input locations correspond to " +
+			"actual halo centers, this might also be an internal Shellfish " +
+			"error and you should submit a bug report.")
+	}
+	
 	kt.low, kt.high = 0, rs[0]
 	for _, r := range rs {
 		if r > kt.high { kt.high = r }

@@ -155,6 +155,10 @@ func loadSheetHeader(
 	err = binary.Read(f, order, &hdBuf.rawGotetraHeader)
 	if err != nil { return nil, binary.LittleEndian, err }
 
+	// Deals with a bug in the current Shellfish version.
+	cw := hdBuf.CountWidth
+	hdBuf.Count = cw*cw*cw
+	
 	return f, order, nil
 }
 

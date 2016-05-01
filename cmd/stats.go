@@ -127,7 +127,6 @@ func (config *StatsConfig) validate() error {
 func (config *StatsConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
-
 	intColIdxs := []int{0, 1}
 	floatColIdxs := make([]int, 4 + 2*config.order*config.order)
 	for i := range floatColIdxs { floatColIdxs[i] = i + len(intColIdxs) }
@@ -136,6 +135,7 @@ func (config *StatsConfig) Run(
 	)
 
 	if err != nil { return nil, err }
+	if len(intCols) == 0 { return nil, fmt.Errorf("No input IDs.") }
 	ids, snaps := intCols[0], intCols[1]
 	coords, coeffs := floatCols[:4], transpose(floatCols[4:])
 	

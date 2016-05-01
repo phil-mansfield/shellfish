@@ -2,6 +2,9 @@ package env
 
 import (
 	"fmt"
+	"io/ioutil"
+	"strings"
+	"strconv"
 )
 
 ///////////
@@ -16,6 +19,8 @@ type (
 
 const (
 	Gotetra CatalogType = iota
+	LGadget2
+	ARTIO
 
 	Rockstar HaloType = iota
 	NilHalo
@@ -23,6 +28,16 @@ const (
 	ConsistentTrees TreeType = iota
 	NilTree
 )
+
+type Environment struct {
+	Catalogs
+	Halos
+	MemoDir string
+}
+
+//////////////////
+// Info structs //
+//////////////////
 
 type ParticleInfo struct {
 	SnapshotFormat          string
@@ -39,10 +54,64 @@ type HaloInfo struct {
 	SnapMin, SnapMax int64
 }
 
-type Environment struct {
-	Catalogs
-	Halos
-	MemoDir string
+func (info *ParticleInfo) GetColumn(
+	i int,
+) (col []interface{}, snapAligned bool, err error) {
+
+	m := info.SnapshotFormatMeanings[i]
+	switch {
+	case m == "ScaleFactor":
+		bs, err := ioutil.ReadFile(info.ScaleFactorFile)
+		if err != nil { return nil, false, err }
+		text := string(bs)
+		lines := strings.Split(text, "\n")
+
+		out := []string{}
+		for i := range lines {
+			line := strings.Trim(lines[i], " ")
+			if len(line) != 0 { out = append(out, line) }
+		}
+
+		if len(out) != int(info.SnapMax - info.SnapMin) + 1 {
+			return nil, false, fmt.Errorf(
+				"%s has %d non-empty lines, but SnapMax = %d and SnapMin = %d.",
+				info.ScaleFactorFile, len(out), info.SnapMax, info.SnapMin,
+			)
+		}
+
+		return anonymize(out), true, nil
+
+	case m == "Snapshot":
+		out := make([]int, int(info.SnapMax - info.SnapMax) + 1)
+		for i := range out { out[i] = i + int(info.SnapMin) }
+		return anonymize(out), true, nil
+
+	case len(m) > 5 && m[:5] == "Block":
+		idx := 0
+		if len(m) > 5 {
+			var err error
+			idx, err = strconv.Atoi(m[5:])
+			if err != nil { return nil, false, err }
+		}
+		out := make([]int, info.FormatMaxes[idx] - info.FormatMins[idx] + 1)
+		for i := range out { out[i] = i + int(info.FormatMins[idx]) + 1 }
+		return anonymize(out), false, nil
+	}
+	panic("Impossible")
+}
+
+func anonymize(col interface{}) []interface{} {
+	switch xs := col.(type) {
+	case []int:
+		out := make([]interface{}, len(xs))
+		for i := range out { out[i] = xs[i] }
+		return out
+	case []string:
+		out := make([]interface{}, len(xs))
+		for i := range out { out[i] = xs[i] }
+		return out
+	}
+	panic("Unknown type.")
 }
 
 //////////////

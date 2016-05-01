@@ -2,11 +2,9 @@ package env
 
 import (
 	"fmt"
-	"os"
 )
 
 func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
-	cat.CatalogType = Gotetra
 
 	if len(info.FormatMins) != 3 {
 		return fmt.Errorf(
@@ -15,26 +13,30 @@ func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
 		)
 	}
 
-	cat.names = make([][]string, info.SnapMax - info.SnapMin + 1)
+	cat.CatalogType = Gotetra
 	cat.snapMin = int(info.SnapMin)
 
-	for snap := info.SnapMin; snap <= info.SnapMax; snap++ {
-		for x := info.FormatMins[0]; x <= info.FormatMaxes[0]; x++ {
-			for y := info.FormatMins[1]; y <= info.FormatMaxes[1]; y++ {
-				for z := info.FormatMins[2]; z <= info.FormatMaxes[2]; z++ {
-
-					fname := fmt.Sprintf(info.SnapshotFormat, snap, x, y, z)
-					if validate {
-						_, err := os.Stat(fname)
-						if err != nil { return err }
-					}
-
-					cat.names[snap - info.SnapMin] = append(
-						cat.names[snap - info.SnapMin], fname,
-					)
-				}
-			}
-		}
+	cols := make([][]interface{}, len(info.SnapshotFormat))
+	snapAligned := make([]bool, len(info.SnapshotFormat))
+	for i := range cols {
+		var err error
+		cols[i], snapAligned[i], err = info.GetColumn(i)
+		if err != nil { return err }
 	}
+
+	formatArgs := interleave(cols, snapAligned)
+	cat.names = [][]string{}
+	for snap := range formatArgs {
+		names := []string{}
+		for block := range formatArgs[snap] {
+			names = append(names,
+				fmt.Sprintf(info.SnapshotFormat, formatArgs[snap][block]...),
+			)
+		}
+		cat.names = append(cat.names, names)
+	}
+
+	if validate { panic("File validation not yet implemented.") }
+
 	return nil
 }

@@ -104,7 +104,7 @@ func interleave(cols [][]interface{}, snapAligned []bool) [][][]interface{} {
 	for i := range cols {
 		if snapAligned[i] {
 			if snaps == -1 {
-				snaps= len(cols[i])
+				snaps = len(cols[i])
 			} else if snaps != len(cols[i]) {
 				// This is safe to think of as an internal error.
 				panic(fmt.Sprintf("Column %d is snapAligned, but has height " +
@@ -118,7 +118,7 @@ func interleave(cols [][]interface{}, snapAligned []bool) [][][]interface{} {
 	// This is safe to think of as an internal error.
 	if snaps == 1 { panic("All values in snapAligned are false.") }
 
-	out := make([][][]interface{}, snaps)
+	out := [][][]interface{}{}
 
 	for snap := 0; snap < snaps; snap++ {
 		snapRows := make([][]interface{}, nonSnaps)

@@ -33,3 +33,4 @@ _testmain.go
 .idea
 *.out
 *.config
+config/

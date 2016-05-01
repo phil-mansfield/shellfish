@@ -16,8 +16,8 @@ func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
 	cat.CatalogType = Gotetra
 	cat.snapMin = int(info.SnapMin)
 
-	cols := make([][]interface{}, len(info.SnapshotFormat))
-	snapAligned := make([]bool, len(info.SnapshotFormat))
+	cols := make([][]interface{}, len(info.SnapshotFormatMeanings))
+	snapAligned := make([]bool, len(info.SnapshotFormatMeanings))
 	for i := range cols {
 		var err error
 		cols[i], snapAligned[i], err = info.GetColumn(i)

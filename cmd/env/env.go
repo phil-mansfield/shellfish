@@ -58,6 +58,8 @@ func (info *ParticleInfo) GetColumn(
 	i int,
 ) (col []interface{}, snapAligned bool, err error) {
 
+	fmt.Println(i)
+	
 	m := info.SnapshotFormatMeanings[i]
 	switch {
 	case m == "ScaleFactor":

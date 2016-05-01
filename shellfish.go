@@ -310,7 +310,7 @@ func initHalos(
 		return fmt.Errorf("You may not use nil as a HaloType for the " +
 			"mode '%s.'\n", mode)
 	case "Text":
-		return e.InitRockstar(gConfig.HaloDir, gConfig.SnapMin, gConfig.SnapMax)
+		return e.InitTextHalo(&gConfig.HaloInfo)
 		if gConfig.TreeType != "consistent-trees"{
 			return fmt.Errorf("You're trying to use the '%s' TreeType with " +
 				"the 'Text' HaloType.")
@@ -327,14 +327,11 @@ func initHalos(
 func initCatalogs(gConfig *cmd.GlobalConfig, e *env.Environment) error {
 	switch gConfig.SnapshotType {
 	case "gotetra":
-		return e.InitGotetra(
-			gConfig.SnapshotFormat, gConfig.SnapMin, gConfig.SnapMax,
-			gConfig.BlockMins, gConfig.BlockMaxes, gConfig.ValidateFormats,
-		)
+		return e.InitGotetra(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	case "LGadget-2":
-		panic("Not yet implemented.")
+		return e.InitLGadget2(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	case "ARTIO":
-		panic("Not yet implemented.")
+		return e.InitARTIO(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	}
 	panic("Impossible.")
 }

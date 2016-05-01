@@ -282,6 +282,7 @@ func validateFormat(config *GlobalConfig) error {
 				return fmt.Errorf("'SnapshotFormatMeaning'[%d] specifies an " +
 					"invalid block range.", i)
 			}
+			return nil
 		nextCase:
 			fallthrough
 		default:

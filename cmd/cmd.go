@@ -41,29 +41,29 @@ type Mode interface {
 // GlobalConfig is a config file used by every mode. It contains information on
 // the directories that various files are stored in.
 type GlobalConfig struct {
-	Version                      string
+	Version                 string
 
-	SnapshotFormat string
-	SnapshotType string
-	HaloDir, HaloType            string
-	TreeDir, TreeType            string
-	MemoDir                      string
+	SnapshotFormat          string
+	SnapshotType            string
+	HaloDir, HaloType       string
+	TreeDir, TreeType       string
+	MemoDir                 string
 
-	HaloIDColumn int64
-	HaloM200mColumn int64
-	HaloPositionColumns []int64
+	HaloIDColumn            int64
+	HaloM200mColumn         int64
+	HaloPositionColumns     []int64
 
-	HaloPositionUnits string
-	HaloMassUnits string
+	HaloPositionUnits       string
+	HaloMassUnits           string
 
-	SnapshotFormatMeanings       []string
-	ScaleFactorFile string
-	FormatMins, FormatMaxes      []int64
-	SnapMin, SnapMax             int64
+	SnapshotFormatMeanings  []string
+	ScaleFactorFile         string
+	FormatMins, FormatMaxes []int64
+	SnapMin, SnapMax        int64
 
-	Endianness                   string
+	Endianness              string
 
-	ValidateFormats              bool
+	ValidateFormats         bool
 }
 
 var _ Mode = &GlobalConfig{}

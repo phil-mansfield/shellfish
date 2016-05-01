@@ -5,35 +5,32 @@ import (
 	"os"
 )
 
-func (cat *Catalogs) InitGotetra(
-format string, snapMin, snapMax int64, blockMins, blockMaxes []int64,
-validate bool,
-) error {
+func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
 	cat.CatalogType = Gotetra
 
-	if len(blockMins) != 3 {
+	if len(info.FormatMins) != 3 {
 		return fmt.Errorf(
 			"'BlockMins' had %d elements, but 3 are required for " +
-			"gotetra catalogs.", len(blockMins),
+			"gotetra catalogs.", len(info.FormatMins),
 		)
 	}
 
-	cat.names = make([][]string, snapMax - snapMin + 1)
-	cat.snapMin = int(snapMin)
+	cat.names = make([][]string, info.SnapMax - info.SnapMin + 1)
+	cat.snapMin = int(info.SnapMin)
 
-	for snap := snapMin; snap <= snapMax; snap++ {
-		for x := blockMins[0]; x <= blockMaxes[0]; x++ {
-			for y := blockMins[1]; y <= blockMaxes[1]; y++ {
-				for z := blockMins[2]; z <= blockMaxes[2]; z++ {
+	for snap := info.SnapMin; snap <= info.SnapMax; snap++ {
+		for x := info.FormatMins[0]; x <= info.FormatMaxes[0]; x++ {
+			for y := info.FormatMins[1]; y <= info.FormatMaxes[1]; y++ {
+				for z := info.FormatMins[2]; z <= info.FormatMaxes[2]; z++ {
 
-					fname := fmt.Sprintf(format, snap, x, y, z)
+					fname := fmt.Sprintf(info.SnapshotFormat, snap, x, y, z)
 					if validate {
 						_, err := os.Stat(fname)
 						if err != nil { return err }
 					}
 
-					cat.names[snap - snapMin] = append(
-						cat.names[snap - snapMin], fname,
+					cat.names[snap - info.SnapMin] = append(
+						cat.names[snap - info.SnapMin], fname,
 					)
 				}
 			}

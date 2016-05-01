@@ -41,29 +41,27 @@ type Mode interface {
 // GlobalConfig is a config file used by every mode. It contains information on
 // the directories that various files are stored in.
 type GlobalConfig struct {
-	Version                string
+	env.ParticleInfo
+	env.HaloInfo
 
-	SnapshotFormat         string
-	SnapshotType           string
-	HaloDir, HaloType      string
-	TreeDir, TreeType      string
-	MemoDir                string
+	Version             string
 
-	HaloIDColumn           int64
-	HaloM200mColumn        int64
-	HaloPositionColumns    []int64
+	SnapshotType        string
+	HaloType            string
+	TreeType            string
 
-	HaloPositionUnits      string
-	HaloMassUnits          string
+	MemoDir             string
 
-	SnapshotFormatMeanings []string
-	ScaleFactorFile        string
-	BlockMins, BlockMaxes  []int64
-	SnapMin, SnapMax       int64
+	HaloIDColumn        int64
+	HaloM200mColumn     int64
+	HaloPositionColumns []int64
 
-	Endianness             string
+	HaloPositionUnits   string
+	HaloMassUnits       string
 
-	ValidateFormats        bool
+	Endianness          string
+
+	ValidateFormats     bool
 }
 
 var _ Mode = &GlobalConfig{}
@@ -100,6 +98,8 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Bool(&config.ValidateFormats, "ValidateFormats", false)
 
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
+	config.HSnapMax = config.SnapMax
+	config.HSnapMin = config.SnapMin
 	return config.validate()
 }
 
@@ -386,4 +386,3 @@ func (config *GlobalConfig) Run(
 ) ([]string, error) {
 	panic("GlobalConfig.Run() should never be executed.")
 }
-

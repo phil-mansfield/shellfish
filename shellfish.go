@@ -282,8 +282,8 @@ func configEqual(m, c *cmd.GlobalConfig) bool {
 		c.TreeDir == m.TreeDir &&
 		c.TreeType == m.TreeType &&
 		c.MemoDir == m.MemoDir &&
-		int64sEqual(c.FormatMins, m.FormatMins) &&
-		int64sEqual(c.FormatMaxes, m.FormatMaxes) &&
+		int64sEqual(c.BlockMins, m.BlockMins) &&
+		int64sEqual(c.BlockMaxes, m.BlockMaxes) &&
 		c.SnapMin == m.SnapMin &&
 		c.SnapMax == m.SnapMax &&
 		c.Endianness == m.Endianness &&
@@ -329,7 +329,7 @@ func initCatalogs(gConfig *cmd.GlobalConfig, e *env.Environment) error {
 	case "gotetra":
 		return e.InitGotetra(
 			gConfig.SnapshotFormat, gConfig.SnapMin, gConfig.SnapMax,
-			gConfig.FormatMins, gConfig.FormatMaxes, gConfig.ValidateFormats,
+			gConfig.BlockMins, gConfig.BlockMaxes, gConfig.ValidateFormats,
 		)
 	case "LGadget-2":
 		panic("Not yet implemented.")

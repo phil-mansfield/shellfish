@@ -50,8 +50,8 @@ type ParticleInfo struct {
 }
 
 type HaloInfo struct {
-	HaloDir, TreeDir string
-	SnapMin, SnapMax int64
+	HaloDir, TreeDir   string
+	HSnapMin, HSnapMax int64
 }
 
 func (info *ParticleInfo) GetColumn(

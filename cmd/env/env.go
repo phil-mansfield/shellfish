@@ -94,7 +94,7 @@ func (info *ParticleInfo) GetColumn(
 			if err != nil { return nil, false, err }
 		}
 		out := make([]int, info.BlockMaxes[idx] - info.BlockMins[idx] + 1)
-		for i := range out { out[i] = i + int(info.BlockMins[idx]) + 1 }
+		for i := range out { out[i] = i + int(info.BlockMins[idx]) }
 		return anonymize(out), false, nil
 	}
 	panic("Impossible")

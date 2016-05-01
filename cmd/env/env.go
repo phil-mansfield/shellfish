@@ -57,8 +57,6 @@ type HaloInfo struct {
 func (info *ParticleInfo) GetColumn(
 	i int,
 ) (col []interface{}, snapAligned bool, err error) {
-
-	fmt.Println(i)
 	
 	m := info.SnapshotFormatMeanings[i]
 	switch {
@@ -84,7 +82,7 @@ func (info *ParticleInfo) GetColumn(
 		return anonymize(out), true, nil
 
 	case m == "Snapshot":
-		out := make([]int, int(info.SnapMax - info.SnapMax) + 1)
+		out := make([]int, int(info.SnapMax - info.SnapMin) + 1)
 		for i := range out { out[i] = i + int(info.SnapMin) }
 		return anonymize(out), true, nil
 

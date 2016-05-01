@@ -21,6 +21,7 @@ func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
 	for i := range cols {
 		var err error
 		cols[i], snapAligned[i], err = info.GetColumn(i)
+
 		if err != nil { return err }
 	}
 

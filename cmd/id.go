@@ -161,6 +161,12 @@ func (config *IDConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 
+
+	if config.snap == -1 {
+		return nil, fmt.Errorf("Either no id.config file was provided or "+
+			"the 'Snap' variable wasn't set.")
+	}
+	
 	if config.snap < gConfig.SnapMin || config.snap > gConfig.SnapMax {
 		return nil, fmt.Errorf("'Snap' = %d, but 'SnapMin' = %d and "+
 			"'SnapMax = %d'", config.snap, gConfig.SnapMin, gConfig.SnapMax)

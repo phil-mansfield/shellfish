@@ -1,4 +1,4 @@
-### Using Unsupported Halo Catalogs and/or Merger Trees
+# Using Unsupported Halo Catalogs and/or Merger Trees
 
 Although Shellfish provides native support for certain types of halo catalogs and
 merger trees through the `shellfish id` and `shellfish tree` modes, it is possible

@@ -124,8 +124,14 @@ func main() {
 	}
 
 	e := &env.Environment{MemoDir: gConfig.MemoDir}
-	initCatalogs(gConfig, e)
-	initHalos(args[1], gConfig, e)
+	err = initCatalogs(gConfig, e)
+	if err != nil {
+		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+	}
+	err = initHalos(args[1], gConfig, e)
+	if err != nil {
+		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+	}
 
 	if err != nil {
 		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())

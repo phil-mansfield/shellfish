@@ -1,4 +1,4 @@
-### Selecting Halos Without `shellfish id`
+# Selecting Halos Without `shellfish id`
 
 Although the config file system is convenient for contiguous mass ranges and
 for small sets of IDs, in more complicated situations where one might want

@@ -134,40 +134,47 @@ that correspond to your simulation. Below I've copied the global config file
 that I used in the previous example if you want to see what a working file looks
 like:
 
-	[config]
-	
+	Verison = 0.2.0
+
 	# File formats
-	
+
 	SnapshotType = gotetra
-	HaloType = Rockstar
+	HaloType = Text
 	TreeType = consistent-trees
 	
-	# Indices of different quantities in the halo catalog
+	# Halo Catalog Information
 	
 	HaloIDColumn = 1
 	HaloM200mColumn = 10
 	HaloPositionColumns = 17, 18, 19
 	
+	HaloPositionUnits = Mpc/h
+	HaloMassUnits = Msun/h
+	
 	# Directories
 	
 	HaloDir = /project/surph/diemer/Box_L0063_N1024_CBol/Rockstar200m/hlists
 	TreeDir = /project/surph/diemer/Box_L0063_N1024_CBol/Rockstar200m/trees
-	MemoDir = /project/surph/mansfield/data/sheet_segments/Box_L0063_N1024_G0008_CBol/gtet_memo
+	MemoDir = /project/surph/mansfield/data/sheet_segments/Box_L0063_N1024_G0008_CBol/shell_gotetra_memo/
 	
-	# Snapshot specification
+	# Formatting information
 	
 	SnapshotFormat = /project/surph/mansfield/data/sheet_segments/Box_L0063_N1024_G0008_CBol/snapdir_%03d/sheet%d%d%d.dat
+	SnapshotFormatMeanings = Snapshot, Block0, Block1, Block2
+	
+	BlockMins  = 0, 0, 0
+	BlockMaxes = 7, 7, 7
+	
 	SnapMin = 6
 	SnapMax = 100
-	FormatMins  = 0, 0, 0
-	FormatMaxes = 7, 7, 7
+
+	Threads = -1
 
 The only confusing variable is `SnapshotFormat`, which is used to specify the
 names of your particle snapshots. This is a neccessary evil that comes from
 the wide range of file naming conventions that different simulations use. The
-idea is to write a format string (like the one used by `printf`) which will take
-a snapshot specifier and some arbitrary number of block identifcation indices
-as arguments, with the specifics depending on the exact simulation.
+idea is to write a format string (like the one used by `printf`). I describe
+how to use it [here](https://github.com/phil-mansfield/shellfish/tree/master/doc).
 
 The other config file that most users will need to set is the
 `shellfish id`-specifc config file. Its sole purpose to concisely communicate to

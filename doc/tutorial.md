@@ -24,7 +24,7 @@ mode does, follow the instructions [here](https://github.com/phil-mansfield/shel
 
 ##### Using Unsupported Halo Catalogs and Merger Trees
 
-If you are using a halo catalog or marger tree format that isn't supported by
+If you are using a halo catalog or merger tree format that isn't supported by
 Shellfish, you can get Shellfish to analyze your halos anyway by following the
 instrucitons [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/unsupported_catalogs.md)
 

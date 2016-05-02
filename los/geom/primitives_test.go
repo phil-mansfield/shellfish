@@ -25,16 +25,16 @@ func TestPluckerTranslate(t *testing.T) {
 	p.Init(&P, &L)
 	pt.Init(&tet)
 	targetEnter := float32(1.0)
-	
+
 	n := 1000
-	dxs := append([][3]float32{{0, 0, 0}}, randomTranslations(n - 1)...)
+	dxs := append([][3]float32{{0, 0, 0}}, randomTranslations(n-1)...)
 	w := new(IntersectionWorkspace)
-	
+
 	for i := range dxs {
 		p.Translate(&dxs[i])
 		pt.Translate(&dxs[i])
 		tet.Translate(&dxs[i])
-		
+
 		enter, _, ok := w.IntersectionDistance(pt, &tet, p)
 
 		if !ok {
@@ -44,19 +44,19 @@ func TestPluckerTranslate(t *testing.T) {
 		} else if !almostEq(enter, targetEnter, 1e-4) {
 			t.Errorf(
 				"%d) Intersection distance of %g instead of %g with dx = %v",
-				i + 1, enter, targetEnter, dxs[i],
+				i+1, enter, targetEnter, dxs[i],
 			)
 		}
 	}
 }
 
-func almostEq64(x, y float64) bool { return x - 1e-4 < y && x + 1e-4 > y }
+func almostEq64(x, y float64) bool { return x-1e-4 < y && x+1e-4 > y }
 
 func TestTetraVolume(t *testing.T) {
 	table := []struct {
-		t Tetra
+		t   Tetra
 		vol float64
-	} {
+	}{
 		{Tetra{{0, 2, 0}, {3, 0, 0}, {0, 0, 1}, {0, 0, 0}}, 1},
 	}
 
@@ -72,12 +72,12 @@ func TestTetraVolume(t *testing.T) {
 func TestSphereSphereIntersect(t *testing.T) {
 	table := []struct {
 		s1, s2 Sphere
-		res bool
-	} {
+		res    bool
+	}{
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 0}, 1}, true},
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 0}, 2}, true},
 		{Sphere{[3]float32{0, 0, 0}, 2}, Sphere{[3]float32{0, 0, 0}, 1}, true},
-		
+
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 1}, 1}, true},
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 1, 0}, 1}, true},
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{1, 0, 0}, 1}, true},
@@ -102,19 +102,19 @@ func TestSphereSphereIntersect(t *testing.T) {
 func TestSphereSphereContain(t *testing.T) {
 	table := []struct {
 		s1, s2 Sphere
-		res bool
-	} {
+		res    bool
+	}{
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 0}, 1}, false},
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 0}, 2}, false},
 		{Sphere{[3]float32{0, 0, 0}, 2}, Sphere{[3]float32{0, 0, 0}, 1}, true},
-		
+
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 1}, 1}, false},
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 1, 0}, 1}, false},
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{1, 0, 0}, 1}, false},
 
-		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{0, 0, 1.5}, 1},true},
-		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{0, 1.5, 0}, 1},true},
-		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{1.5, 0, 0}, 1},true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{0, 0, 1.5}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{0, 1.5, 0}, 1}, true},
+		{Sphere{[3]float32{0, 0, 0}, 3}, Sphere{[3]float32{1.5, 0, 0}, 1}, true},
 
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 0, 3}, 1}, false},
 		{Sphere{[3]float32{0, 0, 0}, 1}, Sphere{[3]float32{0, 3, 0}, 1}, false},
@@ -131,13 +131,13 @@ func TestSphereSphereContain(t *testing.T) {
 
 func TestSphereLineSegmentIntersect(t *testing.T) {
 	eps := float32(1e-4)
-	rt2 := 1/float32(math.Sqrt(2))
+	rt2 := 1 / float32(math.Sqrt(2))
 	table := []struct {
-		s Sphere
-		ls LineSegment
-		enter, exit float32
+		s             Sphere
+		ls            LineSegment
+		enter, exit   float32
 		enters, exits bool
-	} {
+	}{
 		{Sphere{[3]float32{0, 0, 0}, 1},
 			LineSegment{[3]float32{0, 0, 0}, [3]float32{1, 0, 0}, -2, +2},
 			-1, +1, true, true},
@@ -161,11 +161,11 @@ func TestSphereLineSegmentIntersect(t *testing.T) {
 	for i, test := range table {
 		enter, exit, enters, exits := test.s.LineSegmentIntersect(&test.ls)
 		if enters != test.enters || exits != test.exits ||
-			(enters && !almostEq(enter, test.enter,eps)) ||
-			(exits && !almostEq(exit, test.exit,eps)) {
+			(enters && !almostEq(enter, test.enter, eps)) ||
+			(exits && !almostEq(exit, test.exit, eps)) {
 			t.Errorf(
-				"%d) expected intersect result of (%g %g %v %v), got " + 
-					"(%g %g %v %v) ", i + 1, test.enter, test.exit, test.enters,
+				"%d) expected intersect result of (%g %g %v %v), got "+
+					"(%g %g %v %v) ", i+1, test.enter, test.exit, test.enters,
 				test.exits, enter, exit, enters, exits,
 			)
 		}
@@ -177,7 +177,9 @@ func BenchmarkVecTranslate(b *testing.B) {
 	dxs := randomTranslations(n)
 	v := &[3]float32{}
 	for i := 0; i < b.N; i++ {
-		for j := 0; j < 3; j++ { v[j] += dxs[i%n][j] }
+		for j := 0; j < 3; j++ {
+			v[j] += dxs[i%n][j]
+		}
 	}
 }
 
@@ -185,21 +187,27 @@ func BenchmarkTetraTranslate(b *testing.B) {
 	n := 1000
 	dxs := randomTranslations(n)
 	t := new(Tetra)
-	for i := 0; i < b.N; i++ { t.Translate(&dxs[i % n]) }	
+	for i := 0; i < b.N; i++ {
+		t.Translate(&dxs[i%n])
+	}
 }
 
 func BenchmarkPluckerVecTranslate(b *testing.B) {
 	n := 1000
 	dxs := randomTranslations(n)
 	p := new(PluckerVec)
-	for i := 0; i < b.N; i++ { p.Translate(&dxs[i % n]) }
+	for i := 0; i < b.N; i++ {
+		p.Translate(&dxs[i%n])
+	}
 }
 
 func BenchmarkPluckerTetraTranslate(b *testing.B) {
 	n := 1000
 	dxs := randomTranslations(n)
 	pt := new(PluckerTetra)
-	for i := 0; i < b.N; i++ { pt.Translate(&dxs[i % n])}
+	for i := 0; i < b.N; i++ {
+		pt.Translate(&dxs[i%n])
+	}
 }
 
 func BenchmarkSphereIntersect(b *testing.B) {
@@ -224,7 +232,9 @@ func BenchmarkSphereIntersect(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		s.SphereIntersect(&ss[idx])
 		idx++
-		if idx == n { idx = 0 }
+		if idx == n {
+			idx = 0
+		}
 	}
 }
 
@@ -247,8 +257,10 @@ func BenchmarkTetraBoundingSphere(b *testing.B) {
 		ts[idx].BoundingSphere(&ss[idx])
 
 		idx++
-		if idx == n { idx = 0 }
-	} 
+		if idx == n {
+			idx = 0
+		}
+	}
 }
 
 func BenchmarkTetraVolume(b *testing.B) {
@@ -259,5 +271,7 @@ func BenchmarkTetraVolume(b *testing.B) {
 		}
 	}
 
-	for i := 0; i < b.N; i++ { t.Volume() }
+	for i := 0; i < b.N; i++ {
+		t.Volume()
+	}
 }

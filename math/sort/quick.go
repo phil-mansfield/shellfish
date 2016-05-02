@@ -39,8 +39,8 @@ func Quick(xs []float64) []float64 {
 		return Shell(xs)
 	} else {
 		pivIdx := partition(xs)
-		Quick(xs[0: pivIdx])
-		Quick(xs[pivIdx: len(xs)])
+		Quick(xs[0:pivIdx])
+		Quick(xs[pivIdx:len(xs)])
 		return xs
 	}
 }
@@ -50,7 +50,7 @@ func pivIdx(xs []float64) int {
 }
 
 func partition(xs []float64) int {
-	n, n2 := len(xs), len(xs) / 2
+	n, n2 := len(xs), len(xs)/2
 	// Take three values. The median will be the pivot, the other two will
 	// be sentinel values so that we cna avoid bounds checks.
 	max, mid, min := sort3(xs[0], xs[n2], xs[n-1])
@@ -60,13 +60,19 @@ func partition(xs []float64) int {
 	lo, hi := 1, n-1
 	for {
 		lo++
-		for xs[lo] < mid { lo++ }
+		for xs[lo] < mid {
+			lo++
+		}
 		hi--
-		for xs[hi] > mid { hi-- }
-		if hi < lo { break }
+		for xs[hi] > mid {
+			hi--
+		}
+		if hi < lo {
+			break
+		}
 		xs[lo], xs[hi] = xs[hi], xs[lo]
 	}
-	
+
 	// Swap the pivot into the middle
 	xs[1], xs[hi] = xs[hi], xs[1]
 

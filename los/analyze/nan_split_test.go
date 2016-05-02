@@ -6,13 +6,17 @@ import (
 )
 
 func almostEq(x, y, eps float64) bool {
-	return x + eps > y && x - eps < y
+	return x+eps > y && x-eps < y
 }
 
 func sliceAlmostEq(xs, ys []float64, eps float64) bool {
-	if len(xs) != len(ys) { return false }
+	if len(xs) != len(ys) {
+		return false
+	}
 	for i := range xs {
-		if !almostEq(xs[i], ys[i], eps) { return false }
+		if !almostEq(xs[i], ys[i], eps) {
+			return false
+		}
 	}
 	return true
 }
@@ -21,10 +25,10 @@ func TestNaNSplit(t *testing.T) {
 	nan := math.NaN()
 	eps := 1e-6
 
-	table := []struct{
-		in []float64
+	table := []struct {
+		in  []float64
 		out [][]float64
-	} {
+	}{
 		{[]float64{}, [][]float64{}},
 		{[]float64{nan}, [][]float64{}},
 		{[]float64{1}, [][]float64{{1}}},
@@ -42,14 +46,14 @@ func TestNaNSplit(t *testing.T) {
 		if len(out) != len(test.out) {
 			t.Errorf(
 				"%d) Expected NaNSplit(%v) -> %v, but got %v",
-				i + 1, test.in, test.out, out,
+				i+1, test.in, test.out, out,
 			)
 		}
 		for j := range out {
 			if !sliceAlmostEq(out[j], test.out[j], eps) {
 				t.Errorf(
 					"%d) Expected NaNSplit(%v) -> %v, but got %v",
-					i + 1, test.in, test.out, out,
+					i+1, test.in, test.out, out,
 				)
 			}
 		}

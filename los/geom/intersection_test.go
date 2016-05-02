@@ -1,32 +1,32 @@
 package geom
 
 import (
-	"testing"
 	"math"
 	"math/rand"
+	"testing"
 
 	"github.com/phil-mansfield/shellfish/render/io"
 )
 
 var (
-	hx= float32(58.68211)
-	hy = float32(59.48198)
-	hz = float32(8.70855)
+	hx   = float32(58.68211)
+	hy   = float32(59.48198)
+	hz   = float32(8.70855)
 	rMax = float32(0.6318755421407911)
 	rMin = float32(0)
 
 	L = [3]float32{0, 0, 1}
 
-	hd io.SheetHeader
-	xs [][3]float32
-	ts []Tetra
+	hd  io.SheetHeader
+	xs  [][3]float32
+	ts  []Tetra
 	pts []PluckerTetra
 )
 
 func randomizeTetra(t *Tetra, low, high float32) {
 	for v := 0; v < 4; v++ {
 		for i := 0; i < 3; i++ {
-			t[v][i] = (high - low) * rand.Float32() + low
+			t[v][i] = (high-low)*rand.Float32() + low
 		}
 	}
 	t.Orient(+1)
@@ -75,7 +75,7 @@ func BenchmarkAngleRange(b *testing.B) {
 		t.Orient(+1)
 		pt.Init(t)
 
-		if t.ZPlaneSlice(pt, 0, &polys[len(polys) - 1]) {
+		if t.ZPlaneSlice(pt, 0, &polys[len(polys)-1]) {
 			polys = append(polys, TetraSlice{})
 		}
 	}
@@ -93,12 +93,11 @@ func randomAnchoredPluckerVec() *AnchoredPluckerVec {
 	norm := float32(math.Sqrt(float64(x*x + y*y + z*z)))
 
 	P := &[3]float32{0, 0, 0}
-	L := &[3]float32{ x/norm, y/norm, z/norm }
+	L := &[3]float32{x / norm, y / norm, z / norm}
 	p := new(AnchoredPluckerVec)
 	p.Init(P, L)
 	return p
 }
-
 
 func BenchmarkPluckerTetraInit(b *testing.B) {
 	ts := make([]Tetra, 1<<10)
@@ -153,7 +152,7 @@ func BenchmarkIntersectionDistance(b *testing.B) {
 }
 
 func almostEq(x1, x2, eps float32) bool {
-	return x1 + eps > x2 && x1 - eps < x2
+	return x1+eps > x2 && x1-eps < x2
 }
 
 func TestIntersectionDistance(t *testing.T) {
@@ -166,25 +165,23 @@ func TestIntersectionDistance(t *testing.T) {
 
 	ap.Init(&P, &L)
 
-	table := []struct{
-		t Tetra
-		enter, exit float32 
-		ok bool
-	}{	
-		{Tetra{{1,0,4}, {1,4,0}, {1,0,0}, {5,0,0}},1.5,4,true},
-		{Tetra{{1,4,0}, {1,0,4}, {3,0,0}, {5, 0, 0}},2.75,4,true},
-		{Tetra{{1,0,4}, {1,4,0}, {1,0,0}, {5,0,0}},1.5,4,true},
+	table := []struct {
+		t           Tetra
+		enter, exit float32
+		ok          bool
+	}{
+		{Tetra{{1, 0, 4}, {1, 4, 0}, {1, 0, 0}, {5, 0, 0}}, 1.5, 4, true},
+		{Tetra{{1, 4, 0}, {1, 0, 4}, {3, 0, 0}, {5, 0, 0}}, 2.75, 4, true},
+		{Tetra{{1, 0, 4}, {1, 4, 0}, {1, 0, 0}, {5, 0, 0}}, 1.5, 4, true},
 
-		{Tetra{{-1,4,0},{-1,0,4},{-1,0,0},{3,0,0}},-0.5,2,true},
-		{Tetra{{9,4,0}, {9,0,4}, {9,0,0}, {13,0,0}},9.5,12,true},
+		{Tetra{{-1, 4, 0}, {-1, 0, 4}, {-1, 0, 0}, {3, 0, 0}}, -0.5, 2, true},
+		{Tetra{{9, 4, 0}, {9, 0, 4}, {9, 0, 0}, {13, 0, 0}}, 9.5, 12, true},
 
+		{Tetra{{1, 0, 4}, {1, 0, 0}, {5, 0, 0}, {1, 4, 0}}, 1.5, 4, true},
+		{Tetra{{1, 0, 0}, {5, 0, 0}, {1, 4, 0}, {1, 0, 4}}, 1.5, 4, true},
+		{Tetra{{5, 0, 0}, {1, 4, 0}, {1, 0, 4}, {1, 0, 0}}, 1.5, 4, true},
 
-		{Tetra{{1,0,4}, {1,0,0}, {5,0,0}, {1,4,0}},1.5,4,true},
-		{Tetra{{1,0,0}, {5,0,0}, {1,4,0}, {1,0,4}},1.5,4,true},
-		{Tetra{{5,0,0}, {1,4,0}, {1,0,4}, {1,0,0},},1.5,4,true},
-		
-		{Tetra{{1,6,0}, {1,2,4}, {1,2,0}, {5,2,0}},0,0,false},
-
+		{Tetra{{1, 6, 0}, {1, 2, 4}, {1, 2, 0}, {5, 2, 0}}, 0, 0, false},
 	}
 
 	for i, test := range table {
@@ -207,13 +204,17 @@ func TestIntersectionDistance(t *testing.T) {
 
 func almostContains(x, y float32, xs, ys []float32) bool {
 	for i := range xs {
-		if almostEq(xs[i], x, 1e-4) && almostEq(ys[i], y, 1e-4) { return true }
+		if almostEq(xs[i], x, 1e-4) && almostEq(ys[i], y, 1e-4) {
+			return true
+		}
 	}
 	return false
 }
 
 func almostEqTetraSlice(poly *TetraSlice, xs, ys []float32) bool {
-	if len(xs) != poly.Points { return false }
+	if len(xs) != poly.Points {
+		return false
+	}
 	for i := range xs {
 		if !almostContains(poly.Xs[i], poly.Ys[i], xs, ys) {
 			return false
@@ -239,7 +240,6 @@ func TestZPlaneSlice(t *testing.T) {
 			xs, ys, poly.Xs, poly.Ys,
 		)
 	}
-
 
 	tet.Translate(&[3]float32{0, 0, 10})
 	pt.Init(&tet)
@@ -267,13 +267,17 @@ func vectorRing(n int) (vecs []AnchoredPluckerVec, phis []float32) {
 
 func tetXs(t *Tetra) []float32 {
 	xs := make([]float32, 4)
-	for i := 0; i < 4; i++ { xs[i] = t[i][0] }
+	for i := 0; i < 4; i++ {
+		xs[i] = t[i][0]
+	}
 	return xs
 }
 
 func tetYs(t *Tetra) []float32 {
 	ys := make([]float32, 4)
-	for i := 0; i < 4; i++ { ys[i] = t[i][1] }
+	for i := 0; i < 4; i++ {
+		ys[i] = t[i][1]
+	}
 	return ys
 }
 
@@ -289,7 +293,9 @@ func TestAngleRange(t *testing.T) {
 		randomizeTetra(tet, -1, +1)
 		pt.Init(tet)
 
-		if !tet.ZPlaneSlice(pt, 0, poly) { continue }
+		if !tet.ZPlaneSlice(pt, 0, poly) {
+			continue
+		}
 		low, width := poly.AngleRange()
 
 		for j, phi := range phis {
@@ -313,7 +319,7 @@ func BenchmarkSolveLine(b *testing.B) {
 	y02, m2 := 5.0, 1.0
 	for i := 0; i < b.N; i++ {
 		x := (y02 - y01) / (m2 - m1)
-		y := y01  + x * m1
+		y := y01 + x*m1
 		math.Sqrt(x*x + y*y)
 	}
 }
@@ -322,18 +328,20 @@ func BenchmarkSphereLineSegmentIntersection(b *testing.B) {
 	n := 1000
 	ls := make([]LineSegment, n)
 	for i := range ls {
-		ls[i] = LineSegment{ [3]float32{ float32(rand.Float64()),
+		ls[i] = LineSegment{[3]float32{float32(rand.Float64()),
 			float32(rand.Float64()),
-			float32(rand.Float64())}, [3]float32{0, 0, 1}, 0, 1 }
+			float32(rand.Float64())}, [3]float32{0, 0, 1}, 0, 1}
 	}
 	// Want most of the lines to intersect.
-	sphere := Sphere{ [3]float32{0.5, 0.5, 0.5}, 0.5 }
+	sphere := Sphere{[3]float32{0.5, 0.5, 0.5}, 0.5}
 
 	b.ResetTimer()
 	idx := 0
 	for i := 0; i < b.N; i++ {
 		sphere.LineSegmentIntersect(&ls[idx])
 		idx++
-		if idx == n { idx = 0 }
+		if idx == n {
+			idx = 0
+		}
 	}
 }

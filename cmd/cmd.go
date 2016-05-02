@@ -6,17 +6,17 @@ import (
 	"fmt"
 	//"io/ioutil"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 
+	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/version"
-	"github.com/phil-mansfield/shellfish/cmd/env"
 )
 
 var ModeNames map[string]Mode = map[string]Mode{
-	"id": &IDConfig{},
-	"tree": &TreeConfig{},
+	"id":    &IDConfig{},
+	"tree":  &TreeConfig{},
 	"coord": &CoordConfig{},
 	"shell": &ShellConfig{},
 	"stats": &StatsConfig{},
@@ -44,24 +44,24 @@ type GlobalConfig struct {
 	env.ParticleInfo
 	env.HaloInfo
 
-	Version             string
+	Version string
 
-	SnapshotType        string
-	HaloType            string
-	TreeType            string
+	SnapshotType string
+	HaloType     string
+	TreeType     string
 
-	MemoDir             string
+	MemoDir string
 
 	HaloIDColumn        int64
 	HaloM200mColumn     int64
 	HaloPositionColumns []int64
 
-	HaloPositionUnits   string
-	HaloMassUnits       string
+	HaloPositionUnits string
+	HaloMassUnits     string
 
-	Endianness          string
-	ValidateFormats     bool
-	Threads int64
+	Endianness      string
+	ValidateFormats bool
+	Threads         int64
 }
 
 var _ Mode = &GlobalConfig{}
@@ -99,7 +99,9 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 
 	vars.Int(&config.Threads, "Threads", -1)
 
-	if err := parse.ReadConfig(fname, vars); err != nil { return err }
+	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
 	config.HSnapMax = config.SnapMax
 	config.HSnapMin = config.SnapMin
 	return config.validate()
@@ -115,7 +117,7 @@ func (config *GlobalConfig) validate() error {
 	}
 	smajor, sminor, spatch, _ := version.Parse(version.SourceVersion)
 	if major != smajor || minor != sminor || patch != spatch {
-		return fmt.Errorf("The 'Version' variable is set to %s, but the " +
+		return fmt.Errorf("The 'Version' variable is set to %s, but the "+
 			"version of the source is %s",
 			config.Version, version.SourceVersion)
 	}
@@ -125,7 +127,7 @@ func (config *GlobalConfig) validate() error {
 	case "":
 		return fmt.Errorf("The 'SnapshotType variable isn't set.'")
 	default:
-		return fmt.Errorf("The 'SnapshotType' variable is set to '%s', " +
+		return fmt.Errorf("The 'SnapshotType' variable is set to '%s', "+
 			"which I don't recognize.", config.SnapshotType)
 	}
 
@@ -134,8 +136,8 @@ func (config *GlobalConfig) validate() error {
 	case "":
 		return fmt.Errorf("The 'HaloType' variable isn't set.'")
 	default:
-		return fmt.Errorf("The 'HaloType' variable is set to '%s', " +
-		"which I don't recognize.", config.HaloType)
+		return fmt.Errorf("The 'HaloType' variable is set to '%s', "+
+			"which I don't recognize.", config.HaloType)
 	}
 
 	config.HaloPositionUnits = strings.Join(
@@ -147,8 +149,8 @@ func (config *GlobalConfig) validate() error {
 	case "":
 		return fmt.Errorf("The 'HaloPositionUnits' variable isn't set.")
 	default:
-		return fmt.Errorf("The 'HaloPositionUnits variable is set to '%s', " +
-		"which I don't understand.", config.HaloPositionUnits)
+		return fmt.Errorf("The 'HaloPositionUnits variable is set to '%s', "+
+			"which I don't understand.", config.HaloPositionUnits)
 	}
 
 	config.HaloMassUnits = strings.Join(
@@ -160,8 +162,8 @@ func (config *GlobalConfig) validate() error {
 	case "":
 		return fmt.Errorf("The 'HaloMassUnits' variable isn't set.")
 	default:
-		return fmt.Errorf("The 'HaloMassUnits variable is set to '%s', " +
-		"which I don't understand.", config.HaloPositionUnits)
+		return fmt.Errorf("The 'HaloMassUnits variable is set to '%s', "+
+			"which I don't understand.", config.HaloPositionUnits)
 	}
 
 	switch config.TreeType {
@@ -169,8 +171,8 @@ func (config *GlobalConfig) validate() error {
 	case "":
 		return fmt.Errorf("The 'TreeType variable isn't set.'")
 	default:
-		return fmt.Errorf("The 'TreeType' variable is set to '%s', " +
-		"which I don't recognize.", config.TreeType)
+		return fmt.Errorf("The 'TreeType' variable is set to '%s', "+
+			"which I don't recognize.", config.TreeType)
 	}
 
 	if config.HaloDir == "" {
@@ -213,7 +215,7 @@ func (config *GlobalConfig) validate() error {
 	case "LittleEndian", "BigEndian", "SystemOrder":
 	default:
 		return fmt.Errorf("The variable 'Endianness' must be sent to " +
-		"either 'SystemOrder', 'LittleEndian', or 'BigEndian'.")
+			"either 'SystemOrder', 'LittleEndian', or 'BigEndian'.")
 	}
 
 	return validateFormat(config)
@@ -262,7 +264,7 @@ func validateFormat(config *GlobalConfig) error {
 		}
 	}
 
-	if len(config.SnapshotFormatMeanings) == 0{
+	if len(config.SnapshotFormatMeanings) == 0 {
 		return fmt.Errorf("'SnapshotFormatMeanings' was not set.")
 	}
 
@@ -279,16 +281,18 @@ func validateFormat(config *GlobalConfig) error {
 		case len(meaning) > 5 && meaning[:5] == "Block":
 			ending := meaning[5:]
 			n, err := strconv.Atoi(ending)
-			if err != nil { goto nextCase }
+			if err != nil {
+				goto nextCase
+			}
 			if n < 0 || n >= len(config.BlockMaxes) {
-				return fmt.Errorf("'SnapshotFormatMeaning'[%d] specifies an " +
+				return fmt.Errorf("'SnapshotFormatMeaning'[%d] specifies an "+
 					"invalid block range.", i)
 			}
 			return nil
 		nextCase:
 			fallthrough
 		default:
-			return fmt.Errorf("I don't understand '%s' from " +
+			return fmt.Errorf("I don't understand '%s' from "+
 				"'SnapshotFormatMeaning'[%d]", meaning, i)
 		}
 	}

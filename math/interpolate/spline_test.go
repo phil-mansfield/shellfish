@@ -11,10 +11,12 @@ import (
 type func1D func(float64) float64
 
 func splinePlots(xs, ys []float64) {
-	spXs := linspace(xs[0], xs[len(xs) - 1], 100)
+	spXs := linspace(xs[0], xs[len(xs)-1], 100)
 	spYs := make([]float64, 100)
 	sp := NewSpline(xs, ys)
-	for i := 0; i < 100; i++ { spYs[i] = sp.Eval(spXs[i]) }
+	for i := 0; i < 100; i++ {
+		spYs[i] = sp.Eval(spXs[i])
+	}
 
 	plt.Plot(spXs, spYs, "b", plt.Label("Spline"), plt.LW(3))
 	plt.Plot(xs, ys, "ok", plt.Label("Input"), plt.LW(3))
@@ -34,7 +36,7 @@ func (sp *Spline) mapTerm(i int, xs []float64) []float64 {
 func randSeq(n int, lo, hi float64) []float64 {
 	out := make([]float64, n)
 	for i := range out {
-		out[i] = rand.Float64() * (hi - lo) + lo
+		out[i] = rand.Float64()*(hi-lo) + lo
 	}
 	return out
 }
@@ -58,5 +60,3 @@ func TestPyplotSpline(t *testing.T) {
 	plt.Legend(plt.Loc("upper left"))
 	plt.Show()
 }
-
-

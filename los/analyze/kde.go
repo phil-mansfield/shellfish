@@ -8,21 +8,27 @@ import (
 )
 
 func GaussianKDE(xs []float64, h, low, high float64, n int) *intr.Spline {
-	dx := (high - low) / float64(n - 1)
+	dx := (high - low) / float64(n-1)
 	spXs, spYs := make([]float64, n), make([]float64, n)
-	for i := 0; i < n-1; i++ { spXs[i] = low + dx*float64(i) }
-	spXs[n - 1] = high
+	for i := 0; i < n-1; i++ {
+		spXs[i] = low + dx*float64(i)
+	}
+	spXs[n-1] = high
 
 	maxDist := h * 3
 
-	for _, x:= range xs {
+	for _, x := range xs {
 		lowIdx := int((x - maxDist - low) / dx)
-		highIdx := int((x + maxDist -low) / dx) + 1
-		if lowIdx < 0 { lowIdx = 0 }
-		if highIdx >= n { highIdx = n - 1 }
+		highIdx := int((x+maxDist-low)/dx) + 1
+		if lowIdx < 0 {
+			lowIdx = 0
+		}
+		if highIdx >= n {
+			highIdx = n - 1
+		}
 		for i := lowIdx; i <= highIdx; i++ {
 			udx := (spXs[i] - x) / h
-			spYs[i] += math.Exp(-udx*udx)
+			spYs[i] += math.Exp(-udx * udx)
 		}
 	}
 
@@ -30,11 +36,11 @@ func GaussianKDE(xs []float64, h, low, high float64, n int) *intr.Spline {
 }
 
 type KDETree struct {
-	h, low, high float64
-	spTree [][]*intr.Spline
-	maxesTree [][][]float64
+	h, low, high      float64
+	spTree            [][]*intr.Spline
+	maxesTree         [][][]float64
 	thTree, connMaxes [][]float64
-	spRs []float64
+	spRs              []float64
 }
 
 func NewKDETree(
@@ -52,10 +58,12 @@ func NewKDETree(
 			"actual halo centers, this might also be an internal Shellfish " +
 			"error and you should submit a bug report.")
 	}
-	
+
 	kt.low, kt.high = 0, rs[0]
 	for _, r := range rs {
-		if r > kt.high { kt.high = r }
+		if r > kt.high {
+			kt.high = r
+		}
 	}
 
 	kt.spRs = make([]float64, rn)
@@ -63,7 +71,7 @@ func NewKDETree(
 	for i := range kt.spRs {
 		kt.spRs[i] = kt.low + dr*float64(i)
 	}
-	kt.spRs[rn - 1] = kt.high
+	kt.spRs[rn-1] = kt.high
 
 	kt.h = (kt.high - kt.low) / hFactor
 	kt.spTree = [][]*intr.Spline{{GaussianKDE(rs, kt.h, kt.low, kt.high, 100)}}
@@ -81,10 +89,14 @@ func (kt *KDETree) PlotLevel(level int, opts ...interface{}) {
 	rs := make([]float64, 100)
 	vals := make([]float64, 100)
 	dr := (kt.high - kt.low) / float64(len(rs))
-	for i := range rs { rs[i] = dr * (float64(i) + 0.5) + kt.low }
+	for i := range rs {
+		rs[i] = dr*(float64(i)+0.5) + kt.low
+	}
 
 	for _, sp := range sps {
-		for j := range vals { vals[j] = sp.Eval(rs[j]) }
+		for j := range vals {
+			vals[j] = sp.Eval(rs[j])
+		}
 		args := append([]interface{}{rs, vals}, opts...)
 		plt.Plot(args...)
 	}
@@ -108,7 +120,9 @@ func binByTheta(
 	rs, ths []float64, bins int,
 ) (rBins [][]float64, thBins []float64) {
 	rBins = make([][]float64, bins)
-	for i := range rBins { rBins[i] = []float64{} }
+	for i := range rBins {
+		rBins[i] = []float64{}
+	}
 	dth := (2 * math.Pi) / float64(bins)
 	for i := range rs {
 		idx := int(ths[i] / dth)
@@ -139,27 +153,35 @@ func (kt *KDETree) findMaxes() {
 func localSplineMaxes(xs []float64, sp *intr.Spline) []float64 {
 	prev, curr, next := sp.Eval(xs[0]), sp.Eval(xs[1]), sp.Eval(xs[2])
 	maxes := []float64{}
-	if curr > next && curr > prev { maxes = append(maxes, xs[1]) }
-	for i := 2; i < len(xs) - 1; i++ {
+	if curr > next && curr > prev {
+		maxes = append(maxes, xs[1])
+	}
+	for i := 2; i < len(xs)-1; i++ {
 		prev, curr, next = curr, next, sp.Eval(xs[i+1])
-		if curr > next && curr > prev { maxes = append(maxes, xs[i]) }
+		if curr > next && curr > prev {
+			maxes = append(maxes, xs[i])
+		}
 	}
 	return maxes
 }
 
 func (kt *KDETree) connectMaxes() {
 	kt.connMaxes = [][]float64{{kt.maxesTree[0][0][0]}}
-	
+
 	for split, maxes := range kt.maxesTree[1:] {
-		prevMaxes := kt.connMaxes[len(kt.connMaxes) - 1]
-		currMaxes := make([]float64, 2 * len(prevMaxes))
-		for i := range currMaxes { currMaxes[i] = math.NaN() }
+		prevMaxes := kt.connMaxes[len(kt.connMaxes)-1]
+		currMaxes := make([]float64, 2*len(prevMaxes))
+		for i := range currMaxes {
+			currMaxes[i] = math.NaN()
+		}
 
 		for node := range maxes {
 			nodeMaxes := maxes[node]
-			if len(maxes) == 0 { continue }
-			nodePrevMax := prevMaxes[node / 2]
-			
+			if len(maxes) == 0 {
+				continue
+			}
+			nodePrevMax := prevMaxes[node/2]
+
 			var connMax float64
 			if math.IsNaN(nodePrevMax) || len(nodeMaxes) == 0 {
 				connMax = math.NaN()
@@ -167,19 +189,23 @@ func (kt *KDETree) connectMaxes() {
 				connIdx, minDist := -1, math.Inf(+1)
 				for i := range nodeMaxes {
 					dist := math.Abs(nodePrevMax - nodeMaxes[i])
-					if dist < minDist { connIdx, minDist = i, dist }
+					if dist < minDist {
+						connIdx, minDist = i, dist
+					}
 				}
 				connMax = nodeMaxes[connIdx]
 			}
-			
+
 			if !math.IsNaN(connMax) && (split == 0 ||
-				math.Abs(connMax - nodePrevMax) < kt.h) {
+				math.Abs(connMax-nodePrevMax) < kt.h) {
 				currMaxes[node] = connMax
 			} else {
 				for _, max := range nodeMaxes {
 					rFunc := kt.GetRFunc(split, Radial)
 					spR := rFunc(kt.thTree[split+1][node])
-					if math.Abs(max - spR) < kt.h { currMaxes[node] = max }
+					if math.Abs(max-spR) < kt.h {
+						currMaxes[node] = max
+					}
 				}
 			}
 		}
@@ -190,8 +216,10 @@ func (kt *KDETree) connectMaxes() {
 
 func (kt *KDETree) getFinestMax(idx, level int) float64 {
 	for i := 0; i <= level; i++ {
-		r := kt.connMaxes[level - i][idx / (1 << uint(i))]
-		if !math.IsNaN(r) { return r }
+		r := kt.connMaxes[level-i][idx/(1<<uint(i))]
+		if !math.IsNaN(r) {
+			return r
+		}
 	}
 	panic(":3")
 }
@@ -209,34 +237,37 @@ func (kt *KDETree) GetConnMaxes(level int) (rs, ths []float64) {
 func extendAngularRange(maxes, ths []float64) (spMaxes, spThs []float64) {
 	n := len(maxes)
 	buf := 5
-	if buf > n { buf = n }
-	spThs, spMaxes = make([]float64, 2*buf + n), make([]float64, 2*buf + n)
+	if buf > n {
+		buf = n
+	}
+	spThs, spMaxes = make([]float64, 2*buf+n), make([]float64, 2*buf+n)
 
 	j := n - buf
 	for i := 0; i < buf; i++ {
-		spThs[i], spMaxes[i] = ths[j] - 2*math.Pi, maxes[j]
+		spThs[i], spMaxes[i] = ths[j]-2*math.Pi, maxes[j]
 		j++
 	}
 	j = 0
-	for i := buf; i < n + buf; i++ {
+	for i := buf; i < n+buf; i++ {
 		spThs[i], spMaxes[i] = ths[j], maxes[j]
 		j++
 	}
 	j = 0
-	for i := n + buf; i < n + 2*buf; i++ {
-		spThs[i], spMaxes[i] = ths[j] + 2*math.Pi, maxes[j]
+	for i := n + buf; i < n+2*buf; i++ {
+		spThs[i], spMaxes[i] = ths[j]+2*math.Pi, maxes[j]
 		j++
 	}
 	return spMaxes, spThs
 }
 
 type RFuncType int
+
 const (
 	Radial RFuncType = iota
 	Cartesian
 )
 
-func (kt *KDETree) GetRFunc(level int, rt RFuncType) (func(float64) float64) {
+func (kt *KDETree) GetRFunc(level int, rt RFuncType) func(float64) float64 {
 	switch rt {
 	case Radial:
 		maxes, ths := kt.GetConnMaxes(level)
@@ -249,7 +280,7 @@ func (kt *KDETree) GetRFunc(level int, rt RFuncType) (func(float64) float64) {
 		spXs, spYs := make([]float64, len(spThs)), make([]float64, len(spThs))
 		for i, th := range spThs {
 			sin, cos := math.Sincos(th)
-			spXs[i], spYs[i] = spMaxes[i] * cos, spMaxes[i] * sin
+			spXs[i], spYs[i] = spMaxes[i]*cos, spMaxes[i]*sin
 		}
 		xSp, ySp := intr.NewSpline(spThs, spXs), intr.NewSpline(spThs, spYs)
 		return func(th float64) float64 {
@@ -270,7 +301,7 @@ func (kt *KDETree) FilterNearby(
 	rFunc := kt.GetRFunc(level, Radial)
 	fRs, fThs, idxs = []float64{}, []float64{}, []int{}
 	for i := range rs {
-		if math.Abs(rFunc(ths[i]) - rs[i]) < dr {
+		if math.Abs(rFunc(ths[i])-rs[i]) < dr {
 			fRs = append(fRs, rs[i])
 			fThs = append(fThs, ths[i])
 			idxs = append(idxs, i)

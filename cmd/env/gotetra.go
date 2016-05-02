@@ -8,7 +8,7 @@ func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
 
 	if len(info.BlockMins) != 3 {
 		return fmt.Errorf(
-			"'BlockMins' had %d elements, but 3 are required for " +
+			"'BlockMins' had %d elements, but 3 are required for "+
 				"gotetra catalogs.", len(info.BlockMins),
 		)
 	}
@@ -21,7 +21,9 @@ func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
 	for i := range cols {
 		var err error
 		cols[i], snapAligned[i], err = info.GetColumn(i)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 	}
 
 	formatArgs := interleave(cols, snapAligned)
@@ -36,6 +38,8 @@ func (cat *Catalogs) InitGotetra(info *ParticleInfo, validate bool) error {
 		cat.names = append(cat.names, names)
 	}
 
-	if validate { panic("File validation not yet implemented.") }
+	if validate {
+		panic("File validation not yet implemented.")
+	}
 	return nil
 }

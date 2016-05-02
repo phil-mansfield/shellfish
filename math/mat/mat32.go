@@ -6,7 +6,7 @@ import (
 
 // Matrix32 represents a matrix of float32 values.
 type Matrix32 struct {
-	Vals []float32
+	Vals          []float32
 	Width, Height int
 }
 
@@ -15,9 +15,9 @@ type Matrix32 struct {
 // their memory consumption and to prevent recomputing the same decomposition
 // many times.
 type LUFactors32 struct {
-	lu Matrix32
+	lu    Matrix32
 	pivot []int
-	d float32
+	d     float32
 }
 
 // NewMatrix32 creates a matrix with the specified values and dimensions.
@@ -33,7 +33,7 @@ func (m *Matrix32) Init(vals []float32, width, height int) {
 		panic("width must be positive.")
 	} else if height <= 0 {
 		panic("height must be positive.")
-	} else if width * height != len(vals) {
+	} else if width*height != len(vals) {
 		panic("height * width must equal len(vals).")
 	}
 
@@ -48,16 +48,18 @@ func (m1 *Matrix32) Mult(m2 *Matrix32) *Matrix32 {
 	return m1.MultAt(m2, out)
 }
 
-// Mult multiplies to matrices together and writes the result to the 
+// Mult multiplies to matrices together and writes the result to the
 // specified matrix.
 func (m1 *Matrix32) MultAt(m2, out *Matrix32) *Matrix32 {
 	if m1.Width != m2.Height {
 		panic("Multiplication of incompatible matrix sizes.")
 	}
 
-	for i := range out.Vals { out.Vals[i] = 0 }
+	for i := range out.Vals {
+		out.Vals[i] = 0
+	}
 	for i := 0; i < m1.Height; i++ {
-		off := i*m1.Width
+		off := i * m1.Width
 		for j := 0; j < m2.Width; j++ {
 			outIdx := off + j
 			for k := 0; k < m1.Width; k++ {
@@ -111,7 +113,9 @@ func NewLUFactors32(n int) *LUFactors32 {
 
 // LU returns the LU decomposition of a matrix.
 func (m *Matrix32) LU() *LUFactors32 {
-	if m.Width != m.Height { panic("m is non-square.") }
+	if m.Width != m.Height {
+		panic("m is non-square.")
+	}
 
 	lu := NewLUFactors32(m.Width)
 	m.LUFactorsAt(lu)
@@ -135,10 +139,14 @@ func (lu *LUFactors32) factorizeInPlace() {
 	for i := 0; i < n; i++ {
 		big := float32(0.0)
 		for j := 0; j < n; j++ {
-			tmp := float32(math.Abs(float64(m.Vals[i*n + j])))
-			if tmp > big { big = tmp }
+			tmp := float32(math.Abs(float64(m.Vals[i*n+j])))
+			if tmp > big {
+				big = tmp
+			}
 		}
-		if big == 0 { panic("Singular Matrix.") }
+		if big == 0 {
+			panic("Singular Matrix.")
+		}
 		vv[i] = 1 / big
 	}
 
@@ -146,7 +154,7 @@ func (lu *LUFactors32) factorizeInPlace() {
 	for k := 0; k < n; k++ {
 		big := float32(0.0)
 		for i := k; i < n; i++ {
-			tmp := vv[i] * float32(math.Abs(float64(m.Vals[i*n + k])))
+			tmp := vv[i] * float32(math.Abs(float64(m.Vals[i*n+k])))
 			if tmp > big {
 				big = tmp
 				imax = i
@@ -154,19 +162,21 @@ func (lu *LUFactors32) factorizeInPlace() {
 		}
 		if k != imax {
 			for j := 0; j < n; j++ {
-				m.Vals[imax*n + j], m.Vals[k*n + j] =
-					m.Vals[k*n + j], m.Vals[imax*n + j]
+				m.Vals[imax*n+j], m.Vals[k*n+j] =
+					m.Vals[k*n+j], m.Vals[imax*n+j]
 			}
 			lu.d = -lu.d
 			vv[imax] = vv[k]
 		}
 		lu.pivot[k] = imax
-		if m.Vals[k*n + k] == 0 { m.Vals[k*n + k] = 1e-20 }
+		if m.Vals[k*n+k] == 0 {
+			m.Vals[k*n+k] = 1e-20
+		}
 		for i := k + 1; i < n; i++ {
-			m.Vals[i*n + k] /= m.Vals[k*n + k]
-			tmp := m.Vals[i*n + k]
+			m.Vals[i*n+k] /= m.Vals[k*n+k]
+			tmp := m.Vals[i*n+k]
 			for j := k + 1; j < n; j++ {
-				m.Vals[i*n + j] -= tmp*m.Vals[k*n + j]
+				m.Vals[i*n+j] -= tmp * m.Vals[k*n+j]
 			}
 		}
 	}
@@ -207,7 +217,7 @@ func forwardSubst32(n int, pivot []int, lu, bs, ys []float32) {
 	for i := 0; i < n; i++ {
 		sum := float32(0.0)
 		for j := 0; j < i; j++ {
-			sum += lu[i*n + j] * ys[j]
+			sum += lu[i*n+j] * ys[j]
 		}
 		ys[i] = (ys[i] - sum)
 	}
@@ -219,14 +229,14 @@ func backSubst32(n int, lu, ys, xs []float32) {
 	for i := n - 1; i >= 0; i-- {
 		sum := float32(0.0)
 		for j := i + 1; j < n; j++ {
-			sum += lu[i*n + j] * xs[j]
+			sum += lu[i*n+j] * xs[j]
 		}
-		xs[i] = (ys[i] - sum) / lu[i*n + i]
+		xs[i] = (ys[i] - sum) / lu[i*n+i]
 	}
 }
 
 // SolveMatrix solves the equation m * x = b.
-// 
+//
 // x and b may point to the same physical memory.
 func (luf *LUFactors32) SolveMatrix(b, x *Matrix32) *Matrix32 {
 	xs := x.Vals
@@ -235,7 +245,7 @@ func (luf *LUFactors32) SolveMatrix(b, x *Matrix32) *Matrix32 {
 	if b.Width != b.Height {
 		panic("b matrix is non-square.")
 	} else if x.Width != x.Height {
-		panic("x matrix is non-square.") 
+		panic("x matrix is non-square.")
 	} else if n != b.Width {
 		panic("b matrix different size than m matrix.")
 	} else if n != x.Width {
@@ -246,11 +256,11 @@ func (luf *LUFactors32) SolveMatrix(b, x *Matrix32) *Matrix32 {
 
 	for j := 0; j < n; j++ {
 		for i := 0; i < n; i++ {
-			col[i] = xs[i*n + j]
+			col[i] = xs[i*n+j]
 		}
 		luf.SolveVector(col, col)
 		for i := 0; i < n; i++ {
-			xs[i*n + j] = col[i]
+			xs[i*n+j] = col[i]
 		}
 	}
 
@@ -271,7 +281,7 @@ func (luf *LUFactors32) InvertAt(out *Matrix32) *Matrix32 {
 		out.Vals[i] = 0
 	}
 	for i := 0; i < n; i++ {
-		out.Vals[i*n + i] = 1
+		out.Vals[i*n+i] = 1
 	}
 
 	luf.SolveMatrix(out, out)
@@ -286,7 +296,7 @@ func (luf *LUFactors32) Determinant() float32 {
 	n := luf.lu.Width
 
 	for i := 0; i < luf.lu.Width; i++ {
-		d *= lu[i*n + i]
+		d *= lu[i*n+i]
 	}
 	return d
 }

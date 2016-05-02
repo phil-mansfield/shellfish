@@ -23,17 +23,21 @@ type GotetraBuffer struct {
 func NewGotetraBuffer(fname string) (VectorBuffer, error) {
 	hd := &gotetraHeader{}
 	f, _, err := loadSheetHeader(fname, hd)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	err = f.Close()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	sw, gw := hd.SegmentWidth, hd.GridWidth
 	buf := &GotetraBuffer{
 		sheet: make([][3]float32, gw*gw*gw),
-		xs: make([][3]float32, sw*sw*sw),
-		ms: make([]float32, sw*sw*sw),
-		open: false,
-		sw: int(sw), gw: int(gw),
+		xs:    make([][3]float32, sw*sw*sw),
+		ms:    make([]float32, sw*sw*sw),
+		open:  false,
+		sw:    int(sw), gw: int(gw),
 		mass: calcUniformMass(hd.Count, hd.TotalWidth, hd.Cosmo),
 	}
 
@@ -43,7 +47,7 @@ func NewGotetraBuffer(fname string) (VectorBuffer, error) {
 // Returned units are Msun/h.
 func calcUniformMass(count int64, tw float64, c CosmologyHeader) float32 {
 	rhoM0 := cosmo.RhoAverage(c.H100*100, c.OmegaM, c.OmegaL, 0)
-	mTot := (tw*tw*tw) * rhoM0
+	mTot := (tw * tw * tw) * rhoM0
 	return float32(mTot / float64(count))
 }
 
@@ -52,11 +56,15 @@ func (buf *GotetraBuffer) MinMass() float32 { return buf.mass }
 func (buf *GotetraBuffer) IsOpen() bool { return buf.open }
 
 func (buf *GotetraBuffer) Read(fname string) ([][3]float32, []float32, error) {
-	if buf.open { panic("Buffer already open.") }
+	if buf.open {
+		panic("Buffer already open.")
+	}
 	buf.open = true
-	
+
 	err := readSheetPositionsAt(fname, buf.sheet)
-	if err != nil { return nil, nil, err }
+	if err != nil {
+		return nil, nil, err
+	}
 
 	si := 0
 	for z := 0; z < buf.sw; z++ {
@@ -71,12 +79,14 @@ func (buf *GotetraBuffer) Read(fname string) ([][3]float32, []float32, error) {
 			}
 		}
 	}
-	
+
 	return buf.xs, buf.ms, nil
 }
 
 func (buf *GotetraBuffer) Close() {
-	if !buf.open { panic("Buffer already closed.") }
+	if !buf.open {
+		panic("Buffer already closed.")
+	}
 
 	buf.open = false
 }
@@ -91,23 +101,23 @@ The binary format used for phase sheets is as follows:
     3 - (sheet.Header) Header file containing meta-information about the
         sheet fragment.
     4 - ([][3]float32) Contiguous block of x, y, z coordinates. Given in Mpc.
- */
+*/
 type rawGotetraHeader struct {
 	Cosmo                              CosmologyHeader
 	Count, CountWidth                  int64
 	SegmentWidth, GridWidth, GridCount int64
 	Idx, Cells                         int64
 
-	Mass                               float64
-	TotalWidth                         float64
+	Mass       float64
+	TotalWidth float64
 
-	Origin, Width                      [3]float32
-	VelocityOrigin, VelocityWidth      [3]float32
+	Origin, Width                 [3]float32
+	VelocityOrigin, VelocityWidth [3]float32
 }
 
 func (raw *rawGotetraHeader) postprocess(hd *Header) {
 	hd.Cosmo = raw.Cosmo
-	
+
 	hd.N = raw.SegmentWidth * raw.SegmentWidth * raw.SegmentWidth
 	hd.TotalWidth = raw.TotalWidth
 	hd.Origin, hd.Width = raw.Origin, raw.Width
@@ -115,10 +125,9 @@ func (raw *rawGotetraHeader) postprocess(hd *Header) {
 
 type gotetraHeader struct {
 	rawGotetraHeader
-	N int64
+	N     int64
 	guard struct{} // Prevents accidentally trying to write/read this type.
 }
-
 
 // endianness is a utility function converting an endianness flag to a
 // byte order.
@@ -136,7 +145,9 @@ func loadSheetHeader(
 	file string, hdBuf *gotetraHeader,
 ) (*os.File, binary.ByteOrder, error) {
 	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
-	if err != nil { return nil, binary.LittleEndian, err }
+	if err != nil {
+		return nil, binary.LittleEndian, err
+	}
 
 	// order doesn't matter for this read, since flags are symmetric.
 	order := endianness(readInt32(f, binary.LittleEndian))
@@ -144,28 +155,36 @@ func loadSheetHeader(
 	headerSize := readInt32(f, order)
 	if headerSize != int32(unsafe.Sizeof(rawGotetraHeader{})) {
 		return nil, binary.LittleEndian,
-		fmt.Errorf("Expected catalog.SheetHeader size of %d, found %d.",
-			unsafe.Sizeof(rawGotetraHeader{}), headerSize,
-		)
+			fmt.Errorf("Expected catalog.SheetHeader size of %d, found %d.",
+				unsafe.Sizeof(rawGotetraHeader{}), headerSize,
+			)
 	}
 
-	_, err = f.Seek(4 + 4, 0)
-	if err != nil { return nil, binary.LittleEndian, err }
+	_, err = f.Seek(4+4, 0)
+	if err != nil {
+		return nil, binary.LittleEndian, err
+	}
 
 	err = binary.Read(f, order, &hdBuf.rawGotetraHeader)
-	if err != nil { return nil, binary.LittleEndian, err }
+	if err != nil {
+		return nil, binary.LittleEndian, err
+	}
 
 	// Deals with a bug in the current Shellfish version.
 	cw := hdBuf.CountWidth
-	hdBuf.Count = cw*cw*cw
-	
+	hdBuf.Count = cw * cw * cw
+
 	return f, order, nil
 }
 
 func (buf *GotetraBuffer) ReadHeader(fname string, out *Header) error {
 	f, _, err := loadSheetHeader(fname, &buf.hd)
-	if err != nil { return err }
-	if err = f.Close(); err != nil { return err }
+	if err != nil {
+		return err
+	}
+	if err = f.Close(); err != nil {
+		return err
+	}
 
 	buf.hd.postprocess(out)
 
@@ -176,18 +195,24 @@ func (buf *GotetraBuffer) ReadHeader(fname string, out *Header) error {
 func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
 	h := &gotetraHeader{}
 	f, order, err := loadSheetHeader(file, h)
-	if err != nil { return nil }
+	if err != nil {
+		return nil
+	}
 
 	if h.GridCount != int64(len(xsBuf)) {
-		return fmt.Errorf("Position buffer has length %d, but file %s has %d " +
-		"vectors.", len(xsBuf), file, h.GridCount)
+		return fmt.Errorf("Position buffer has length %d, but file %s has %d "+
+			"vectors.", len(xsBuf), file, h.GridCount)
 	}
 
 	// Go to block 4 in the file.
 	// The file pointer should already be here, but let's just be safe, okay?
-	f.Seek(int64(4 + 4 + int(unsafe.Sizeof(rawGotetraHeader{}))), 0)
-	if err := readVecAsByte(f, order, xsBuf); err != nil { return err }
+	f.Seek(int64(4+4+int(unsafe.Sizeof(rawGotetraHeader{}))), 0)
+	if err := readVecAsByte(f, order, xsBuf); err != nil {
+		return err
+	}
 
-	if err := f.Close(); err != nil { return err }
+	if err := f.Close(); err != nil {
+		return err
+	}
 	return nil
 }

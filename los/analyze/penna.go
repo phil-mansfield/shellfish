@@ -2,9 +2,9 @@ package analyze
 
 import (
 	"math"
-	
-	"github.com/phil-mansfield/shellfish/math/mat"
+
 	"github.com/phil-mansfield/shellfish/los"
+	"github.com/phil-mansfield/shellfish/math/mat"
 
 	"github.com/gonum/matrix/mat64"
 )
@@ -15,18 +15,20 @@ func pinv(m, t *mat.Matrix) *mat.Matrix {
 	gmt := mat64.NewDense(m.Width, m.Height, t.Vals)
 
 	out1 := mat64.NewDense(m.Height, m.Height,
-		make([]float64, m.Height * m.Height))
+		make([]float64, m.Height*m.Height))
 	out2 := mat64.NewDense(m.Width, m.Height,
-		make([]float64, m.Height * m.Width))
+		make([]float64, m.Height*m.Width))
 	out1.Mul(gm, gmt)
 	inv, err := mat64.Inverse(out1)
-	if err != nil { panic(err.Error()) }
+	if err != nil {
+		panic(err.Error())
+	}
 	out2.Mul(gmt, inv)
 
 	vals := make([]float64, m.Width*m.Height)
 	for y := 0; y < m.Width; y++ {
 		for x := 0; x < m.Height; x++ {
-			vals[y*m.Height + x] = out2.At(y, x)
+			vals[y*m.Height+x] = out2.At(y, x)
 		}
 	}
 	return mat.NewMatrix(vals, m.Height, m.Width)
@@ -51,7 +53,7 @@ func PennaCoeffs(xs, ys, zs []float64, I, J, K int) []float64 {
 		sinphis[i] = ys[i] / rs[i] / sinths[i]
 	}
 
-	MVals := make([]float64, I*J*K * len(xs))
+	MVals := make([]float64, I*J*K*len(xs))
 	M := mat.NewMatrix(MVals, len(rs), I*J*K)
 
 	// Populate matrix.
@@ -63,9 +65,9 @@ func PennaCoeffs(xs, ys, zs []float64, I, J, K int) []float64 {
 				sinphi := math.Pow(sinphis[n], float64(j))
 				cosphi := 1.0
 				for i := 0; i < I; i++ {
-					MVals[m*M.Width + n] =
+					MVals[m*M.Width+n] =
 						math.Pow(sinths[n], float64(i+j)) *
-						cosphi * costh * sinphi
+							cosphi * costh * sinphi
 					m++
 					cosphi *= cosphis[n]
 				}
@@ -100,14 +102,15 @@ func PennaFunc(cs []float64, I, J, K int) Shell {
 	}
 }
 
-
 func PennaVolumeFit(
 	xs, ys [][]float64, h *los.Halo, I, J int,
 ) (cs []float64, shell Shell) {
 	n := 0
-	for i := range xs { n += len(xs[i]) }
+	for i := range xs {
+		n += len(xs[i])
+	}
 	fXs, fYs, fZs := make([]float64, n), make([]float64, n), make([]float64, n)
-	
+
 	idx := 0
 	for i := range xs {
 		for j := range xs[i] {
@@ -125,19 +128,19 @@ func FilterPoints(
 	rs []RingBuffer, levels int, hFactor float64,
 ) (pxs, pys [][]float64, ok bool) {
 	pxs, pys = [][]float64{}, [][]float64{}
-	
+
 	for ri := range rs {
 		r := &rs[ri]
 		validXs := make([]float64, 0, r.N)
 		validYs := make([]float64, 0, r.N)
-		
+
 		for i := 0; i < r.N; i++ {
 			if r.Oks[i] {
 				validXs = append(validXs, r.PlaneXs[i])
 				validYs = append(validYs, r.PlaneYs[i])
 			}
 		}
-		
+
 		validRs, validPhis := []float64{}, []float64{}
 		for i := range r.Rs {
 			if r.Oks[i] {
@@ -145,14 +148,16 @@ func FilterPoints(
 				validPhis = append(validPhis, r.Phis[i])
 			}
 		}
-		
+
 		kt, ok := NewKDETree(validRs, validPhis, levels, hFactor)
-		if !ok { return nil, nil, false }
-		fRs, fThs, _ := kt.FilterNearby(validRs, validPhis, levels, kt.H() / 2)
+		if !ok {
+			return nil, nil, false
+		}
+		fRs, fThs, _ := kt.FilterNearby(validRs, validPhis, levels, kt.H()/2)
 		fXs, fYs := make([]float64, len(fRs)), make([]float64, len(fRs))
 		for i := range fRs {
 			sin, cos := math.Sincos(fThs[i])
-			fXs[i], fYs[i] = fRs[i] * cos, fRs[i] * sin
+			fXs[i], fYs[i] = fRs[i]*cos, fRs[i]*sin
 		}
 
 		pxs, pys = append(pxs, fXs), append(pys, fYs)

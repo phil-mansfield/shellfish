@@ -1,9 +1,9 @@
 package sort
 
 import (
+	"math/rand"
 	"sort"
 	"testing"
-	"math/rand"
 )
 
 func sliceEq(xs, ys []float64) bool {
@@ -175,7 +175,6 @@ func BenchmarkMedian10(b *testing.B) {
 	}
 }
 
-
 func BenchmarkMedian100(b *testing.B) {
 	xs := randSlice(100)
 	buf := make([]float64, len(xs))
@@ -185,7 +184,6 @@ func BenchmarkMedian100(b *testing.B) {
 	}
 }
 
-
 func BenchmarkMedian1000(b *testing.B) {
 	xs := randSlice(1000)
 	buf := make([]float64, len(xs))
@@ -194,7 +192,6 @@ func BenchmarkMedian1000(b *testing.B) {
 		NthLargest(xs, n, buf)
 	}
 }
-
 
 func BenchmarkMedian10000(b *testing.B) {
 	xs := randSlice(10000)
@@ -227,7 +224,6 @@ func TestQuick(t *testing.T) {
 	}
 }
 
-
 func TestMedian(t *testing.T) {
 	buf := make([]float64, 1000)
 	for i := 0; i < 10; i++ {
@@ -239,10 +235,10 @@ func TestMedian(t *testing.T) {
 		for j := range mixed {
 			mixed[j] = xs[perm[j]]
 		}
-		
+
 		for j := 1; j <= len(buf); j++ {
 			val := NthLargest(mixed, j, buf)
-			if val != xs[len(xs) - j] {
+			if val != xs[len(xs)-j] {
 				t.Errorf("Failed to find NthLargest.")
 			}
 		}

@@ -18,14 +18,22 @@ func Parse(s string) (major, minor, patch int, err error) {
 	errMsg := "Version string does not take the form of three " +
 		"period-separated non-negative numbers"
 
-	if len(toks) != 3 { return -1, -1, -1, fmt.Errorf(errMsg) }
+	if len(toks) != 3 {
+		return -1, -1, -1, fmt.Errorf(errMsg)
+	}
 
 	major, err = strconv.Atoi(toks[0])
-	if err != nil { return -1, -1, -1, fmt.Errorf(errMsg) }
+	if err != nil {
+		return -1, -1, -1, fmt.Errorf(errMsg)
+	}
 	minor, err = strconv.Atoi(toks[1])
-	if err != nil { return -1, -1, -1, fmt.Errorf(errMsg) }
+	if err != nil {
+		return -1, -1, -1, fmt.Errorf(errMsg)
+	}
 	patch, err = strconv.Atoi(toks[2])
-	if err != nil { return -1, -1, -1, fmt.Errorf(errMsg) }
+	if err != nil {
+		return -1, -1, -1, fmt.Errorf(errMsg)
+	}
 
 	if major < 0 || minor < 0 || patch < 0 {
 		return -1, -1, -1, fmt.Errorf(errMsg)
@@ -38,9 +46,13 @@ func Parse(s string) (major, minor, patch int, err error) {
 // s2. An error is returned if either is invalid.
 func Later(s1, s2 string) (bool, error) {
 	major1, minor1, patch1, err := Parse(s1)
-	if err != nil { return false, err }
+	if err != nil {
+		return false, err
+	}
 	major2, minor2, patch2, err := Parse(s2)
-	if err != nil { return false, err }
+	if err != nil {
+		return false, err
+	}
 
 	if major1 == major2 {
 		if minor1 == minor2 {

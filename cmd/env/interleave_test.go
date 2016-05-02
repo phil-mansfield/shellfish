@@ -13,14 +13,14 @@ type interleaveTest struct {
 func TestEmptyInterleave(t *testing.T) {
 	tests := []interleaveTest{
 		{
-			cols: [][]interface{}{[]interface{}{}},
+			cols:   [][]interface{}{[]interface{}{}},
 			isSnap: []bool{true},
-			out: [][][]interface{}{},
+			out:    [][][]interface{}{},
 		},
 		{
-			cols: [][]interface{}{[]interface{}{}, []interface{}{}},
+			cols:   [][]interface{}{[]interface{}{}, []interface{}{}},
 			isSnap: []bool{true, false},
-			out: [][][]interface{}{},
+			out:    [][][]interface{}{},
 		},
 	}
 
@@ -36,7 +36,7 @@ func TestEmptyInterleave(t *testing.T) {
 func TestSingletonInterleave(t *testing.T) {
 	tests := []interleaveTest{
 		{
-			cols: [][]interface{}{[]interface{}{1, 2, 3}},
+			cols:   [][]interface{}{[]interface{}{1, 2, 3}},
 			isSnap: []bool{true},
 			out: [][][]interface{}{
 				[][]interface{}{[]interface{}{1}},
@@ -88,7 +88,7 @@ func TestPairInterleave(t *testing.T) {
 			},
 		},
 		{
-			cols: [][]interface{}{[]interface{}{4, 5}, []interface{}{1, 2, 3}},
+			cols:   [][]interface{}{[]interface{}{4, 5}, []interface{}{1, 2, 3}},
 			isSnap: []bool{false, true},
 			out: [][][]interface{}{
 				[][]interface{}{[]interface{}{4, 1}, []interface{}{5, 1}},
@@ -155,9 +155,13 @@ func TestMultiInterleave(t *testing.T) {
 }
 
 func interleaveOutputEq(xs, ys [][][]interface{}) bool {
-	if len(xs) != len(ys) { return false }
+	if len(xs) != len(ys) {
+		return false
+	}
 	for i := range xs {
-		if len(xs[i]) != len(ys[i]) { return false }
+		if len(xs[i]) != len(ys[i]) {
+			return false
+		}
 		for j := range xs[i] {
 			if !intInterfacesEq(xs[i][j], ys[i][j]) {
 				return false
@@ -168,13 +172,21 @@ func interleaveOutputEq(xs, ys [][][]interface{}) bool {
 }
 
 func intInterfacesEq(xs, ys []interface{}) bool {
-	if len(xs) != len(ys) { return false }
+	if len(xs) != len(ys) {
+		return false
+	}
 	for i := range xs {
 		x, ok := xs[i].(int)
-		if !ok { return false }
+		if !ok {
+			return false
+		}
 		y, ok := ys[i].(int)
-		if !ok { return false }
-		if x != y { return false }
+		if !ok {
+			return false
+		}
+		if x != y {
+			return false
+		}
 	}
 	return true
 }

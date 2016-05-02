@@ -7,28 +7,29 @@ import (
 )
 
 const (
-	MaxDim = uint32(6)
-	MaxBit = uint32(30)
-	maxSeqNum = 1<<MaxBit
-	fac = 1.0 / maxSeqNum
+	MaxDim    = uint32(6)
+	MaxBit    = uint32(30)
+	maxSeqNum = 1 << MaxBit
+	fac       = 1.0 / maxSeqNum
 )
 
 var (
-	initMDeg = [MaxDim]uint32{1,2,3,3,4,4}
-	initIp = [MaxDim]uint32{0,1,1,2,1,4}
-	initIv = [MaxBit*MaxDim]uint32{
-		1,1,1,1,1,1,3,1,3,3,1,1,5,7,7,3,3,5,15,11,5,15,13,9,
+	initMDeg = [MaxDim]uint32{1, 2, 3, 3, 4, 4}
+	initIp   = [MaxDim]uint32{0, 1, 1, 2, 1, 4}
+	initIv   = [MaxBit * MaxDim]uint32{
+		1, 1, 1, 1, 1, 1, 3, 1, 3, 3, 1, 1, 5, 7, 7, 3, 3, 5, 15, 11, 5, 15, 13, 9,
 	}
 )
 
 type SobolSequence struct {
-	seqNum uint32
+	seqNum       uint32
 	ix, mdeg, ip [MaxDim]uint32
-	iv [MaxBit*MaxDim]uint32
-	fac float64
+	iv           [MaxBit * MaxDim]uint32
+	fac          float64
 
 	isInit bool
 }
+
 // See Press et al. 2007.
 func NewSobolSequence() *SobolSequence {
 	seq := &SobolSequence{}
@@ -38,8 +39,12 @@ func NewSobolSequence() *SobolSequence {
 
 // See Press et al. 2007.
 func (seq *SobolSequence) Init() {
-	for i := range seq.ix { seq.ix[i] = 0 }
-	if seq.isInit { return }
+	for i := range seq.ix {
+		seq.ix[i] = 0
+	}
+	if seq.isInit {
+		return
+	}
 	seq.seqNum = 0
 
 	seq.iv = initIv
@@ -48,21 +53,23 @@ func (seq *SobolSequence) Init() {
 
 	for k := uint32(0); k < MaxDim; k++ {
 		for j := uint32(0); j < seq.mdeg[k]; j++ {
-			seq.iv[MaxDim * j + k] <<= MaxBit - j - 1
+			seq.iv[MaxDim*j+k] <<= MaxBit - j - 1
 		}
 
 		deg := seq.mdeg[k]
 		for j := deg; j < MaxBit; j++ {
 			ipp := seq.ip[k]
-			i := seq.iv[MaxDim * (j - deg) + k]
+			i := seq.iv[MaxDim*(j-deg)+k]
 			i ^= (i >> deg)
 
 			for l := deg - 1; l >= 1; l-- {
-				if 1 & ipp == 1 { i ^= seq.iv[MaxDim * (j - 1) + k] }
+				if 1&ipp == 1 {
+					i ^= seq.iv[MaxDim*(j-1)+k]
+				}
 				ipp >>= 1
 			}
 
-			seq.iv[MaxDim * j + k] = i
+			seq.iv[MaxDim*j+k] = i
 		}
 	}
 
@@ -91,18 +98,22 @@ func (seq *SobolSequence) NextAt(target []float64) {
 
 	zeroIdx := uint32(0)
 	for zeroIdx = 0; zeroIdx < MaxBit; zeroIdx++ {
-		if (seq.seqNum & (1<<zeroIdx)) == 0 { break }
+		if (seq.seqNum & (1 << zeroIdx)) == 0 {
+			break
+		}
 	}
 
 	im := zeroIdx * MaxDim
 	for k := uint32(0); k < dim; k++ {
-		seq.ix[k] ^= seq.iv[im + k]
+		seq.ix[k] ^= seq.iv[im+k]
 		target[k] = float64(seq.ix[k]) * fac
 	}
 }
 
 func min(x, y int) int {
-	if x <= y { return x }
+	if x <= y {
+		return x
+	}
 	return y
 }
 

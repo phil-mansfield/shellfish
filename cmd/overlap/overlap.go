@@ -2,7 +2,7 @@ package overlap
 
 import (
 	"fmt"
-	
+
 	"github.com/phil-mansfield/shellfish/render/halo"
 )
 
@@ -17,7 +17,7 @@ var (
 // SubIDs returns the subhalos within OverlapMult * 3 of the given host
 // halos, including
 //
-// An error is 
+// An error is
 func SubIDs(ids, snaps []int) (
 	sIDs, sSnaps, hIDs []int, err error,
 ) {
@@ -30,18 +30,22 @@ func SubIDs(ids, snaps []int) (
 	}
 
 	subIDs := make([][]int, len(ids))
-	
+
 	for snap, group := range snapGroups {
 		// Read position data
 		hd, err := ReadSnapHeader(snap)
-		if err != nil { return nil, nil, nil, err }
+		if err != nil {
+			return nil, nil, nil, err
+		}
 		allIDs, err := ReadSortedRockstarIDs(snap, -1, halo.M200b)
-		if err != nil { return nil, nil, nil, err }
+		if err != nil {
+			return nil, nil, nil, err
+		}
 		vals, err := ReadRockstar(
 			snap, allIDs, halo.X, halo.Y, halo.Z, halo.Rad200b,
 		)
 		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
-		
+
 		// Find subhalos
 		g := halo.NewGrid(FinderCells, hd.TotalWidth, len(xs))
 		g.Insert(xs, ys, zs)
@@ -75,7 +79,6 @@ func SubIDs(ids, snaps []int) (
 			hIDs = append(hIDs, ids[i])
 		}
 	}
-	
+
 	return sIDs, sSnaps, hIDs, nil
 }
-

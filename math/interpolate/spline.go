@@ -15,7 +15,7 @@ type splineCoeff struct {
 // points.
 type Spline struct {
 	xs, ys, y2s []float64
-	coeffs []splineCoeff
+	coeffs      []splineCoeff
 
 	incr bool
 	// Usually the input data is uniform. This is our estimate of the point
@@ -27,10 +27,10 @@ type Spline struct {
 // must be sorted in increasing or decreasing order in x.
 func NewSpline(xs, ys []float64) *Spline {
 	if len(xs) != len(ys) {
-		panic(fmt.Sprintf("Table given to NewSpline() has len(xs) = %d " + 
+		panic(fmt.Sprintf("Table given to NewSpline() has len(xs) = %d "+
 			"but len(ys) = %d.", len(xs), len(ys)))
 	} else if len(xs) <= 1 {
-		panic(fmt.Sprintf("Table given to NewSpline() has " + 
+		panic(fmt.Sprintf("Table given to NewSpline() has "+
 			"length of %d.", len(xs)))
 	}
 
@@ -79,11 +79,15 @@ func (sp *Spline) Init(xs, ys []float64) {
 // x must be within the range of x values given to NewSpline().
 func (sp *Spline) Eval(x float64) float64 {
 	if x <= sp.xs[0] == sp.incr || x >= sp.xs[len(sp.xs)-1] == sp.incr {
-		if x == sp.xs[0] { return sp.ys[0] }
-		if x == sp.xs[len(sp.xs) - 1] { return sp.ys[len(sp.ys) - 1] }
+		if x == sp.xs[0] {
+			return sp.ys[0]
+		}
+		if x == sp.xs[len(sp.xs)-1] {
+			return sp.ys[len(sp.ys)-1]
+		}
 
-		panic(fmt.Sprintf("Point %g given to Spline.Eval() out of bounds " + 
-			"[%g, %g].", x, sp.xs[0], sp.xs[len(sp.xs) - 1]))
+		panic(fmt.Sprintf("Point %g given to Spline.Eval() out of bounds "+
+			"[%g, %g].", x, sp.xs[0], sp.xs[len(sp.xs)-1]))
 	}
 
 	i := sp.bsearch(x)
@@ -110,7 +114,7 @@ func (sp *Spline) EvalAll(xs []float64, out ...[]float64) []float64 {
 // x must be within the range of x values given to NewSpline().
 func (sp *Spline) Deriv(x float64, order int) float64 {
 	if x < sp.xs[0] == sp.incr || x > sp.xs[len(sp.xs)-1] == sp.incr {
-		panic(fmt.Sprintf("Point %g given to Spline.Differentiate() " + 
+		panic(fmt.Sprintf("Point %g given to Spline.Differentiate() "+
 			"out of bounds.", x))
 	}
 
@@ -125,7 +129,7 @@ func (sp *Spline) Deriv(x float64, order int) float64 {
 	case 2:
 		return 6*a*dx + 2*b
 	case 3:
-		return 6*a
+		return 6 * a
 	default:
 		return 0
 	}
@@ -133,12 +137,14 @@ func (sp *Spline) Deriv(x float64, order int) float64 {
 
 // Integrate integrates the spline from lo to hi.
 func (sp *Spline) Integrate(lo, hi float64) float64 {
-	if lo > hi { return -sp.Integrate(hi, lo) }
+	if lo > hi {
+		return -sp.Integrate(hi, lo)
+	}
 	if lo < sp.xs[0] == sp.incr || lo > sp.xs[len(sp.xs)-1] == sp.incr {
-		panic(fmt.Sprintf("Low bound %g in Spline.Integrate() " + 
+		panic(fmt.Sprintf("Low bound %g in Spline.Integrate() "+
 			"out of bounds.", lo))
 	} else if hi < sp.xs[0] == sp.incr || hi > sp.xs[len(sp.xs)-1] == sp.incr {
-		panic(fmt.Sprintf("High bound %g in Spline.Integrate() " + 
+		panic(fmt.Sprintf("High bound %g in Spline.Integrate() "+
 			"out of bounds.", hi))
 	}
 
@@ -150,7 +156,7 @@ func (sp *Spline) Integrate(lo, hi float64) float64 {
 		integTerm(&sp.coeffs[iHi], sp.xs[iHi], hi)
 
 	for i := iLo + 1; i < iHi; i++ {
-		sum += integTerm(&sp.coeffs[i], sp.xs[i], sp.xs[i + 1])
+		sum += integTerm(&sp.coeffs[i], sp.xs[i], sp.xs[i+1])
 	}
 	return sum
 }
@@ -184,9 +190,9 @@ func (sp *Spline) bsearch(x float64) int {
 		}
 	}
 
-	if lo == len(sp.xs) - 1 { 
+	if lo == len(sp.xs)-1 {
 		panic(fmt.Sprintf("Point %g out of Spline bounds [%g, %g].",
-			x, sp.xs[0], sp.xs[len(sp.xs) - 1]))
+			x, sp.xs[0], sp.xs[len(sp.xs)-1]))
 	}
 	return lo
 }
@@ -215,7 +221,7 @@ func (sp *Spline) calcY2s() {
 			((ys[j] - ys[j-1]) / (xs[j] - xs[j-1]))
 	}
 
-	TriDiagAt(as, bs, cs, rs, sp.y2s[1: n-1])
+	TriDiagAt(as, bs, cs, rs, sp.y2s[1:n-1])
 }
 
 func (sp *Spline) calcCoeffs() {
@@ -224,7 +230,7 @@ func (sp *Spline) calcCoeffs() {
 		dx := xs[i+1] - xs[i]
 		coeffs[i].a = (-y2s[i]/6 + y2s[i+1]/6) / dx
 		coeffs[i].b = y2s[i] / 2
-		coeffs[i].c = (ys[i+1] - ys[i])/dx + dx*(-y2s[i]/3 - y2s[i+1]/6)
+		coeffs[i].c = (ys[i+1]-ys[i])/dx + dx*(-y2s[i]/3-y2s[i+1]/6)
 		coeffs[i].d = ys[i]
 	}
 }
@@ -240,7 +246,7 @@ func (sp *splineRef) Eval(x float64) float64 {
 	panic("NYI")
 }
 
-func (sp *splineRef) EvalAll(xs []float64, out... []float64) []float64 {
+func (sp *splineRef) EvalAll(xs []float64, out ...[]float64) []float64 {
 	panic("NYI")
 }
 

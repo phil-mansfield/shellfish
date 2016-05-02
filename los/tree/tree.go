@@ -2,7 +2,7 @@ package tree
 
 import (
 	"fmt"
-	
+
 	ct "github.com/phil-mansfield/consistent_trees"
 )
 
@@ -15,7 +15,9 @@ import (
 func HaloHistories(
 	files []string, roots []int, snapOffset int,
 ) (ids [][]int, snaps [][]int, err error) {
-	if len(roots) == 0 { return [][]int{}, [][]int{}, nil }
+	if len(roots) == 0 {
+		return [][]int{}, [][]int{}, nil
+	}
 
 	ids, snaps = make([][]int, len(roots)), make([][]int, len(roots))
 
@@ -24,13 +26,17 @@ func HaloHistories(
 		ct.ReadTree(file)
 		var ok bool
 		for i, id := range roots {
-			if ids[i] != nil { continue }
+			if ids[i] != nil {
+				continue
+			}
 			if ids[i], snaps[i], ok = findHistory(id); ok {
 				foundCount++
 			}
 		}
 		ct.DeleteTree()
-		if foundCount == len(roots) { break }
+		if foundCount == len(roots) {
+			break
+		}
 	}
 
 	for i, idSnaps := range snaps {
@@ -42,7 +48,9 @@ func HaloHistories(
 	}
 
 	for i := range snaps {
-		for j := range snaps[i] { snaps[i][j] += snapOffset }
+		for j := range snaps[i] {
+			snaps[i][j] += snapOffset
+		}
 	}
 	return ids, snaps, nil
 }
@@ -50,23 +58,31 @@ func HaloHistories(
 // HaloSnaps takes a slice of Rockstar halo trees and a slice of IDs. It
 // will return the snapshots which each of those IDs are from.
 func HaloSnaps(files []string, ids []int) (snaps []int, err error) {
-	if len(ids) == 0 { return []int{}, nil }
+	if len(ids) == 0 {
+		return []int{}, nil
+	}
 
 	snaps = make([]int, len(ids))
-	for i := range snaps { snaps[i] = -1 }
+	for i := range snaps {
+		snaps[i] = -1
+	}
 
 	foundCount := 0
 	for _, file := range files {
 		ct.ReadTree(file)
 		for i, id := range ids {
-			if snaps[i] != -1 { continue }
+			if snaps[i] != -1 {
+				continue
+			}
 			if _, snap, ok := findHalo(id); ok {
 				snaps[i] = snap
 				foundCount++
 			}
 		}
 		ct.DeleteTree()
-		if foundCount == len(ids) { break }
+		if foundCount == len(ids) {
+			break
+		}
 	}
 
 	for i, snap := range snaps {
@@ -93,7 +109,9 @@ func findHalo(id int) (ct.Halo, int, bool) {
 
 func findHistory(id int) (ids, snaps []int, ok bool) {
 	h, snap, ok := findHalo(id)
-	if !ok { return nil, nil, false }
+	if !ok {
+		return nil, nil, false
+	}
 	desc, descSnaps := descTree(h)
 	prog, progSnaps := progTree(h)
 
@@ -108,9 +126,11 @@ func descTree(h ct.Halo) (ids, snaps []int) {
 	numLists := ct.GetHaloTree().NumLists()
 	for {
 		h, ok = h.Desc()
-		if !ok { break }
+		if !ok {
+			break
+		}
 		ids = append(ids, h.ID())
-		snaps = append(snaps, numLists - ct.LookupIndex(h.Scale()))
+		snaps = append(snaps, numLists-ct.LookupIndex(h.Scale()))
 	}
 	return ids, snaps
 }
@@ -121,9 +141,11 @@ func progTree(h ct.Halo) (ids, snaps []int) {
 	numLists := ct.GetHaloTree().NumLists()
 	for {
 		h, ok = h.Prog()
-		if !ok { break }
+		if !ok {
+			break
+		}
 		ids = append(ids, h.ID())
-		snaps = append(snaps, numLists - ct.LookupIndex(h.Scale()))
+		snaps = append(snaps, numLists-ct.LookupIndex(h.Scale()))
 	}
 	return ids, snaps
 }
@@ -131,7 +153,7 @@ func progTree(h ct.Halo) (ids, snaps []int) {
 func reverse(xs []int) []int {
 	out := make([]int, len(xs))
 	for i := range xs {
-		out[i] = xs[len(xs) - 1 - i]
+		out[i] = xs[len(xs)-1-i]
 	}
 	return out
 }

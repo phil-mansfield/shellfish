@@ -5,13 +5,12 @@ import (
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
-	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/cmd/halo"
+	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/io"
 )
 
 type CoordConfig struct {
-
 }
 
 var _ Mode = &CoordConfig{}
@@ -26,16 +25,20 @@ func (config *CoordConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	ids, snaps := intCols[0], intCols[1]
 
-	if len(ids) == 0 { return nil, fmt.Errorf("In input IDs.") }
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("In input IDs.")
+	}
 
 	vars := &halo.VarColumns{
-		ID: int(gConfig.HaloIDColumn),
-		X: int(gConfig.HaloPositionColumns[0]),
-		Y: int(gConfig.HaloPositionColumns[1]),
-		Z: int(gConfig.HaloPositionColumns[2]),
+		ID:    int(gConfig.HaloIDColumn),
+		X:     int(gConfig.HaloPositionColumns[0]),
+		Y:     int(gConfig.HaloPositionColumns[1]),
+		Z:     int(gConfig.HaloPositionColumns[2]),
 		M200m: int(gConfig.HaloM200mColumn),
 	}
 
@@ -43,10 +46,14 @@ func (config *CoordConfig) Run(
 		e.ParticleCatalog(snaps[0], 0),
 		gConfig.SnapshotType, gConfig.Endianness,
 	)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, vars, buf, e)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	lines := catalog.FormatCols(
 		[][]int{ids, snaps}, [][]float64{xs, ys, zs, rs},
@@ -72,7 +79,9 @@ func readHaloCoords(
 	rs = make([]float64, len(ids))
 
 	for snap, _ := range snapBins {
-		if snap == -1 { continue }
+		if snap == -1 {
+			continue
+		}
 		snapIDs := snapBins[snap]
 		idxs := idxBins[snap]
 
@@ -80,7 +89,9 @@ func readHaloCoords(
 			snap, snapIDs, vars, buf, e,
 		)
 
-		if err != nil { return nil, nil, nil, nil, err }
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
 
 		for i, idx := range idxs {
 			xs[idx] = sxs[i]

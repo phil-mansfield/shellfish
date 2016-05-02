@@ -14,7 +14,7 @@ import (
 
 // Matrix represents a matrix of float64 values.
 type Matrix struct {
-	Vals []float64
+	Vals          []float64
 	Width, Height int
 }
 
@@ -22,9 +22,9 @@ type Matrix struct {
 // Exporting this type allows calling routines to better manage their memory
 // consumption and to prevent recomputing the same decomposition many times.
 type LUFactors struct {
-	lu Matrix
+	lu    Matrix
 	pivot []int
-	d float64
+	d     float64
 }
 
 // NewMatrix32 creates a matrix with the specified values and dimensions.
@@ -40,7 +40,7 @@ func (m *Matrix) Init(vals []float64, width, height int) {
 		panic("width must be positive.")
 	} else if height <= 0 {
 		panic("height must be positive.")
-	} else if width * height != len(vals) {
+	} else if width*height != len(vals) {
 		panic("height * width must equal len(vals).")
 	}
 
@@ -55,16 +55,18 @@ func (m1 *Matrix) Mult(m2 *Matrix) *Matrix {
 	return m1.MultAt(m2, out)
 }
 
-// Mult multiplies to matrices together and writes the result to the 
+// Mult multiplies to matrices together and writes the result to the
 // specified matrix.
 func (m1 *Matrix) MultAt(m2, out *Matrix) *Matrix {
 	if m1.Width != m2.Height {
 		panic("Multiplication of incompatible matrix sizes.")
 	}
 
-	for i := range out.Vals { out.Vals[i] = 0 }
+	for i := range out.Vals {
+		out.Vals[i] = 0
+	}
 	for i := 0; i < m1.Height; i++ {
-		off := i*m1.Width
+		off := i * m1.Width
 		for j := 0; j < m2.Width; j++ {
 			outIdx := off + j
 			for k := 0; k < m1.Width; k++ {
@@ -84,11 +86,13 @@ func MultVec(m *Matrix, v, out []float64) {
 		panic("Shape error.")
 	}
 
-	for i := range out { out[i] = 0 }
+	for i := range out {
+		out[i] = 0
+	}
 	offset := 0
 	for j := 0; j < m.Height; j++ {
 		for i := 0; i < m.Width; i++ {
-			out[j] += m.Vals[offset + i] * v[i]
+			out[j] += m.Vals[offset+i] * v[i]
 		}
 		offset += m.Width
 	}
@@ -99,11 +103,13 @@ func VecMult(v []float64, m *Matrix, out []float64) {
 	if m.Height != len(v) || m.Width != len(out) {
 		panic("Shape error.")
 	}
-	for i := range out { out[i] = 0 }
+	for i := range out {
+		out[i] = 0
+	}
 	for i := 0; i < m.Width; i++ {
 		sum := 0.0
 		for j := 0; j < m.Height; j++ {
-			sum += v[j] * m.Vals[i + m.Width*j]
+			sum += v[j] * m.Vals[i+m.Width*j]
 		}
 		out[i] = sum
 	}
@@ -111,7 +117,7 @@ func VecMult(v []float64, m *Matrix, out []float64) {
 
 func (m *Matrix) Transpose() *Matrix {
 	vals := make([]float64, m.Height*m.Width)
-	out :=NewMatrix(vals, m.Height, m.Width)
+	out := NewMatrix(vals, m.Height, m.Width)
 	m.TransposeAt(out)
 	return out
 }
@@ -122,6 +128,7 @@ func (m *Matrix) TransposeAt(out *Matrix) {
 }
 
 const transposeRecWidth = 16000000
+
 func recTranspose(
 	m, out []float64, width, height int,
 	mXLow, mYLow, mXWidth, mYWidth int,
@@ -136,17 +143,17 @@ func recTranspose(
 			recTranspose(m, out, width, height, mXLow, mYLow,
 				newMXWidth, mYWidth, outXLow, outYLow)
 			recTranspose(m, out, width, height,
-				mXLow + newMXWidth, mYLow,
-				mXWidth - newMXWidth, mYWidth,
-				outXLow, outYLow + newMXWidth)
+				mXLow+newMXWidth, mYLow,
+				mXWidth-newMXWidth, mYWidth,
+				outXLow, outYLow+newMXWidth)
 		} else {
 			newMYWidth := mYWidth / 2
 			recTranspose(m, out, width, height, mXLow, mYLow,
 				mXWidth, newMYWidth, outXLow, outYLow)
 			recTranspose(m, out, width, height,
-				mXLow, mYLow + newMYWidth,
-				mXWidth, mYWidth - newMYWidth,
-				outXLow + newMYWidth, outYLow)
+				mXLow, mYLow+newMYWidth,
+				mXWidth, mYWidth-newMYWidth,
+				outXLow+newMYWidth, outYLow)
 		}
 	}
 }
@@ -155,14 +162,14 @@ func baseTranspose(
 	m, out []float64, width, height int,
 	mXLow, mYLow, mXWidth, mYWidth int,
 	outXLow, outYLow int,
-	
+
 ) {
 	for y := 0; y < mYWidth; y++ {
-		my, outx := mYLow + y, outXLow + y
-		mOffset := my*width
+		my, outx := mYLow+y, outXLow+y
+		mOffset := my * width
 		for x := 0; x < mXWidth; x++ {
-			mx, outy := mXLow + x, outYLow + x
-			out[outy*height + outx] = m[mOffset + mx]
+			mx, outy := mXLow+x, outYLow+x
+			out[outy*height+outx] = m[mOffset+mx]
 		}
 	}
 }
@@ -207,7 +214,9 @@ func NewLUFactors(n int) *LUFactors {
 
 // LU returns the LU decomposition of a matrix.
 func (m *Matrix) LU() *LUFactors {
-	if m.Width != m.Height { panic("m is non-square.") }
+	if m.Width != m.Height {
+		panic("m is non-square.")
+	}
 
 	lu := NewLUFactors(m.Width)
 	m.LUFactorsAt(lu)
@@ -231,10 +240,14 @@ func (lu *LUFactors) factorizeInPlace() {
 	for i := 0; i < n; i++ {
 		big := 0.0
 		for j := 0; j < n; j++ {
-			tmp := math.Abs(m.Vals[i*n + j])
-			if tmp > big { big = tmp }
+			tmp := math.Abs(m.Vals[i*n+j])
+			if tmp > big {
+				big = tmp
+			}
 		}
-		if big == 0 { panic("Singular Matrix.") }
+		if big == 0 {
+			panic("Singular Matrix.")
+		}
 		vv[i] = 1 / big
 	}
 
@@ -242,7 +255,7 @@ func (lu *LUFactors) factorizeInPlace() {
 	for k := 0; k < n; k++ {
 		big := 0.0
 		for i := k; i < n; i++ {
-			tmp := vv[i] * math.Abs(m.Vals[i*n + k])
+			tmp := vv[i] * math.Abs(m.Vals[i*n+k])
 			if tmp > big {
 				big = tmp
 				imax = i
@@ -250,19 +263,21 @@ func (lu *LUFactors) factorizeInPlace() {
 		}
 		if k != imax {
 			for j := 0; j < n; j++ {
-				m.Vals[imax*n + j], m.Vals[k*n + j] =
-					m.Vals[k*n + j], m.Vals[imax*n + j]
+				m.Vals[imax*n+j], m.Vals[k*n+j] =
+					m.Vals[k*n+j], m.Vals[imax*n+j]
 			}
 			lu.d = -lu.d
 			vv[imax] = vv[k]
 		}
 		lu.pivot[k] = imax
-		if m.Vals[k*n + k] == 0 { m.Vals[k*n + k] = 1e-20 }
+		if m.Vals[k*n+k] == 0 {
+			m.Vals[k*n+k] = 1e-20
+		}
 		for i := k + 1; i < n; i++ {
-			m.Vals[i*n + k] /= m.Vals[k*n + k]
-			tmp := m.Vals[i*n + k]
+			m.Vals[i*n+k] /= m.Vals[k*n+k]
+			tmp := m.Vals[i*n+k]
 			for j := k + 1; j < n; j++ {
-				m.Vals[i*n + j] -= tmp*m.Vals[k*n + j]
+				m.Vals[i*n+j] -= tmp * m.Vals[k*n+j]
 			}
 		}
 	}
@@ -303,7 +318,7 @@ func forwardSubst(n int, pivot []int, lu, bs, ys []float64) {
 	for i := 0; i < n; i++ {
 		sum := 0.0
 		for j := 0; j < i; j++ {
-			sum += lu[i*n + j] * ys[j]
+			sum += lu[i*n+j] * ys[j]
 		}
 		ys[i] = (ys[i] - sum)
 	}
@@ -315,14 +330,14 @@ func backSubst(n int, lu, ys, xs []float64) {
 	for i := n - 1; i >= 0; i-- {
 		sum := 0.0
 		for j := i + 1; j < n; j++ {
-			sum += lu[i*n + j] * xs[j]
+			sum += lu[i*n+j] * xs[j]
 		}
-		xs[i] = (ys[i] - sum) / lu[i*n + i]
+		xs[i] = (ys[i] - sum) / lu[i*n+i]
 	}
 }
 
 // SolveMatrix solves the equation m * x = b.
-// 
+//
 // x and b may point to the same physical memory.
 func (luf *LUFactors) SolveMatrix(b, x *Matrix) *Matrix {
 	xs := x.Vals
@@ -331,7 +346,7 @@ func (luf *LUFactors) SolveMatrix(b, x *Matrix) *Matrix {
 	if b.Width != b.Height {
 		panic("b matrix is non-square.")
 	} else if x.Width != x.Height {
-		panic("x matrix is non-square.") 
+		panic("x matrix is non-square.")
 	} else if n != b.Width {
 		panic("b matrix different size than m matrix.")
 	} else if n != x.Width {
@@ -342,11 +357,11 @@ func (luf *LUFactors) SolveMatrix(b, x *Matrix) *Matrix {
 
 	for j := 0; j < n; j++ {
 		for i := 0; i < n; i++ {
-			col[i] = xs[i*n + j]
+			col[i] = xs[i*n+j]
 		}
 		luf.SolveVector(col, col)
 		for i := 0; i < n; i++ {
-			xs[i*n + j] = col[i]
+			xs[i*n+j] = col[i]
 		}
 	}
 
@@ -367,7 +382,7 @@ func (luf *LUFactors) InvertAt(out *Matrix) *Matrix {
 		out.Vals[i] = 0
 	}
 	for i := 0; i < n; i++ {
-		out.Vals[i*n + i] = 1
+		out.Vals[i*n+i] = 1
 	}
 
 	luf.SolveMatrix(out, out)
@@ -382,7 +397,7 @@ func (luf *LUFactors) Determinant() float64 {
 	n := luf.lu.Width
 
 	for i := 0; i < luf.lu.Width; i++ {
-		d *= lu[i*n + i]
+		d *= lu[i*n+i]
 	}
 	return d
 }

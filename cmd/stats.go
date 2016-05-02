@@ -7,22 +7,21 @@ import (
 	"sort"
 
 	"github.com/phil-mansfield/shellfish/io"
-	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/los/analyze"
+	"github.com/phil-mansfield/shellfish/los/geom"
 
-	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
-	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/cmd/env"
+	"github.com/phil-mansfield/shellfish/cmd/memo"
+	"github.com/phil-mansfield/shellfish/parse"
 )
 
-
 type StatsConfig struct {
-	values []string
-	histogramBins int64
+	values            []string
+	histogramBins     int64
 	monteCarloSamples int64
 	exclusionStrategy string
-	order int64
+	order             int64
 }
 
 var _ Mode = &StatsConfig{}
@@ -86,12 +85,16 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 
 	vars.Strings(&config.values, "Values", []string{})
 	vars.Int(&config.histogramBins, "HistogramBins", 50)
-	vars.Int(&config.monteCarloSamples, "MonteCarloSamples", 10 * 1000)
+	vars.Int(&config.monteCarloSamples, "MonteCarloSamples", 10*1000)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "none")
 	vars.Int(&config.order, "Order", 3)
 
-	if fname == "" { return nil }
-	if err := parse.ReadConfig(fname, vars); err != nil { return err }
+	if fname == "" {
+		return nil
+	}
+	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
 	return config.validate()
 }
 
@@ -100,7 +103,7 @@ func (config *StatsConfig) validate() error {
 		switch val {
 		case "snap", "id", "m-sp", "r-sp", "r-sp-min", "r-sp-max":
 		default:
-			return fmt.Errorf("Item %d of variable 'Values' is set to '%s', " +
+			return fmt.Errorf("Item %d of variable 'Values' is set to '%s', "+
 				"which I don't recognize.", i, val)
 		}
 	}
@@ -108,7 +111,7 @@ func (config *StatsConfig) validate() error {
 	switch config.exclusionStrategy {
 	case "none", "contain", "overlap":
 	default:
-		return fmt.Errorf("variable 'ExclusionStrategy' set to '%s', which " +
+		return fmt.Errorf("variable 'ExclusionStrategy' set to '%s', which "+
 			"I don't recognize.", config.exclusionStrategy)
 	}
 
@@ -128,17 +131,23 @@ func (config *StatsConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	intColIdxs := []int{0, 1}
-	floatColIdxs := make([]int, 4 + 2*config.order*config.order)
-	for i := range floatColIdxs { floatColIdxs[i] = i + len(intColIdxs) }
+	floatColIdxs := make([]int, 4+2*config.order*config.order)
+	for i := range floatColIdxs {
+		floatColIdxs[i] = i + len(intColIdxs)
+	}
 	intCols, floatCols, err := catalog.ParseCols(
 		stdin, intColIdxs, floatColIdxs,
 	)
 
-	if err != nil { return nil, err }
-	if len(intCols) == 0 { return nil, fmt.Errorf("No input IDs.") }
+	if err != nil {
+		return nil, err
+	}
+	if len(intCols) == 0 {
+		return nil, fmt.Errorf("No input IDs.")
+	}
 	ids, snaps := intCols[0], intCols[1]
 	coords, coeffs := floatCols[:4], transpose(floatCols[4:])
-	
+
 	snapBins, coeffBins, idxBins := binCoeffsBySnap(snaps, ids, coeffs)
 
 	masses := make([]float64, len(ids))
@@ -152,15 +161,18 @@ func (config *StatsConfig) Run(
 	}
 	sort.Ints(sortedSnaps)
 
-
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(snaps[0], 0),
 		gConfig.SnapshotType, gConfig.Endianness,
 	)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	for _, snap := range sortedSnaps {
-		if snap == -1 { continue }
+		if snap == -1 {
+			continue
+		}
 		snapCoeffs := coeffBins[snap]
 		idxs := idxBins[snap]
 
@@ -181,9 +193,13 @@ func (config *StatsConfig) Run(
 		}
 
 		hds, files, err := memo.ReadHeaders(snap, buf, e)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 		hBounds, err := boundingSpheres(snapCoords, &hds[0], config, e)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 		intrBins := binSphereIntersections(hds, hBounds)
 
 		rLows := make([]float64, len(snapCoeffs))
@@ -195,10 +211,14 @@ func (config *StatsConfig) Run(
 		}
 
 		for i := range hds {
-			if len(intrBins[i]) == 0 { continue }
+			if len(intrBins[i]) == 0 {
+				continue
+			}
 
 			xs, ms, err := buf.Read(files[i])
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 
 			for j := range idxs {
 				masses[idxs[j]] += massContained(
@@ -229,9 +249,9 @@ func (config *StatsConfig) Run(
 
 func wrapDist(x1, x2, width float32) float32 {
 	dist := x1 - x2
-	if dist > width / 2 {
+	if dist > width/2 {
 		return dist - width
-	} else if dist < width / -2 {
+	} else if dist < width/-2 {
 		return dist + width
 	} else {
 		return dist
@@ -239,7 +259,7 @@ func wrapDist(x1, x2, width float32) float32 {
 }
 
 func inRange(x, r, low, width, tw float32) bool {
-	return wrapDist(x, low, tw) > -r && wrapDist(x, low + width, tw) < r
+	return wrapDist(x, low, tw) > -r && wrapDist(x, low+width, tw) < r
 }
 
 // SheetIntersect returns true if the given halo and sheet intersect one another
@@ -247,14 +267,13 @@ func inRange(x, r, low, width, tw float32) bool {
 func sheetIntersect(s geom.Sphere, hd *io.Header) bool {
 	tw := float32(hd.TotalWidth)
 	return inRange(s.C[0], s.R, hd.Origin[0], hd.Width[0], tw) &&
-	inRange(s.C[1], s.R, hd.Origin[1], hd.Width[1], tw) &&
-	inRange(s.C[2], s.R, hd.Origin[2], hd.Width[2], tw)
+		inRange(s.C[1], s.R, hd.Origin[1], hd.Width[1], tw) &&
+		inRange(s.C[2], s.R, hd.Origin[2], hd.Width[2], tw)
 }
-
 
 func binCoeffsBySnap(
 	snaps, ids []int, coeffs [][]float64,
-) (snapBins map[int][]int,coeffBins map[int][][]float64,idxBins map[int][]int) {
+) (snapBins map[int][]int, coeffBins map[int][][]float64, idxBins map[int][]int) {
 	snapBins = make(map[int][]int)
 	coeffBins = make(map[int][][]float64)
 	idxBins = make(map[int][]int)
@@ -314,7 +333,7 @@ func rSp(coeffs []float64) float64 {
 	order := findOrder(coeffs)
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
 	vol := shell.Volume(10 * 1000)
-	r := math.Pow(vol / (math.Pi * 4 / 3), 0.33333)
+	r := math.Pow(vol/(math.Pi*4/3), 0.33333)
 	return r
 	//return shell.MedianRadius(10 * 1000)
 }
@@ -331,10 +350,12 @@ func massContained(
 ) float64 {
 
 	cpu := runtime.NumCPU()
-	if threads > 0 { cpu = int(threads) }
+	if threads > 0 {
+		cpu = int(threads)
+	}
 	workers := int64(runtime.GOMAXPROCS(cpu))
 	outChan := make(chan float64, workers)
-	for i := int64(0); i < workers - 1; i++ {
+	for i := int64(0); i < workers-1; i++ {
 		go massContainedChan(
 			hd, xs, ms, coeffs, sphere, rLow, rHigh, i, workers, outChan,
 		)
@@ -342,7 +363,7 @@ func massContained(
 
 	massContainedChan(
 		hd, xs, ms, coeffs, sphere, rLow, rHigh,
-		workers - 1, workers, outChan,
+		workers-1, workers, outChan,
 	)
 
 	sum := 0.0
@@ -367,15 +388,15 @@ func massContainedChan(
 	sum := 0.0
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
-		x, y, z = x - sphere.C[0], y - sphere.C[1], z - sphere.C[2]
+		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
 		x = wrap(x, tw2)
 		y = wrap(y, tw2)
 		z = wrap(z, tw2)
 
-		r2 := x*x + y*y +z*z
+		r2 := x*x + y*y + z*z
 
-		if r2 < low2 || ( r2 < high2 &&
-		shell.Contains(float64(x), float64(y), float64(z))) {
+		if r2 < low2 || (r2 < high2 &&
+			shell.Contains(float64(x), float64(y), float64(z))) {
 			sum += float64(ms[i])
 		}
 	}

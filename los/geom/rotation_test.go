@@ -19,13 +19,13 @@ func vecEpsEq(v1, v2 *[3]float32, eps float32) bool {
 func TestRotate(t *testing.T) {
 	eps := float32(1e-4)
 	pi := float32(math.Pi)
-	pi2 := float32(math.Pi/2)
-	sqrt2 := 1/float32(math.Sqrt(2))
+	pi2 := float32(math.Pi / 2)
+	sqrt2 := 1 / float32(math.Sqrt(2))
 
-	table := []struct{
+	table := []struct {
 		phi, theta, psi float32
-		start, end [3]float32
-	} {
+		start, end      [3]float32
+	}{
 		{0, 0, 0, [3]float32{1, 2, 3}, [3]float32{1, 2, 3}},
 		{pi, 0, 0, [3]float32{1, 0, 0}, [3]float32{-1, 0, 0}},
 		{-pi, 0, 0, [3]float32{1, 0, 0}, [3]float32{-1, 0, 0}},
@@ -41,7 +41,7 @@ func TestRotate(t *testing.T) {
 		{0, pi2, 0, [3]float32{0, 1, 0}, [3]float32{0, 0, 1}},
 		{0, pi2, 0, [3]float32{0, 0, 1}, [3]float32{0, -1, 0}},
 
-		{pi2, pi2/2, 0, [3]float32{1, 0, 0}, [3]float32{0, sqrt2, sqrt2}},
+		{pi2, pi2 / 2, 0, [3]float32{1, 0, 0}, [3]float32{0, sqrt2, sqrt2}},
 	}
 
 	for i, test := range table {
@@ -58,21 +58,20 @@ func TestRotate(t *testing.T) {
 }
 
 func TestEulerMatrixBetween(t *testing.T) {
-	sqrt2 := 1/float32(math.Sqrt(2))
+	sqrt2 := 1 / float32(math.Sqrt(2))
 
 	eps := float32(1e-4)
-	table := []struct{
+	table := []struct {
 		v1, v2 [3]float32
-	} {
+	}{
 		{[3]float32{1, 0, 0}, [3]float32{1, 0, 0}},
 		{[3]float32{1, 0, 0}, [3]float32{0, 1, 0}},
 		{[3]float32{0, 1, 0}, [3]float32{0, sqrt2, sqrt2}},
 		{[3]float32{1, 0, 0}, [3]float32{0, sqrt2, sqrt2}},
- 		{[3]float32{1, 0, 0}, [3]float32{0, 0, 1}},
+		{[3]float32{1, 0, 0}, [3]float32{0, 0, 1}},
 		{[3]float32{0, 1, 0}, [3]float32{1, 0, 0}},
 		{[3]float32{0, 1, 0}, [3]float32{0, 0, 1}},
 		{[3]float32{0, 0, 1}, [3]float32{1, 0, 0}},
-
 
 		{[3]float32{2, 3, 4}, [3]float32{4, 2, 3}},
 		{[3]float32{2, 3, 4}, [3]float32{4, 2, 3}},
@@ -92,17 +91,16 @@ func TestEulerMatrixBetween(t *testing.T) {
 	}
 }
 
-
 func TestAngularDistance(t *testing.T) {
 	n := 1000
 	for i := 0; i < n; i++ {
-		phi1, phi2 := rand.Float32() * 2 * math.Pi, rand.Float32() * 2 * math.Pi
+		phi1, phi2 := rand.Float32()*2*math.Pi, rand.Float32()*2*math.Pi
 		dist := AngularDistance(phi1, phi2)
-		
+
 		if dist > math.Pi || dist < -math.Pi {
 			t.Errorf(
 				"%d) AnguleDistance(%g, %g) -> %g out of range [-pi, pi].",
-				i + 1, phi1, phi2, dist,
+				i+1, phi1, phi2, dist,
 			)
 		} else if !almostEq(
 			float32(math.Mod(float64(dist+phi1+2*math.Pi), 2*math.Pi)),
@@ -111,7 +109,7 @@ func TestAngularDistance(t *testing.T) {
 
 			t.Errorf(
 				"%d) AngularDistance(%g, %g) -> %g doesn't add up.",
-				i + 1, phi1, phi2, dist,
+				i+1, phi1, phi2, dist,
 			)
 		}
 	}
@@ -146,6 +144,6 @@ func BenchmarkEulerMatrix(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		EulerMatrix(phis[i % n], thetas[i % n], psis[i % n])
+		EulerMatrix(phis[i%n], thetas[i%n], psis[i%n])
 	}
 }

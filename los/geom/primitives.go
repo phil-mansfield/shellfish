@@ -13,7 +13,7 @@ import (
 	"math"
 )
 
-// PluckerVec represents a ray. If P and L are the position of the ray's 
+// PluckerVec represents a ray. If P and L are the position of the ray's
 // origin and the unit vector representing its direction, respectively, then
 // U = L and V = L cross P.
 type PluckerVec struct {
@@ -31,10 +31,10 @@ type AnchoredPluckerVec struct {
 // direction vector, L.
 func (p *PluckerVec) Init(P, L *[3]float32) {
 	p.U = *L
-	
+
 	p.V[0] = -P[1]*L[2] + P[2]*L[1]
-    p.V[1] = -P[2]*L[0] + P[0]*L[2]
-    p.V[2] = -P[0]*L[1] + P[1]*L[0]
+	p.V[1] = -P[2]*L[0] + P[0]*L[2]
+	p.V[2] = -P[0]*L[1] + P[1]*L[0]
 }
 
 // InitFromSegment initialized a Plucker vector which corresponds to a ray
@@ -43,21 +43,21 @@ func (p *PluckerVec) InitFromSegment(P1, P2 *[3]float32) {
 	var sum float32
 	for i := 0; i < 3; i++ {
 		p.U[i] = P2[i] - P1[i]
-		sum += p.U[i]*p.U[i]
+		sum += p.U[i] * p.U[i]
 	}
 	sum = float32(math.Sqrt(float64(sum)))
 	//for i := 0; i < 3; i++ { p.U[i] /= sum }
 
 	p.V[0] = -P1[1]*p.U[2] + P1[2]*p.U[1]
-    p.V[1] = -P1[2]*p.U[0] + P1[0]*p.U[2]
-    p.V[2] = -P1[0]*p.U[1] + P1[1]*p.U[0]
+	p.V[1] = -P1[2]*p.U[0] + P1[0]*p.U[2]
+	p.V[2] = -P1[0]*p.U[1] + P1[1]*p.U[0]
 }
 
 // Translate translates a Plucker vector along the given vector.
 func (p *PluckerVec) Translate(dx *[3]float32) {
 	p.V[0] += -dx[1]*p.U[2] + dx[2]*p.U[1]
-    p.V[1] += -dx[2]*p.U[0] + dx[0]*p.U[2]
-    p.V[2] += -dx[0]*p.U[1] + dx[1]*p.U[0]
+	p.V[1] += -dx[2]*p.U[0] + dx[0]*p.U[2]
+	p.V[2] += -dx[0]*p.U[1] + dx[1]*p.U[0]
 }
 
 // Dot computes the permuted inner product of p1 and p2, i.e.
@@ -105,7 +105,9 @@ func (ap *AnchoredPluckerVec) InitFromSegment(P1, P2 *[3]float32) {
 // Translate translates a Plucker vector along the given vector.
 func (ap *AnchoredPluckerVec) Translate(dx *[3]float32) {
 	ap.PluckerVec.Translate(dx)
-	for i := 0; i < 3; i++ { ap.P[i] += dx[i] }
+	for i := 0; i < 3; i++ {
+		ap.P[i] += dx[i]
+	}
 }
 
 // Tetra is a tetrahedron. (Duh!)
@@ -117,11 +119,11 @@ func (ap *AnchoredPluckerVec) Translate(dx *[3]float32) {
 // F3(V0, V1, V2)
 type Tetra [4][3]float32
 
-var tetraIdxs = [4][3]int {
-	[3]int{ 3, 2, 1 },
-	[3]int{ 2, 3, 0 },
-	[3]int{ 1, 0, 3 },
-	[3]int{ 0, 1, 2 },
+var tetraIdxs = [4][3]int{
+	[3]int{3, 2, 1},
+	[3]int{2, 3, 0},
+	[3]int{1, 0, 3},
+	[3]int{0, 1, 2},
 }
 
 // VertexIdx returns the index into the given tetrahedron corresponding to
@@ -139,8 +141,8 @@ func (t *Tetra) Orient(dir int) {
 		w[i] = t[2][i] - t[0][i]
 	}
 	n[0] = -v[1]*w[2] + v[2]*w[1]
-    n[1] = -v[2]*w[0] + v[0]*w[2]
-    n[2] = -v[0]*w[1] + v[1]*w[0]
+	n[1] = -v[2]*w[0] + v[0]*w[2]
+	n[2] = -v[0]*w[1] + v[1]*w[0]
 
 	var dot float32
 	for i := 0; i < 3; i++ {
@@ -167,11 +169,13 @@ func (t *Tetra) Volume() float64 {
 	leg20, leg21, leg22 := t[2][0]-t[0][0], t[2][1]-t[0][1], t[2][2]-t[0][2]
 	leg30, leg31, leg32 := t[3][0]-t[0][0], t[3][1]-t[0][1], t[3][2]-t[0][2]
 
-	n0 := leg10*(leg21*leg32 - leg22*leg31)
-    n1 := leg11*(leg22*leg30 - leg20*leg32)
-    n2 := leg12*(leg20*leg31 - leg21*leg30)
+	n0 := leg10 * (leg21*leg32 - leg22*leg31)
+	n1 := leg11 * (leg22*leg30 - leg20*leg32)
+	n2 := leg12 * (leg20*leg31 - leg21*leg30)
 	vol := float64((n0 + n1 + n2) / 6)
-	if vol < 0 { return -vol }
+	if vol < 0 {
+		return -vol
+	}
 	return vol
 }
 
@@ -185,11 +189,13 @@ type Sphere struct {
 func (s1 *Sphere) SphereIntersect(s2 *Sphere) bool {
 	sum := float32(0)
 	dr := s1.R + s2.R
-	dr2 := dr*dr
+	dr2 := dr * dr
 	for i := 0; i < 3; i++ {
 		dx := s1.C[i] - s2.C[i]
-		sum += dx*dx
-		if sum > dr2 { return false }
+		sum += dx * dx
+		if sum > dr2 {
+			return false
+		}
 	}
 	return true
 }
@@ -197,11 +203,13 @@ func (s1 *Sphere) SphereIntersect(s2 *Sphere) bool {
 // VecIntersect returns true if a vector is contained inside a sphere.
 func (s *Sphere) VecIntersect(v *[3]float32) bool {
 	sum := float32(0)
-	dr2 := s.R*s.R
+	dr2 := s.R * s.R
 	for i := 0; i < 3; i++ {
 		dx := s.C[i] - v[i]
-		sum += dx*dx
-		if sum > dr2 { return false }
+		sum += dx * dx
+		if sum > dr2 {
+			return false
+		}
 	}
 	return true
 
@@ -210,14 +218,16 @@ func (s *Sphere) VecIntersect(v *[3]float32) bool {
 // TetraIntersect returns true if a tetrahedron and a sphere overlap.
 func (s *Sphere) TetraIntersect(t *Tetra) bool {
 	for i := 0; i < 4; i++ {
-		if s.VecIntersect(&t[i]) { return true }
+		if s.VecIntersect(&t[i]) {
+			return true
+		}
 	}
 	return false
 }
 
 // LineSegment represents a line segment.
 type LineSegment struct {
-	Origin, Dir [3]float32
+	Origin, Dir  [3]float32
 	StartR, EndR float32
 }
 
@@ -230,8 +240,10 @@ func (s *Sphere) LineSegmentIntersect(
 	ls *LineSegment,
 ) (enter, exit float32, enters, exits bool) {
 	dr := [3]float32{}
-	for i := 0; i < 3; i++ { dr[i] = ls.Origin[i] - s.C[i] }
-	b := 2 * ls.Dir[0]*dr[0] + ls.Dir[1]*dr[1] + ls.Dir[2]*dr[2]
+	for i := 0; i < 3; i++ {
+		dr[i] = ls.Origin[i] - s.C[i]
+	}
+	b := 2*ls.Dir[0]*dr[0] + ls.Dir[1]*dr[1] + ls.Dir[2]*dr[2]
 	c := dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2] - s.R*s.R
 	disc := b*b - 4*c
 
@@ -253,13 +265,17 @@ func (s *Sphere) LineSegmentIntersect(
 // SphereContain returns true if s1 is completely contained in s2.
 func (s1 *Sphere) SphereContain(s2 *Sphere) bool {
 	sum := float32(0)
-	if s1.R <= s2.R { return false }
+	if s1.R <= s2.R {
+		return false
+	}
 	dr := s1.R - s2.R
-	dr2 := dr*dr
+	dr2 := dr * dr
 	for i := 0; i < 3; i++ {
 		dx := s1.C[i] - s2.C[i]
-		sum += dx*dx
-		if sum > dr2 { return false }
+		sum += dx * dx
+		if sum > dr2 {
+			return false
+		}
 	}
 	return true
 }
@@ -268,7 +284,9 @@ func (s1 *Sphere) SphereContain(s2 *Sphere) bool {
 // sphere.
 func (s *Sphere) TetraContain(t *Tetra) bool {
 	for i := 0; i < 4; i++ {
-		if !s.VecIntersect(&t[i]) { return false }
+		if !s.VecIntersect(&t[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -284,7 +302,9 @@ func (t *Tetra) BoundingSphere(sph *Sphere) {
 	for i := 1; i < 4; i++ {
 		dx, dy, dz = bx-t[i][0], by-t[i][1], bz-t[i][2]
 		rSqr := dx*dx + dy*dy + dz*dz
-		if rSqr > maxRSqr { maxRSqr = rSqr }
+		if rSqr > maxRSqr {
+			maxRSqr = rSqr
+		}
 	}
 
 	sph.C[0], sph.C[1], sph.C[2] = bx, by, bz
@@ -294,7 +314,7 @@ func (t *Tetra) BoundingSphere(sph *Sphere) {
 // TetraFaceBary contains information specifying the barycentric coordinates
 // of a point on a face of a tetrahedron.
 type TetraFaceBary struct {
-	w [3]float32
+	w    [3]float32
 	face int
 }
 
@@ -304,11 +324,15 @@ func (t *Tetra) Distance(ap *AnchoredPluckerVec, bary *TetraFaceBary) float32 {
 	// Computes one coordinate of the intersection point from the barycentric
 	// coordinates of the intersection, then solves P_intr = P + t * L for t.
 	var sum float32
-	for i := 0; i < 3; i++ { sum += bary.w[i] }
-	u0, u1, u2 := bary.w[0] / sum, bary.w[1] / sum, bary.w[2] / sum
+	for i := 0; i < 3; i++ {
+		sum += bary.w[i]
+	}
+	u0, u1, u2 := bary.w[0]/sum, bary.w[1]/sum, bary.w[2]/sum
 	var dim int
 	for dim = 0; dim < 3; dim++ {
-		if ap.U[dim] > 1e-6 || ap.U[dim] < -1e-6 { break }
+		if ap.U[dim] > 1e-6 || ap.U[dim] < -1e-6 {
+			break
+		}
 	}
 
 	p0 := t[t.VertexIdx(bary.face, 0)][dim]
@@ -333,10 +357,10 @@ func (t *Tetra) Distance(ap *AnchoredPluckerVec, bary *TetraFaceBary) float32 {
 type PluckerTetra [6]PluckerVec
 
 var pluckerTetraEdges = [4][3]int{
-	[3]int{ 3, 4, 5 }, // 2-1, 1-3, 3-2
-	[3]int{ 2, 1, 5 }, // 3-0, 0-2, 2-3
-	[3]int{ 2, 4, 0 }, // 0-3, 3-1, 1-0
-	[3]int{ 3, 1, 0 }, // 1-2, 2-0, 0-1
+	[3]int{3, 4, 5}, // 2-1, 1-3, 3-2
+	[3]int{2, 1, 5}, // 3-0, 0-2, 2-3
+	[3]int{2, 4, 0}, // 0-3, 3-1, 1-0
+	[3]int{3, 1, 0}, // 1-2, 2-0, 0-1
 }
 
 var pluckerTetraFlips = [4][3]bool{
@@ -346,17 +370,17 @@ var pluckerTetraFlips = [4][3]bool{
 	[3]bool{false, true, false},
 }
 
-var pluckerTetraFaceShare = [6][6]bool {
-	[6]bool{ false, true,  true,  true,  true,  false },
-	[6]bool{ true,  false, true,  true,  false, true  },
-	[6]bool{ true,  true,  false, false, true,  true  },
-	[6]bool{ true,  true,  false, false, true,  true  },
-	[6]bool{ true,  false, true,  true,  false, true  },
-	[6]bool{ false, true,  true,  true,  true,  false },
+var pluckerTetraFaceShare = [6][6]bool{
+	[6]bool{false, true, true, true, true, false},
+	[6]bool{true, false, true, true, false, true},
+	[6]bool{true, true, false, false, true, true},
+	[6]bool{true, true, false, false, true, true},
+	[6]bool{true, false, true, true, false, true},
+	[6]bool{false, true, true, true, true, false},
 }
 
-var tetraEdgeStarts = [6]int{ 0, 0, 0, 1, 1, 2 }
-var tetraEdgeEnds = [6]int{ 1, 2, 3, 2, 3, 3 }
+var tetraEdgeStarts = [6]int{0, 0, 0, 1, 1, 2}
+var tetraEdgeEnds = [6]int{1, 2, 3, 2, 3, 3}
 
 // Init initializes a Plucker Tetrahedron from a normal Tetrahedron.
 func (pt *PluckerTetra) Init(t *Tetra) {
@@ -370,7 +394,9 @@ func (pt *PluckerTetra) Init(t *Tetra) {
 
 // Translate translates a Plucker tetrahedron along the given vector.
 func (pt *PluckerTetra) Translate(dx *[3]float32) {
-	for i := 0; i < 6; i++ { pt[i].Translate(dx) }
+	for i := 0; i < 6; i++ {
+		pt[i].Translate(dx)
+	}
 }
 
 // EdgeIdx returns the index into pt which corresponds to the requested

@@ -5,7 +5,7 @@ const (
 )
 
 type Grid struct {
-	Cells int
+	Cells     int
 	cw, Width float64
 
 	// Grid-sized
@@ -17,13 +17,15 @@ type Grid struct {
 func NewGrid(cells int, width float64, dataLen int) *Grid {
 	g := &Grid{
 		Cells: cells,
-		cw: width / float64(cells),
+		cw:    width / float64(cells),
 		Width: width,
-		Heads: make([]int, cells * cells * cells),
-		Next: make([]int, dataLen),
+		Heads: make([]int, cells*cells*cells),
+		Next:  make([]int, dataLen),
 	}
 
-	for i := range g.Heads { g.Heads[i] = tail }
+	for i := range g.Heads {
+		g.Heads[i] = tail
+	}
 
 	return g
 }
@@ -56,10 +58,9 @@ func (g *Grid) Insert(xs, ys, zs []float64) {
 		} else if z < 0 {
 			z += g.Width
 		}
-				
 
 		ix, iy, iz := int(x/g.cw), int(y/g.cw), int(z/g.cw)
-		idx := ix + iy * g.Cells + iz * g.Cells * g.Cells
+		idx := ix + iy*g.Cells + iz*g.Cells*g.Cells
 
 		g.Next[i] = g.Heads[idx]
 		g.Heads[idx] = i
@@ -74,7 +75,9 @@ func (g *Grid) MaxLength() int {
 	max := 0
 	for i := 0; i < g.TotalCells(); i++ {
 		l := g.Length(i)
-		if l > max { max = l }
+		if l > max {
+			max = l
+		}
 	}
 	return max
 }
@@ -85,7 +88,7 @@ func (g *Grid) AverageLength() int {
 
 func (g *Grid) ReadIndexes(idx int, buf []int) []int {
 	buf = buf[:cap(buf)]
-	
+
 	next := g.Heads[idx]
 	n := 0
 	for next != tail {

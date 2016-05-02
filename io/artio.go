@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/phil-mansfield/shellfish/cosmo"
 	artio "github.com/phil-mansfield/go-artio"
+	"github.com/phil-mansfield/shellfish/cosmo"
 )
 
 const (
@@ -20,19 +20,21 @@ const (
 )
 
 type ARTIOBuffer struct {
-	open bool
-	xsBuf [][3]float32
-	msBuf []float32
-	xsBufs [][][3]float32
-	msBufs [][]float32
+	open    bool
+	xsBuf   [][3]float32
+	msBuf   []float32
+	xsBufs  [][][3]float32
+	msBufs  [][]float32
 	sMasses []float32
-	sFlags []bool // True if the species is "N-BODY" type.
+	sFlags  []bool // True if the species is "N-BODY" type.
 	fileset string
 }
 
 func NewARTIOBuffer(fileset string) (VectorBuffer, error) {
 	h, err := artio.FilesetOpen(fileset, artio.OpenHeader, artio.NullContext)
-	if err != nil { return nil, err  }
+	if err != nil {
+		return nil, err
+	}
 	defer h.Close()
 
 	numSpecies := h.GetInt(h.Key("num_particle_species"))[0]
@@ -53,21 +55,25 @@ func NewARTIOBuffer(fileset string) (VectorBuffer, error) {
 	}
 	massUnit := (h100 / cosmo.MSunMks * 1000) *
 		h.GetDouble(h.Key("mass_unit"))[0]
-	for i := range sMasses { sMasses[i] *= float32(massUnit) }
+	for i := range sMasses {
+		sMasses[i] *= float32(massUnit)
+	}
 
 	sFlags, err := nBodyFlags(h, fileset)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	return &ARTIOBuffer{
-		xsBufs: make([][][3]float32, numSpecies),
+		xsBufs:  make([][][3]float32, numSpecies),
 		sMasses: sMasses,
-		sFlags: sFlags,
+		sFlags:  sFlags,
 	}, nil
 }
 
 func parseARTIOFilename(fname string) (fileset string, block int, err error) {
 	split := strings.LastIndex(fname, ".")
-	if split == -1 || split == len(fname) - 1 {
+	if split == -1 || split == len(fname)-1 {
 		return "", -1, fmt.Errorf(
 			"'%s' is not the name of an ARTIO block.", fname,
 		)
@@ -88,29 +94,37 @@ func (buf *ARTIOBuffer) Read(
 	fileNumStr string,
 ) ([][3]float32, []float32, error) {
 	// Open the file.
-	if buf.open { panic("Buffer already open.") }
+	if buf.open {
+		panic("Buffer already open.")
+	}
 	buf.open = true
 
 	h, err := artio.FilesetOpen(
 		buf.fileset, artio.OpenHeader, artio.NullContext,
 	)
-	if err != nil { return nil, nil, err  }
+	if err != nil {
+		return nil, nil, err
+	}
 	defer h.Close()
 
 	// I'm not sure if this can just be replaced with putting an
 	// artio.OpenParticles flag in artio.FilesetOpen(). Someone with more
 	// knowledge about ARTIO than me should figure this out.
 	err = h.OpenParticles()
-	if err != nil { return nil, nil, err}
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Flag N_BODY particles.
 	flags, err := nBodyFlags(h, buf.fileset)
-	if err != nil { return nil, nil, err }
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Get SFC range.
 	fIdx, err := strconv.Atoi(fileNumStr)
 	fileIdxs := h.GetLong(h.Key("particle_file_sfc_index"))
-	sfcStart, sfcEnd := fileIdxs[fIdx], fileIdxs[fIdx + 1] - 1
+	sfcStart, sfcEnd := fileIdxs[fIdx], fileIdxs[fIdx+1]-1
 
 	// Counts and buffer manipulation. Do the reading.
 	sCounts, err := h.CountInRange(sfcStart, sfcEnd)
@@ -120,7 +134,9 @@ func (buf *ARTIOBuffer) Read(
 			totCount += sCounts[i]
 			expandVectors(buf.xsBufs[i][:0], int(sCounts[i]))
 			err = h.GetPositionsAt(i, sfcStart, sfcEnd, buf.xsBufs[i])
-			if err != nil { return nil, nil, err }
+			if err != nil {
+				return nil, nil, err
+			}
 
 			expandScalars(buf.msBufs[i][:0], int(sCounts[i]))
 			for j := range buf.msBufs[i] {
@@ -172,14 +188,16 @@ func nBodyFlags(h artio.Fileset, fname string) ([]bool, error) {
 		nBodyCount++
 	}
 	if nBodyCount == 0 {
-		return nil, fmt.Errorf("ARTIO fileset '%s' does not contain any " +
-		"particle species of type 'N-BODY'.", fname)
+		return nil, fmt.Errorf("ARTIO fileset '%s' does not contain any "+
+			"particle species of type 'N-BODY'.", fname)
 	}
 	return isNBody, nil
 }
 
 func (buf *ARTIOBuffer) Close() {
-	if !buf.open { panic("Buffer not open.") }
+	if !buf.open {
+		panic("Buffer not open.")
+	}
 	buf.open = false
 }
 
@@ -193,7 +211,9 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 	h, err := artio.FilesetOpen(
 		buf.fileset, artio.OpenHeader, artio.NullContext,
 	)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer h.Close()
 
 	var h100 float64
@@ -231,7 +251,7 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 
 	if out.Cosmo.H100 > 10 {
 		panic("Oops, Phil misunderstood the meaning of an ARTIO field. " +
-		"Please submit an issue.")
+			"Please submit an issue.")
 	}
 
 	return nil

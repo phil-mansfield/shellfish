@@ -10,7 +10,6 @@ import (
 )
 
 type TreeConfig struct {
-
 }
 
 var _ Mode = &TreeConfig{}
@@ -25,28 +24,33 @@ func (config *TreeConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	inputIDs := intCols[0]
 
 	trees, err := treeFiles(gConfig)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	idSets, snapSets, err := tree.HaloHistories(
 		trees, inputIDs, e.SnapOffset(),
 	)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	ids, snaps := []int{}, []int{}
 	for i := range idSets {
 		ids = append(ids, idSets[i]...)
 		snaps = append(snaps, snapSets[i]...)
 		// Sentinels:
-		if i != len(idSets) - 1 {
+		if i != len(idSets)-1 {
 			ids = append(ids, -1)
 			snaps = append(snaps, -1)
 		}
 	}
-
 
 	lines := catalog.FormatCols(
 		[][]int{ids, snaps}, [][]float64{}, []int{0, 1},
@@ -69,7 +73,9 @@ func (config *TreeConfig) Run(
 
 func treeFiles(gConfig *GlobalConfig) ([]string, error) {
 	infos, err := ioutil.ReadDir(gConfig.TreeDir)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	names := []string{}
 	for _, info := range infos {

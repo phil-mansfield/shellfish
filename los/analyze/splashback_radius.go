@@ -1,6 +1,6 @@
 package analyze
 
-type splashbackRadiusParams struct { dLim float64 }
+type splashbackRadiusParams struct{ dLim float64 }
 type internalSplashbackRadiusOption func(*splashbackRadiusParams)
 type SplashbackRadiusOption internalSplashbackRadiusOption
 
@@ -12,7 +12,9 @@ func DLim(dLim float64) SplashbackRadiusOption {
 
 func (p *splashbackRadiusParams) loadOptions(opts []SplashbackRadiusOption) {
 	p.dLim = -5
-	for _, opt := range opts { opt(p) }
+	for _, opt := range opts {
+		opt(p)
+	}
 }
 
 func SplashbackRadius(
@@ -21,21 +23,27 @@ func SplashbackRadius(
 	p := new(splashbackRadiusParams)
 	p.loadOptions(opts)
 
-	if len(rhos) != len(derivs) { panic("len(rhos) != len(derivs)") }
-	if len(rhos) == 0 { return 0, false }
+	if len(rhos) != len(derivs) {
+		panic("len(rhos) != len(derivs)")
+	}
+	if len(rhos) == 0 {
+		return 0, false
+	}
 
 	rhoMin := rhos[0]
 	dMin, iMin := p.dLim, -1
-	for i := 1; i < len(rs) - 1; i++ {
+	for i := 1; i < len(rs)-1; i++ {
 		if rhos[i] < rhoMin {
 			rhoMin = rhos[i]
 			if isMinimum(derivs, i) && (derivs[i] < dMin) {
 				dMin, iMin = derivs[i], i
 			}
-		} 
+		}
 	}
 
-	if iMin == -1 { return 0, false }
+	if iMin == -1 {
+		return 0, false
+	}
 	return rs[iMin], true
 }
 

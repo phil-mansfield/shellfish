@@ -7,16 +7,20 @@ import (
 func readDerivs(p *ProfileRing, i int) []float64 {
 	out := make([]float64, p.bins)
 	for j := 0; j < p.bins; j++ {
-		out[j] = p.derivs[j + p.bins*i]
+		out[j] = p.derivs[j+p.bins*i]
 	}
 	return out
 }
 
 func sliceAlmostEq(xs, ys []float64) bool {
-	if len(xs) != len(ys) { return false }
+	if len(xs) != len(ys) {
+		return false
+	}
 	eps := 1e-5
 	for i := range xs {
-		if xs[i] + eps < ys[i] || xs[i] - eps > ys[i] { return false }
+		if xs[i]+eps < ys[i] || xs[i]-eps > ys[i] {
+			return false
+		}
 	}
 	return true
 }
@@ -26,13 +30,13 @@ func TestProfileRingInsert(t *testing.T) {
 	bins := 10
 	minR, maxR := 1.0, 2.0
 
-	table := [] struct{
+	table := []struct {
 		start, end, rho float64
-		out []float64
-	} {
+		out             []float64
+	}{
 		{-1, 0, 1, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
 		{-1, 1, 1, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-		{3, 4, 1,  []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+		{3, 4, 1, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
 		{2, 4, 1, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
 		{0, 3, 1, []float64{1, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
 		{0, 3, 10, []float64{10, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
@@ -62,19 +66,18 @@ func TestProfileRingInsert(t *testing.T) {
 	}
 }
 
-
 func TestProfileRingRetreive(t *testing.T) {
 	n := 4
 	bins := 10
 	minR, maxR := 1.0, 2.0
 
-	table := [] struct{
+	table := []struct {
 		start, end, rho float64
-		out []float64
-	} {
+		out             []float64
+	}{
 		{-1, 0, 1, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
 		{-1, 1, 1, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-		{3, 4, 1,  []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+		{3, 4, 1, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
 		{2, 4, 1, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
 		{0, 3, 1, []float64{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},
 		{0, 3, 10, []float64{10, 10, 10, 10, 10, 10, 10, 10, 10, 10}},
@@ -122,7 +125,11 @@ func BenchmarkProfileRingInsert(b *testing.B) {
 		p.Insert(starts[idx], ends[idx], 1, pIdx)
 		idx++
 		pIdx++
-		if idx == m { idx = 0 }
-		if pIdx == n { pIdx = 0 }
+		if idx == m {
+			idx = 0
+		}
+		if pIdx == n {
+			pIdx = 0
+		}
 	}
 }

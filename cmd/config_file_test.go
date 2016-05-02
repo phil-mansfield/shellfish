@@ -7,7 +7,7 @@ import (
 )
 
 func TestExampleFiles(t *testing.T) {
-	tests := []Mode {
+	tests := []Mode{
 		&GlobalConfig{},
 		&IDConfig{},
 		&TreeConfig{},
@@ -18,7 +18,9 @@ func TestExampleFiles(t *testing.T) {
 	for i := range tests {
 		mode := tests[i]
 		f, err := ioutil.TempFile("", "shellfish_config_test")
-		if err != nil { panic(err.Error()) }
+		if err != nil {
+			panic(err.Error())
+		}
 		defer os.Remove(f.Name())
 
 		if _, err = f.Write([]byte(mode.ExampleConfig())); err != nil {

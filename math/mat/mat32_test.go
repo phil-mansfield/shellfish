@@ -1,15 +1,17 @@
 package mat
 
 import (
-	"testing"
 	"math/rand"
+	"testing"
 )
 
 func randomMatrices32(w, h, n int) []*Matrix32 {
 	ms := make([]*Matrix32, n)
 	for i := range ms {
 		ms[i] = NewMatrix32(make([]float32, w*h), w, h)
-		for j := range ms[i].Vals { ms[i].Vals[j] = rand.Float32() }
+		for j := range ms[i].Vals {
+			ms[i].Vals[j] = rand.Float32()
+		}
 	}
 	return ms
 }
@@ -54,7 +56,7 @@ func Benchmark32Mult1024(b *testing.B) {
 func Benchmark32LU3(b *testing.B) {
 	n := 10
 	ms := randomMatrices32(3, 3, n)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		idx := i % n
@@ -66,7 +68,7 @@ func Benchmark32LUFactorsAt3(b *testing.B) {
 	n := 10
 	ms := randomMatrices32(3, 3, n)
 	lu := NewLUFactors32(3)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		idx := i % n
@@ -92,7 +94,7 @@ func Benchmark32LUDeterminant3(b *testing.B) {
 		lus[i] = NewLUFactors32(3)
 		ms[i].LUFactorsAt(lus[i])
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		idx := i % n
@@ -119,7 +121,7 @@ func Benchmark32LUInvert3(b *testing.B) {
 		ms[i].LUFactorsAt(lus[i])
 	}
 	out := NewMatrix32(make([]float32, 9), 3, 3)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		idx := i % n

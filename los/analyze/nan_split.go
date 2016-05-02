@@ -7,7 +7,7 @@ import (
 )
 
 type nanSplitParams struct {
-	aux [][]float64
+	aux     [][]float64
 	valSets [][]float64
 	auxSets [][][]float64
 }
@@ -35,7 +35,9 @@ func AuxSets(auxSets [][][]float64) NaNSplitOption {
 }
 
 func (p *nanSplitParams) loadOptions(opts []NaNSplitOption) {
-	for _, opt := range opts { opt(p) }
+	for _, opt := range opts {
+		opt(p)
+	}
 
 	// valSets
 	if p.valSets != nil {
@@ -78,16 +80,16 @@ func NaNSplit(
 			panic("All slices given to NaNSplit must be the same length.")
 		}
 	}
-	
+
 	rangeStart := 0
 	midNaN := true
 	for i, val := range vals {
 		if math.IsNaN(val) {
 			// Encountered end of valid range.
 			if !midNaN {
-				valSets = append(valSets, vals[rangeStart: i])
+				valSets = append(valSets, vals[rangeStart:i])
 				for j := range aux {
-					auxSets[j] = append(auxSets[j], aux[j][rangeStart: i])
+					auxSets[j] = append(auxSets[j], aux[j][rangeStart:i])
 				}
 				midNaN = true
 			}
@@ -102,12 +104,12 @@ func NaNSplit(
 
 	// The seqeunce ended on a valid range.
 	if !midNaN {
-		valSets = append(valSets, vals[rangeStart: len(vals)])
+		valSets = append(valSets, vals[rangeStart:len(vals)])
 		for j := range aux {
-			auxSets[j] = append(auxSets[j], aux[j][rangeStart: len(vals)])
+			auxSets[j] = append(auxSets[j], aux[j][rangeStart:len(vals)])
 		}
 		midNaN = true
 	}
-	
+
 	return valSets, auxSets
 }

@@ -6,29 +6,27 @@ import (
 	"runtime"
 	"sort"
 
-
-	"github.com/phil-mansfield/shellfish/parse"
-	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
+	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/cosmo"
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/los/analyze"
+	"github.com/phil-mansfield/shellfish/parse"
 
 	"github.com/phil-mansfield/shellfish/io"
 
 	"github.com/phil-mansfield/shellfish/math/rand"
-
 )
 
 type ShellConfig struct {
 	radialBins, spokes, rings int64
-	rMaxMult, rMinMult float64
-	rKernelMult float64
+	rMaxMult, rMinMult        float64
+	rKernelMult               float64
 
-	eta float64
+	eta                                             float64
 	order, smoothingWindow, levels, subsampleFactor int64
-	losSlopeCutoff, backgroundRhoMult float64
+	losSlopeCutoff, backgroundRhoMult               float64
 }
 
 var _ Mode = &ShellConfig{}
@@ -112,8 +110,12 @@ func (config *ShellConfig) ReadConfig(fname string) error {
 	vars.Float(&config.losSlopeCutoff, "LOSSlopeCutoff", 0.0)
 	vars.Float(&config.backgroundRhoMult, "BackgroundRhoMult", 0.5)
 
-	if fname == "" { return nil }
-	if err := parse.ReadConfig(fname, vars); err != nil { return err }
+	if fname == "" {
+		return nil
+	}
+	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
 	return config.validate()
 }
 
@@ -155,7 +157,7 @@ func (config *ShellConfig) validate() error {
 	}
 
 	if config.rMinMult >= config.rMaxMult {
-		return fmt.Errorf("The variable '%s' was set to %g, but the " +
+		return fmt.Errorf("The variable '%s' was set to %g, but the "+
 			"variable '%s' was set to %g.", "RMinMult", config.rMinMult,
 			"RMaxMult", config.rMaxMult)
 	}
@@ -171,14 +173,18 @@ func (config *ShellConfig) Run(
 	intCols, coords, err := catalog.ParseCols(
 		stdin, []int{0, 1}, []int{2, 3, 4, 5},
 	)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	ids, snaps := intCols[0], intCols[1]
-	
-	if len(ids) == 0 { return nil, fmt.Errorf("No input IDs.") }
+
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("No input IDs.")
+	}
 
 	// Compute coefficients.
 	out := make([][]float64, len(ids))
-	rowLength := config.order*config.order*2
+	rowLength := config.order * config.order * 2
 
 	for i := range out {
 		out[i] = make([]float64, rowLength)
@@ -190,7 +196,9 @@ func (config *ShellConfig) Run(
 	)
 
 	err = loop(ids, snaps, coords, config, buf, e, out, gConfig.Threads)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	intNames := []string{"ID", "Snapshot"}
 	floatNames := []string{"X", "Y", "Z", "R_200m"}
@@ -204,9 +212,10 @@ func (config *ShellConfig) Run(
 		}
 	}
 
-
-	colOrder := make([]int, 2 + 4 + 2*config.order*config.order)
-	for i := range colOrder { colOrder[i] = i }
+	colOrder := make([]int, 2+4+2*config.order*config.order)
+	for i := range colOrder {
+		colOrder[i] = i
+	}
 
 	lines := catalog.FormatCols(
 		[][]int{ids, snaps}, append(coords, transpose(out)...), colOrder,
@@ -219,14 +228,16 @@ func (config *ShellConfig) Run(
 func transpose(in [][]float64) [][]float64 {
 	rows, cols := len(in), len(in[0])
 	out := make([][]float64, cols)
-	for i := range out { out[i] = make([]float64, rows) }
+	for i := range out {
+		out[i] = make([]float64, rows)
+	}
 
 	for y := 0; y < rows; y++ {
 		for x := 0; x < cols; x++ {
 			out[x][y] = in[y][x]
 		}
 	}
-	
+
 	return out
 }
 
@@ -237,7 +248,9 @@ func loop(
 ) error {
 	snapBins, idxBins := binBySnap(snaps, ids)
 	ringBuf := make([]analyze.RingBuffer, c.rings)
-	for i := range ringBuf { ringBuf[i].Init(int(c.spokes), int(c.radialBins)) }
+	for i := range ringBuf {
+		ringBuf[i].Init(int(c.spokes), int(c.radialBins))
+	}
 
 	sortedSnaps := []int{}
 	for snap := range snapBins {
@@ -246,20 +259,26 @@ func loop(
 	sort.Ints(sortedSnaps)
 
 	hds, _, err := memo.ReadHeaders(sortedSnaps[0], buf, e)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	minMass := buf.MinMass()
 
 	workers := runtime.NumCPU()
-	if threads > 0 { workers = int(threads) }
+	if threads > 0 {
+		workers = int(threads)
+	}
 	sphBuf := &sphBuffers{
-		intr: make([]bool, hds[0].N),
-		xs: [][3]float32{},
-		ms: []float32{},
-		sphWorkers: make([]los.Halo, workers - 1),
+		intr:       make([]bool, hds[0].N),
+		xs:         [][3]float32{},
+		ms:         []float32{},
+		sphWorkers: make([]los.Halo, workers-1),
 	}
 
 	for _, snap := range sortedSnaps {
-		if snap == -1 { continue }
+		if snap == -1 {
+			continue
+		}
 		idxs := idxBins[snap]
 		snapCoords := [][]float64{
 			make([]float64, len(idxs)), make([]float64, len(idxs)),
@@ -275,7 +294,9 @@ func loop(
 		// Create Halos
 		runtime.GC()
 		halos, err := createHalos(snapCoords, &hds[0], c, e, minMass)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 
 		// I'm so sorry about having ten arguments to this function.
 		if err = sphereLoop(snap, ids, idxs, halos, c,
@@ -301,15 +322,21 @@ func sphereLoop(
 	threads int64, out [][]float64,
 ) error {
 	hds, files, err := memo.ReadHeaders(snap, buf, e)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	intrBins := binIntersections(hds, halos)
 
 	for i := range hds {
 		runtime.GC()
-		if len(intrBins[i]) == 0 { continue }
+		if len(intrBins[i]) == 0 {
+			continue
+		}
 
 		sphBuf.xs, sphBuf.ms, err = buf.Read(files[i])
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 
 		binHs := intrBins[i]
 		for j := range binHs {
@@ -324,9 +351,9 @@ func sphereLoop(
 
 type sphBuffers struct {
 	sphWorkers []los.Halo
-	xs [][3]float32
-	ms []float32
-	intr []bool
+	xs         [][3]float32
+	ms         []float32
+	intr       []bool
 }
 
 func loadSphereVecs(
@@ -334,11 +361,15 @@ func loadSphereVecs(
 	threads int64,
 ) {
 	workers := runtime.NumCPU()
-	if threads > 0 { workers = int(threads) }
+	if threads > 0 {
+		workers = int(threads)
+	}
 	runtime.GOMAXPROCS(workers)
 	sphWorkers, xs := sphBuf.sphWorkers, sphBuf.xs
 	ms, intr := sphBuf.ms, sphBuf.intr
-	if len(sphWorkers) + 1 != workers { panic("impossible")}
+	if len(sphWorkers)+1 != workers {
+		panic("impossible")
+	}
 
 	sync := make(chan bool, workers)
 
@@ -347,7 +378,9 @@ func loadSphereVecs(
 	h.Intersect(xs, rad, intr)
 	numIntr := 0
 	for i := range intr {
-		if intr[i] { numIntr++ }
+		if intr[i] {
+			numIntr++
+		}
 	}
 
 	h.Split(sphWorkers)
@@ -356,9 +389,11 @@ func loadSphereVecs(
 		wh := &sphBuf.sphWorkers[i]
 		go chanLoadSphereVec(wh, xs, ms, intr, i, workers, hd, c, sync)
 	}
-	chanLoadSphereVec(h, xs, ms, intr, workers - 1, workers, hd, c, sync)
+	chanLoadSphereVec(h, xs, ms, intr, workers-1, workers, hd, c, sync)
 
-	for i := 0; i < workers; i++ { <-sync }
+	for i := 0; i < workers; i++ {
+		<-sync
+	}
 
 	h.Join(sphWorkers)
 }
@@ -369,17 +404,17 @@ func chanLoadSphereVec(
 	hd *io.Header, c *ShellConfig, sync chan bool,
 ) {
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
-	sphVol := 4*math.Pi/3*rad*rad*rad
+	sphVol := 4 * math.Pi / 3 * rad * rad * rad
 
-	rhoM := cosmo.RhoAverage(hd.Cosmo.H100 * 100,
+	rhoM := cosmo.RhoAverage(hd.Cosmo.H100*100,
 		hd.Cosmo.OmegaM, hd.Cosmo.OmegaL, hd.Cosmo.Z)
 
 	sf := c.subsampleFactor
-	skip := workers*int(sf*sf*sf)
-	for i := offset*int(sf*sf*sf); i < int(hd.N); i += skip {
+	skip := workers * int(sf*sf*sf)
+	for i := offset * int(sf*sf*sf); i < int(hd.N); i += skip {
 		if intr[i] {
-			h.Insert(xs[i], rad, (float64(ms[i])*float64(sf*sf*sf) /
-				sphVol) / rhoM)
+			h.Insert(xs[i], rad, (float64(ms[i])*float64(sf*sf*sf)/
+				sphVol)/rhoM)
 		}
 	}
 
@@ -415,16 +450,18 @@ func createHalos(
 		x, y, z, r := coords[0][i], coords[1][i], coords[2][i], coords[3][i]
 
 		// This happens sometimes...
-		if r <= 0 { continue }
+		if r <= 0 {
+			continue
+		}
 
 		norms := normVecs(int(c.rings))
 		origin := [3]float64{x, y, z}
 		rMax, rMin := r*c.rMaxMult, r*c.rMinMult
-		rad := r*c.rKernelMult
+		rad := r * c.rKernelMult
 
-		sphVol := 4*math.Pi/3*rad*rad*rad
+		sphVol := 4 * math.Pi / 3 * rad * rad * rad
 		sf := c.subsampleFactor
-		rhoM := cosmo.RhoAverage(hd.Cosmo.H100 * 100,
+		rhoM := cosmo.RhoAverage(hd.Cosmo.H100*100,
 			hd.Cosmo.OmegaM, hd.Cosmo.OmegaL, hd.Cosmo.Z)
 		rho := ((float64(minMass) * float64(sf*sf*sf)) / sphVol) / rhoM
 		defaultRho := rho * c.backgroundRhoMult
@@ -456,7 +493,7 @@ func normVecs(n int) [][3]float32 {
 
 				if r < 1 {
 					vecs[i] = [3]float32{
-						float32(x/r), float32(y/r), float32(z/r),
+						float32(x / r), float32(y / r), float32(z / r),
 					}
 					break
 				}
@@ -469,7 +506,7 @@ func normVecs(n int) [][3]float32 {
 
 type profileRange struct {
 	rMin, rMax float64
-	v0 [3]float32
+	v0         [3]float32
 }
 
 func binIntersections(
@@ -494,7 +531,9 @@ func calcCoeffs(
 		buf[i].Splashback(halo, i, int(c.smoothingWindow), c.losSlopeCutoff)
 	}
 	pxs, pys, ok := analyze.FilterPoints(buf, int(c.levels), c.eta)
-	if !ok { return nil, false }
+	if !ok {
+		return nil, false
+	}
 	cs, _ := analyze.PennaVolumeFit(pxs, pys, halo, int(c.order), int(c.order))
 	return cs, true
 }

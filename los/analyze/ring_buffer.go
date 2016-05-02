@@ -8,17 +8,17 @@ import (
 )
 
 type RingBuffer struct {
-	PlaneXs, PlaneYs, Xs, Ys, Zs, Rs, Phis []float64
-	Oks []bool
+	PlaneXs, PlaneYs, Xs, Ys, Zs, Rs, Phis     []float64
+	Oks                                        []bool
 	profRs, profRhos, smoothRhos, smoothDerivs []float64
-	N, Bins int
+	N, Bins                                    int
 }
 
 func (r *RingBuffer) Init(n, bins int) {
 	r.N, r.Bins = n, bins
 
 	r.PlaneXs, r.PlaneYs = make([]float64, n), make([]float64, n)
-	r.Xs, r.Ys, r.Zs = make([]float64, n), make([]float64, n), make([]float64,n)
+	r.Xs, r.Ys, r.Zs = make([]float64, n), make([]float64, n), make([]float64, n)
 	r.Phis, r.Rs = make([]float64, n), make([]float64, n)
 	r.Oks = make([]bool, n)
 
@@ -28,7 +28,7 @@ func (r *RingBuffer) Init(n, bins int) {
 
 func (r *RingBuffer) Clear() {
 	for i := 0; i < r.N; i++ {
-		r.PlaneXs[i], r.PlaneYs[i] = 0, 0 
+		r.PlaneXs[i], r.PlaneYs[i] = 0, 0
 		r.Xs[i], r.Ys[i], r.Zs[i] = 0, 0, 0
 		r.Phis[i], r.Rs[i] = 0, 0
 		r.Oks[i] = false
@@ -51,16 +51,22 @@ func (r *RingBuffer) Splashback(
 			r.profRs, r.profRhos, window,
 			Vals(r.smoothRhos), Derivs(r.smoothDerivs),
 		)
-		if !r.Oks[i] { continue }
+		if !r.Oks[i] {
+			continue
+		}
 		r.Rs[i], r.Oks[i] = SplashbackRadius(
 			r.profRs, r.smoothRhos, r.smoothDerivs, DLim(dLim),
 		)
-		if !r.Oks[i] { continue }
+		if !r.Oks[i] {
+			continue
+		}
 
 		r.Phis[i] = float64(h.Phi(i))
-		if r.Phis[i] < 0 { r.Phis[i] += math.Pi }
+		if r.Phis[i] < 0 {
+			r.Phis[i] += math.Pi
+		}
 		sin, cos := math.Sincos(r.Phis[i])
-		r.PlaneXs[i], r.PlaneYs[i] = cos * r.Rs[i], sin * r.Rs[i]
+		r.PlaneXs[i], r.PlaneYs[i] = cos*r.Rs[i], sin*r.Rs[i]
 
 		h.LineSegment(ring, i, ls)
 		r.Xs[i] = r.Rs[i] * float64(ls.Dir[0])

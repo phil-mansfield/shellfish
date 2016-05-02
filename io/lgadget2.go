@@ -8,7 +8,6 @@ import (
 	"os"
 )
 
-
 // gadgetHeader is the formatting for meta-information used by Gadget 2.
 type lGadget2Header struct {
 	NPart                                     [6]uint32
@@ -51,7 +50,9 @@ func readLGadget2Header(
 	path string, order binary.ByteOrder, out *lGadget2Header,
 ) error {
 	f, err := os.Open(path)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer f.Close()
 
 	_ = readInt32(f, order)
@@ -66,7 +67,9 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	msBuf []float32,
 ) (xs [][3]float32, ms []float32, err error) {
 	f, err := os.Open(path)
-	if err != nil { return nil, nil, err }
+	if err != nil {
+		return nil, nil, err
+	}
 	defer f.Close()
 
 	gh := &lGadget2Header{}
@@ -103,7 +106,9 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	}
 
 	msBuf = expandScalars(msBuf, count)
-	for i := range msBuf { msBuf[i] = buf.mass }
+	for i := range msBuf {
+		msBuf[i] = buf.mass
+	}
 
 	return xsBuf, msBuf, nil
 }
@@ -112,9 +117,9 @@ func expandVectors(vecs [][3]float32, n int) [][3]float32 {
 	switch {
 	case cap(vecs) <= n:
 		return vecs[:n]
-	case int(float64(cap(vecs)) * 1.5) > n:
+	case int(float64(cap(vecs))*1.5) > n:
 		return append(vecs[:cap(vecs)],
-			make([][3]float32, n - cap(vecs))...)
+			make([][3]float32, n-cap(vecs))...)
 	default:
 		return make([][3]float32, n)
 	}
@@ -124,21 +129,21 @@ func expandScalars(scalars []float32, n int) []float32 {
 	switch {
 	case cap(scalars) <= n:
 		return scalars[:n]
-	case int(float64(cap(scalars)) * 1.5) > n:
+	case int(float64(cap(scalars))*1.5) > n:
 		return append(scalars[:cap(scalars)],
-			make([]float32, n - cap(scalars))...)
+			make([]float32, n-cap(scalars))...)
 	default:
 		return make([]float32, n)
 	}
 }
 
 type LGadget2Buffer struct {
-	open bool
+	open  bool
 	order binary.ByteOrder
-	hd lGadget2Header
-	mass float32
-	xs [][3]float32
-	ms []float32
+	hd    lGadget2Header
+	mass  float32
+	xs    [][3]float32
+	ms    []float32
 }
 
 func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
@@ -148,12 +153,16 @@ func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
 	case "BigEndian":
 		order = binary.BigEndian
 	case "SystemOrder":
-		if !IsSysOrder(order) { order = binary.BigEndian }
+		if !IsSysOrder(order) {
+			order = binary.BigEndian
+		}
 	}
 
-	buf := &LGadget2Buffer{ order: order }
+	buf := &LGadget2Buffer{order: order}
 	err := readLGadget2Header(path, order, &buf.hd)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	c := CosmologyHeader{
 		Z: buf.hd.Redshift, OmegaM: buf.hd.Omega0,
@@ -166,7 +175,9 @@ func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
 }
 
 func (buf *LGadget2Buffer) Read(fname string) ([][3]float32, []float32, error) {
-	if buf.open { panic("Buffer already open.") }
+	if buf.open {
+		panic("Buffer already open.")
+	}
 	buf.open = true
 
 	var err error
@@ -178,7 +189,9 @@ func (buf *LGadget2Buffer) Read(fname string) ([][3]float32, []float32, error) {
 }
 
 func (buf *LGadget2Buffer) Close() {
-	if !buf.open { panic("Buffer not open.") }
+	if !buf.open {
+		panic("Buffer not open.")
+	}
 	buf.open = false
 }
 
@@ -189,9 +202,13 @@ func (buf *LGadget2Buffer) IsOpen() bool {
 func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
 
 	err := readLGadget2Header(fname, buf.order, &buf.hd)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	xs, _, err := buf.Read(fname)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	buf.hd.postprocess(xs, out)
 

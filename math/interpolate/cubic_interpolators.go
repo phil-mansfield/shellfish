@@ -10,17 +10,17 @@ import (
 
 type BiCubic struct {
 	xs, ys []float64
-	vals []float64
-	nx int
+	vals   []float64
+	nx     int
 
-	lastY float64
-	ySplines []*Spline
+	lastY       float64
+	ySplines    []*Spline
 	xSplineVals []float64
-	xSpline *Spline
+	xSpline     *Spline
 }
 
 func NewBiCubic(xs, ys, vals []float64) *BiCubic {
-	if len(xs) * len(ys) != len(vals) {
+	if len(xs)*len(ys) != len(vals) {
 		panic(fmt.Sprintf(
 			"len(vals) = %d, but len(xs) = %d and len(ys) = %d",
 			len(vals), len(xs), len(ys),
@@ -56,8 +56,12 @@ func NewUniformBiCubic(
 
 	bi.xs = make([]float64, nx)
 	bi.ys = make([]float64, ny)
-	for i := range bi.xs { bi.xs[i] = x0 + float64(i)*dx }
-	for i := range bi.ys { bi.ys[i] = y0 + float64(i)*dy }
+	for i := range bi.xs {
+		bi.xs[i] = x0 + float64(i)*dx
+	}
+	for i := range bi.ys {
+		bi.ys[i] = y0 + float64(i)*dy
+	}
 
 	bi.initSplines()
 
@@ -70,7 +74,7 @@ func (bi *BiCubic) initSplines() {
 	for xi := range bi.xs {
 		yVals := make([]float64, len(bi.ys))
 		for yi := range bi.ys {
-			yVals[yi] = bi.vals[bi.nx * yi + xi]
+			yVals[yi] = bi.vals[bi.nx*yi+xi]
 		}
 
 		bi.ySplines[xi] = NewSpline(bi.ys, yVals)
@@ -99,8 +103,12 @@ func (bi *BiCubic) Eval(x, y float64) float64 {
 }
 
 func (bi *BiCubic) EvalAll(xs, ys []float64, out ...[]float64) []float64 {
-	if len(out) == 0 { out = [][]float64{ make([]float64, len(xs)) } }
-	for i := range xs { out[0][i] = bi.Eval(xs[i], ys[i]) }
+	if len(out) == 0 {
+		out = [][]float64{make([]float64, len(xs))}
+	}
+	for i := range xs {
+		out[0][i] = bi.Eval(xs[i], ys[i])
+	}
 	return out[0]
 }
 
@@ -129,17 +137,16 @@ func (bi *biCubicRef) Ref() BiInterpolator {
 
 type TriCubic struct {
 	xs, ys, zs []float64
-	vals []float64
-	nx, ny int
+	vals       []float64
+	nx, ny     int
 
 	lastY, lastZ float64
-	zSplines []*Spline
-	ySplineVals [][]float64
-	ySplines []*Spline
-	xSplineVals []float64
-	xSpline *Spline
+	zSplines     []*Spline
+	ySplineVals  [][]float64
+	ySplines     []*Spline
+	xSplineVals  []float64
+	xSpline      *Spline
 }
-
 
 func NewTriCubic(xs, ys, zs, vals []float64) *TriCubic {
 	if len(xs)*len(ys)*len(zs) != len(vals) {
@@ -184,9 +191,15 @@ func NewUniformTriCubic(
 	tri.ys = make([]float64, ny)
 	tri.zs = make([]float64, nz)
 
-	for i := range tri.xs { tri.xs[i] = x0 + float64(i)*dx }
-	for i := range tri.ys { tri.ys[i] = y0 + float64(i)*dy }
-	for i := range tri.zs { tri.zs[i] = z0 + float64(i)*dz }
+	for i := range tri.xs {
+		tri.xs[i] = x0 + float64(i)*dx
+	}
+	for i := range tri.ys {
+		tri.ys[i] = y0 + float64(i)*dy
+	}
+	for i := range tri.zs {
+		tri.zs[i] = z0 + float64(i)*dz
+	}
 
 	tri.initSplines()
 
@@ -202,10 +215,10 @@ func (tri *TriCubic) initSplines() {
 		for yi := range tri.ys {
 			zVals := make([]float64, len(tri.zs))
 			for zi := range tri.zs {
-				zVals[zi] = tri.vals[tri.nx*tri.ny*zi + tri.nx*yi + xi]
+				zVals[zi] = tri.vals[tri.nx*tri.ny*zi+tri.nx*yi+xi]
 			}
 
-			tri.zSplines[yi*tri.nx + xi] = NewSpline(tri.zs, zVals)
+			tri.zSplines[yi*tri.nx+xi] = NewSpline(tri.zs, zVals)
 		}
 	}
 
@@ -219,7 +232,7 @@ func (tri *TriCubic) initSplines() {
 		tri.ySplineVals[xi] = make([]float64, len(tri.ys))
 		for yi := range tri.ys {
 			tri.ySplineVals[xi][yi] =
-				tri.zSplines[yi*tri.nx + xi].Eval(tri.lastZ)
+				tri.zSplines[yi*tri.nx+xi].Eval(tri.lastZ)
 		}
 		tri.ySplines[xi] = NewSpline(tri.ys, tri.ySplineVals[xi])
 	}
@@ -240,25 +253,25 @@ func (tri *TriCubic) Eval(x, y, z float64) float64 {
 	if y != tri.lastY || z != tri.lastZ {
 		if z != tri.lastZ {
 			tri.lastZ = z
-			
+
 			tri.ySplineVals = make([][]float64, len(tri.xs))
 			for xi := range tri.xs {
 				tri.ySplineVals[xi] = make([]float64, len(tri.ys))
 				for yi := range tri.ys {
 					tri.ySplineVals[xi][yi] =
-						tri.zSplines[yi*tri.nx + xi].Eval(tri.lastZ)
+						tri.zSplines[yi*tri.nx+xi].Eval(tri.lastZ)
 				}
 				tri.ySplines[xi].Init(tri.ys, tri.ySplineVals[xi])
-			}			
+			}
 		}
 
 		tri.lastY = y
-		
+
 		tri.xSplineVals = make([]float64, len(tri.xs))
 		for xi := range tri.xSplineVals {
 			tri.xSplineVals[xi] = tri.ySplines[xi].Eval(tri.lastY)
 		}
-		
+
 		tri.xSpline.Init(tri.xs, tri.xSplineVals)
 	}
 
@@ -266,8 +279,12 @@ func (tri *TriCubic) Eval(x, y, z float64) float64 {
 }
 
 func (tri *TriCubic) EvalAll(xs, ys, zs []float64, out ...[]float64) []float64 {
-	if len(out) == 0 { out = [][]float64{ make([]float64, len(xs)) } }
-	for i := range xs { out[0][i] = tri.Eval(xs[i], ys[i], zs[i]) }
+	if len(out) == 0 {
+		out = [][]float64{make([]float64, len(xs))}
+	}
+	for i := range xs {
+		out[0][i] = tri.Eval(xs[i], ys[i], zs[i])
+	}
 	return out[0]
 }
 

@@ -24,13 +24,13 @@ func CommentString(intNames, floatNames []string, order []int) string {
 func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 	if (len(intCols) == 0 && len(floatCols) == 0) ||
 		(len(intCols) > 0 && len(intCols[0]) == 0) ||
-		(len(floatCols) > 0 && len(floatCols[0]) == 0){
+		(len(floatCols) > 0 && len(floatCols[0]) == 0) {
 		return []string{}
 	}
 
 	formattedIntCols := make([][]string, len(intCols))
 	formattedFloatCols := make([][]string, len(floatCols))
-	
+
 	height := -1
 	for i := range intCols {
 		formattedIntCols[i] = formatIntCol(intCols[i])
@@ -40,7 +40,7 @@ func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 			panic("Columns of unequal height.")
 		}
 	}
-	
+
 	for i := range floatCols {
 		formattedFloatCols[i] = formatFloatCol(floatCols[i])
 		if height == -1 {
@@ -49,10 +49,10 @@ func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 			panic("Columns of unequal height.")
 		}
 	}
-	
+
 	orderedCols := [][]string{}
 	for _, idx := range order {
-		if idx >= len(intCols) + len(floatCols) {
+		if idx >= len(intCols)+len(floatCols) {
 			panic("Column ordering out of range.")
 		}
 
@@ -65,7 +65,7 @@ func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {
 	}
 
 	lines := []string{}
-	tokens := make([]string, len(intCols) + len(floatCols))
+	tokens := make([]string, len(intCols)+len(floatCols))
 	for i := 0; i < height; i++ {
 		for j := range orderedCols {
 			tokens[j] = orderedCols[j][i]
@@ -81,7 +81,9 @@ func formatIntCol(col []int) []string {
 	width := len(fmt.Sprintf("%d", col[0]))
 	for i := 1; i < len(col); i++ {
 		n := len(fmt.Sprintf("%d", col[i]))
-		if n > width { width = n }
+		if n > width {
+			width = n
+		}
 	}
 
 	out := []string{}
@@ -96,7 +98,9 @@ func formatFloatCol(col []float64) []string {
 	width := len(fmt.Sprintf("%.4g", col[0]))
 	for i := 1; i < len(col); i++ {
 		n := len(fmt.Sprintf("%.4g", col[i]))
-		if n > width { width = n }
+		if n > width {
+			width = n
+		}
 	}
 
 	out := []string{}
@@ -121,7 +125,7 @@ func Uncomment(lines []string) (out []string, lineNums []int) {
 		trimmed := strings.Trim(lines[i], " \t")
 		if len(trimmed) > 0 {
 			out = append(out, trimmed)
-			lineNums = append(lineNums, i + 1)
+			lineNums = append(lineNums, i+1)
 		}
 	}
 	return out, lineNums
@@ -130,21 +134,27 @@ func Uncomment(lines []string) (out []string, lineNums []int) {
 func ParseCols(
 	lines []string, intIdxs, floatIdxs []int,
 ) ([][]int, [][]float64, error) {
-	if len(intIdxs) == 0 && len(floatIdxs) == 0 { return nil, nil, nil }
+	if len(intIdxs) == 0 && len(floatIdxs) == 0 {
+		return nil, nil, nil
+	}
 
 	fLines, lineNums := Uncomment(lines)
 	minWidth := -1
 	for _, x := range intIdxs {
-		if x > minWidth { minWidth = x }
+		if x > minWidth {
+			minWidth = x
+		}
 	}
 	for _, x := range floatIdxs {
-		if x > minWidth { minWidth = x }
+		if x > minWidth {
+			minWidth = x
+		}
 	}
 	minWidth++
 
 	intCols := make([][]int, len(intIdxs))
 	floatCols := make([][]float64, len(floatIdxs))
-	
+
 	for i := range fLines {
 		toks := tokenize(fLines[i])
 
@@ -157,7 +167,7 @@ func ParseCols(
 			for colIdx, j := range intIdxs {
 				n, err := strconv.Atoi(toks[j])
 				if err != nil {
-					return nil, nil, fmt.Errorf("Cannot parse column %d of " +
+					return nil, nil, fmt.Errorf("Cannot parse column %d of "+
 						"line %d, '%s', to an int.", j, lineNums[i], toks[j])
 				}
 				intCols[colIdx] = append(intCols[j], n)
@@ -166,7 +176,7 @@ func ParseCols(
 			for colIdx, j := range floatIdxs {
 				x, err := strconv.ParseFloat(toks[j], 64)
 				if err != nil {
-					return nil, nil, fmt.Errorf("Cannot parse column %d of " +
+					return nil, nil, fmt.Errorf("Cannot parse column %d of "+
 						"line %d, '%s', to a float.", j, lineNums[i], toks[j])
 				}
 				floatCols[colIdx] = append(floatCols[colIdx], x)

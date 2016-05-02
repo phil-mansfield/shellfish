@@ -25,7 +25,7 @@ func EulerMatrix(phi, theta, psi float32) *mat.Matrix32 {
 // This is really slow right now.
 func EulerMatrixAt(phi, theta, psi float32, out *mat.Matrix32) {
 	c1, s1 := float32(math.Cos(float64(phi))), float32(math.Sin(float64(phi)))
-	c2, s2:=float32(math.Cos(float64(theta))),float32(math.Sin(float64(theta)))
+	c2, s2 := float32(math.Cos(float64(theta))), float32(math.Sin(float64(theta)))
 	c3, s3 := float32(math.Cos(float64(psi))), float32(math.Sin(float64(psi)))
 
 	R1 := []float32{c1, -s1, 0, s1, c1, 0, 0, 0, 1}
@@ -36,7 +36,6 @@ func EulerMatrixAt(phi, theta, psi float32, out *mat.Matrix32) {
 	m3 := mat.NewMatrix32(R3, 3, 3)
 	m3.MultAt(m2.Mult(m1), out)
 }
-
 
 // EulerMatrixBetween creates a 3D rotation matrix which such that M * v1 = v2.
 func EulerMatrixBetween(v1, v2 *[3]float32) *mat.Matrix32 {
@@ -51,7 +50,7 @@ func EulerMatrixBetweenAt(v1, v2 *[3]float32, out *mat.Matrix32) *mat.Matrix32 {
 	x2, y2, z2 := v2[0], v2[1], v2[2]
 	phi2, theta2 := SphericalAngles(x2, y2, z2)
 	pi2 := float32(math.Pi / 2)
-	EulerMatrixAt(pi2 - phi1, theta1 - theta2, phi2 - pi2, out)
+	EulerMatrixAt(pi2-phi1, theta1-theta2, phi2-pi2, out)
 	return out
 }
 
@@ -64,15 +63,17 @@ func RotateVec(v *[3]float32, m *mat.Matrix32) {
 }
 
 // Rotate rotates a tetrahedron by the given rotation matrix.
-func (t *Tetra) Rotate(m *mat.Matrix32){
-	for i := 0; i < 4; i++ { RotateVec(&t[i], m) }
+func (t *Tetra) Rotate(m *mat.Matrix32) {
+	for i := 0; i < 4; i++ {
+		RotateVec(&t[i], m)
+	}
 }
 
 // SphericalAngles returns the azimuthal and polar angles (respectively) of
 // the point specified by x, y, z.
 func SphericalAngles(x, y, z float32) (phi, theta float32) {
 	phi = float32(math.Atan2(float64(y), float64(x)))
-	r := math.Sqrt(float64(x*x + y*y +z*z))
+	r := math.Sqrt(float64(x*x + y*y + z*z))
 	theta = float32(math.Acos(float64(z) / r))
 	return phi, theta
 }
@@ -110,7 +111,7 @@ func AngularDistance(phi1, phi2 float32) float32 {
 func AngleInRange(phi, low, width float32) bool {
 	high := low + width
 	if high > 2*math.Pi {
-		high -= 2*math.Pi
+		high -= 2 * math.Pi
 		return phi >= low || phi <= high
 	} else {
 		return phi >= low && phi <= high
@@ -120,7 +121,7 @@ func AngleInRange(phi, low, width float32) bool {
 // AngleBinRange returns the bin range of the given angle range.
 func AngleBinRange(low, width float32, bins int) (lowIdx, idxWidth int) {
 	dphi := math.Pi * 2 / float32(bins)
-	iLow := int(low / dphi) + 1
-	iHigh := int((low + width) /dphi) + 1
+	iLow := int(low/dphi) + 1
+	iHigh := int((low+width)/dphi) + 1
 	return iLow, iHigh - iLow
 }

@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-// IntersectionWorkspace contains various fields useful for speeding up 
+// IntersectionWorkspace contains various fields useful for speeding up
 // ray-tetrahedron intersection checks.
 //
 // Workspaces should not be shared between threads.
@@ -21,7 +21,7 @@ type IntersectionWorkspace struct {
 //
 // The ray represented by ap extends infinitely in both directions.
 func (w *IntersectionWorkspace) IntersectionBary(
-	pt *PluckerTetra, p *PluckerVec, 
+	pt *PluckerTetra, p *PluckerVec,
 ) (bEnter, bLeave *TetraFaceBary, ok bool) {
 	fEnter, fLeave := -1, -1
 
@@ -32,7 +32,7 @@ func (w *IntersectionWorkspace) IntersectionBary(
 
 		i0, flip0 := pt.EdgeIdx(face, 0)
 		i1, flip1 := pt.EdgeIdx(face, 1)
-		i2, flip2 := pt.EdgeIdx(face, 2)		
+		i2, flip2 := pt.EdgeIdx(face, 2)
 
 		p0, p1, p2 := &pt[i0], &pt[i1], &pt[i2]
 		d0, s0 := p.SignDot(p0, flip0)
@@ -43,16 +43,22 @@ func (w *IntersectionWorkspace) IntersectionBary(
 			fEnter = face
 			w.bEnter.w[0], w.bEnter.w[1], w.bEnter.w[2] = d0, d1, d2
 			w.bEnter.face = face
-			if fLeave != -1 { break }
-		} else if fLeave == - 1 && s0 <= 0 && s1 <= 0 && s2 <= 0 {
+			if fLeave != -1 {
+				break
+			}
+		} else if fLeave == -1 && s0 <= 0 && s1 <= 0 && s2 <= 0 {
 			fLeave = face
 			w.bLeave.w[0], w.bLeave.w[1], w.bLeave.w[2] = d0, d1, d2
 			w.bLeave.face = face
-			if fEnter != -1 { break }
+			if fEnter != -1 {
+				break
+			}
 		}
 	}
 
-	if fEnter == -1 || fLeave == -1 { return nil, nil, false } 
+	if fEnter == -1 || fLeave == -1 {
+		return nil, nil, false
+	}
 	return &w.bEnter, &w.bLeave, true
 }
 
@@ -66,10 +72,12 @@ func (w *IntersectionWorkspace) IntersectionBary(
 // The ray represented by ap extends infinitely in both directions, so negative
 // distances are valid return values.
 func (w *IntersectionWorkspace) IntersectionDistance(
-	pt *PluckerTetra, t *Tetra, ap *AnchoredPluckerVec, 
+	pt *PluckerTetra, t *Tetra, ap *AnchoredPluckerVec,
 ) (lEnter, lLeave float32, ok bool) {
 	bEnter, bLeave, ok := w.IntersectionBary(pt, &ap.PluckerVec)
-	if !ok { return 0, 0, false }
+	if !ok {
+		return 0, 0, false
+	}
 	enter := t.Distance(ap, bEnter)
 	exit := t.Distance(ap, bLeave)
 	return enter, exit, true
@@ -81,8 +89,8 @@ func (w *IntersectionWorkspace) IntersectionDistance(
 // By convention, the generic name for a TetraSlice variable is "poly".
 type TetraSlice struct {
 	Xs, Ys, Phis, linePhiStarts, linePhiWidths [4]float32
-	edges, lineStarts, lineEnds [4]int
-	Lines [4]Line
+	edges, lineStarts, lineEnds                [4]int
+	Lines                                      [4]Line
 
 	Points int
 }
@@ -93,10 +101,12 @@ func (t *Tetra) crossesZPlane(idx1, idx2 int, z float32) bool {
 }
 
 // crossZ0Plane computes the x and y coordinates of the point where a ray
-// crosses the z = 0 plane. The ray is prepresented by a point, P, and a unit 
+// crosses the z = 0 plane. The ray is prepresented by a point, P, and a unit
 // direction vector, L.
 func intersectZPlane(P, L *[3]float32, z float32) (x, y float32, ok bool) {
-	if L[2] == 0 { return 0, 0, false }
+	if L[2] == 0 {
+		return 0, 0, false
+	}
 	t := (z - P[2]) / L[2]
 	return P[0] + L[0]*t, P[1] + L[1]*t, true
 }
@@ -112,7 +122,7 @@ func (poly *TetraSlice) link() (ok bool) {
 			lineStart = poly.lineEnds[i-1]
 		}
 
-		if i == poly.Points - 1 {
+		if i == poly.Points-1 {
 			lineEnd = 0
 		} else {
 			for j := 0; j < poly.Points; j++ {
@@ -134,7 +144,7 @@ func (poly *TetraSlice) link() (ok bool) {
 		phiHigh := poly.Phis[poly.lineEnds[i]]
 		width := AngularDistance(phiLow, phiHigh)
 		if width < 0 {
-			poly.lineStarts[i], poly.lineEnds[i] = 
+			poly.lineStarts[i], poly.lineEnds[i] =
 				poly.lineEnds[i], poly.lineStarts[i]
 			poly.linePhiStarts[i] = phiHigh
 			poly.linePhiWidths[i] = -width
@@ -143,7 +153,6 @@ func (poly *TetraSlice) link() (ok bool) {
 			poly.linePhiWidths[i] = width
 		}
 
-		
 		if !poly.Lines[i].Init(
 			poly.Xs[poly.lineStarts[i]], poly.Ys[poly.lineStarts[i]],
 			poly.Xs[poly.lineEnds[i]], poly.Ys[poly.lineEnds[i]],
@@ -168,7 +177,9 @@ func (t *Tetra) ZPlaneSlice(
 			x, y, _ := intersectZPlane(&t[start], &pt[i].U, z)
 			// Half the time is spent in this function call:
 			phi := PolarAngle(x, y)
-			if phi < 0 { phi += 2*math.Pi }
+			if phi < 0 {
+				phi += 2 * math.Pi
+			}
 
 			poly.Xs[poly.Points] = x
 			poly.Ys[poly.Points] = y
@@ -178,13 +189,19 @@ func (t *Tetra) ZPlaneSlice(
 		}
 	}
 
-	if poly.Points < 3 { return false }
-	if !poly.link() { return false }
+	if poly.Points < 3 {
+		return false
+	}
+	if !poly.link() {
+		return false
+	}
 	return true
 }
 
 func abs32(x float32) float32 {
-	if x < 0 { return -x }
+	if x < 0 {
+		return -x
+	}
 	return x
 }
 
@@ -198,7 +215,7 @@ func angularWidth(low, high float32) float32 {
 
 // IntersectingLines returns the lines in the given tetrahedron slice which
 // overlap with the given angle.
-// 
+//
 // It's possible that only only line will be intersected (if the polygon
 // encloses the origin), in which case l2 will be returned as nil.
 func (poly *TetraSlice) IntersectingLines(phi float32) (l1, l2 *Line) {
@@ -248,7 +265,7 @@ func (poly *TetraSlice) AngleRange() (start, width float32) {
 	}
 
 	if phiWidth > math.Pi {
-		return 0, 2*math.Pi
+		return 0, 2 * math.Pi
 	} else {
 		return lowPhi, phiWidth
 	}

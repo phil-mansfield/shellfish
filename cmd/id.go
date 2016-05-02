@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	
-	"github.com/phil-mansfield/shellfish/parse"
-	"github.com/phil-mansfield/shellfish/cmd/env"
-	"github.com/phil-mansfield/shellfish/cmd/memo"
+
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
+	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/halo"
+	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/io"
+	"github.com/phil-mansfield/shellfish/parse"
 )
 
 const finderCells = 150
@@ -16,11 +16,11 @@ const finderCells = 150
 // IDConfig contains the configuration fileds for the 'id' mode of the shellfish
 // tool.
 type IDConfig struct {
-	idType string
-	ids []int64
+	idType                     string
+	ids                        []int64
 	idStart, idEnd, snap, mult int64
 
-	exclusionStrategy string
+	exclusionStrategy   string
 	exclusionRadiusMult float64
 }
 
@@ -97,8 +97,12 @@ func (config *IDConfig) ReadConfig(fname string) error {
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "subhalo")
 	vars.Float(&config.exclusionRadiusMult, "ExclusionRadiusMult", 1)
 
-	if fname == "" { return nil }
-	if err := parse.ReadConfig(fname, vars); err != nil { return err }
+	if fname == "" {
+		return nil
+	}
+	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
 	return config.validate()
 }
 
@@ -107,7 +111,7 @@ func (config *IDConfig) validate() error {
 	switch config.idType {
 	case "halo-id", "m200m":
 	default:
-		return fmt.Errorf("The 'IDType' variable is set to '%s', which I " +
+		return fmt.Errorf("The 'IDType' variable is set to '%s', which I "+
 			"don't recognize.", config.idType)
 	}
 
@@ -115,12 +119,12 @@ func (config *IDConfig) validate() error {
 	case "none", "subhalo":
 	case "overlap":
 		if config.exclusionRadiusMult <= 0 {
-			return fmt.Errorf("The 'ExclusionRadiusMult' varaible is set to " +
+			return fmt.Errorf("The 'ExclusionRadiusMult' varaible is set to "+
 				"%g, but it needs to be positive.", config.exclusionRadiusMult)
 		}
 	default:
-		return fmt.Errorf("The 'ExclusionStrategy' variable is set to '%s', " +
-		"which I don't recognize.", config.exclusionStrategy)
+		return fmt.Errorf("The 'ExclusionStrategy' variable is set to '%s', "+
+			"which I don't recognize.", config.exclusionStrategy)
 	}
 
 	// TODO: Check the ranges of the IDs as well as IDStart and IDEnd
@@ -133,7 +137,7 @@ func (config *IDConfig) validate() error {
 		case config.idEnd == -1:
 			return fmt.Errorf("'IDEnd' variable not set.")
 		case config.idEnd < config.idStart:
-			return fmt.Errorf("'IDEnd' variable set to %d, but 'IDStart' " +
+			return fmt.Errorf("'IDEnd' variable set to %d, but 'IDStart' "+
 				"variable set to %d.", config.idEnd, config.idStart)
 		}
 	}
@@ -158,7 +162,7 @@ func (config *IDConfig) Run(
 ) ([]string, error) {
 
 	if config.snap < gConfig.SnapMin || config.snap > gConfig.SnapMax {
-		return nil, fmt.Errorf("'Snap' = %d, but 'SnapMin' = %d and " +
+		return nil, fmt.Errorf("'Snap' = %d, but 'SnapMin' = %d and "+
 			"'SnapMax = %d'", config.snap, gConfig.SnapMin, gConfig.SnapMax)
 	}
 
@@ -167,22 +171,24 @@ func (config *IDConfig) Run(
 	rawIds := getIDs(config.idStart, config.idEnd, config.ids)
 
 	vars := &halo.VarColumns{
-		ID: int(gConfig.HaloIDColumn),
-		X: int(gConfig.HaloPositionColumns[0]),
-		Y: int(gConfig.HaloPositionColumns[1]),
-		Z: int(gConfig.HaloPositionColumns[2]),
+		ID:    int(gConfig.HaloIDColumn),
+		X:     int(gConfig.HaloPositionColumns[0]),
+		Y:     int(gConfig.HaloPositionColumns[1]),
+		Z:     int(gConfig.HaloPositionColumns[2]),
 		M200m: int(gConfig.HaloM200mColumn),
 	}
 
 	var (
 		ids, snaps []int
-		buf io.VectorBuffer
+		buf        io.VectorBuffer
 	)
 
 	switch config.idType {
 	case "halo-id":
 		snaps = make([]int, len(rawIds))
-		for i := range snaps { snaps[i] = int(config.snap) }
+		for i := range snaps {
+			snaps[i] = int(config.snap)
+		}
 		ids = rawIds
 
 		var err error
@@ -190,20 +196,28 @@ func (config *IDConfig) Run(
 			e.ParticleCatalog(snaps[0], 0),
 			gConfig.SnapshotType, gConfig.Endianness,
 		)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 	case "m200m":
 		snaps = make([]int, len(rawIds))
-		for i := range snaps { snaps[i] = int(config.snap) }
+		for i := range snaps {
+			snaps[i] = int(config.snap)
+		}
 
 		var err error
 		buf, err = getVectorBuffer(
 			e.ParticleCatalog(snaps[0], 0),
 			gConfig.SnapshotType, gConfig.Endianness,
 		)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 
 		ids, err = convertSortedIDs(rawIds, int(config.snap), vars, buf, e)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 	default:
 		panic("Impossible")
 	}
@@ -217,7 +231,9 @@ func (config *IDConfig) Run(
 	case "overlap":
 		var err error
 		exclude, err = findOverlapSubs(ids, snaps, vars, buf, e, config)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Generate lines
@@ -229,7 +245,9 @@ func (config *IDConfig) Run(
 	// Filter
 	fLines := []string{}
 	for i := range lines {
-		if !exclude[i] { fLines = append(fLines, lines[i]) }
+		if !exclude[i] {
+			fLines = append(fLines, lines[i])
+		}
 	}
 
 	// Multiply
@@ -244,13 +262,13 @@ func (config *IDConfig) Run(
 		[]string{"ID", "Snapshot"}, []string{}, []int{0, 1},
 	)
 	mLines = append([]string{cString}, mLines...)
-	
+
 	return mLines, nil
 }
 
 func getIDs(idStart, idEnd int64, ids []int64) []int {
 	if idStart != -1 {
-		out := make([]int, idEnd - idStart)
+		out := make([]int, idEnd-idStart)
 		for i := range out {
 			out[i] = int(idStart) + i
 		}
@@ -270,14 +288,20 @@ func convertSortedIDs(
 ) ([]int, error) {
 	maxID := 0
 	for _, id := range rawIDs {
-		if id > maxID { maxID = id }
+		if id > maxID {
+			maxID = id
+		}
 	}
 
 	rids, err := memo.ReadSortedRockstarIDs(snap, maxID, vars, buf, e)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	ids := make([]int, len(rawIDs))
-	for i := range ids { ids[i] = rids[rawIDs[i]] }
+	for i := range ids {
+		ids[i] = rids[rawIDs[i]]
+	}
 	return ids, nil
 }
 
@@ -298,12 +322,16 @@ func findOverlapSubs(
 
 	// Load each snapshot.
 	hds, _, err := memo.ReadHeaders(snaps[0], buf, e)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	hd := hds[0]
 
 	for snap, group := range snapGroups {
 		rids, err := memo.ReadSortedRockstarIDs(snap, -1, vars, buf, e)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 		_, xs, ys, zs, _, rs, err := memo.ReadRockstar(snap, rids, vars, buf, e)
 
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
@@ -318,7 +346,7 @@ func findOverlapSubs(
 				if checkID == id {
 					isSub[origIdx] = sf.HostCount(j) > 0
 					break
-				} else if j == len(rids) - 1 {
+				} else if j == len(rids)-1 {
 					return nil, fmt.Errorf("ID %d not in halo list.", id)
 				}
 			}

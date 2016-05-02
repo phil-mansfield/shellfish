@@ -36,25 +36,25 @@ import (
 	"math"
 
 	"github.com/phil-mansfield/shellfish/io"
+	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/math/mat"
 	"github.com/phil-mansfield/shellfish/math/sort"
-	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 // Type SphereHalo represents a halo which can have spheres inserted into it.
 type Halo struct {
-	origin [3]float64
-	rings, bins, n int // bins = radial bins, n = number of lines per 
-	rMin, rMax float64
-	rs []float64
+	origin         [3]float64
+	rings, bins, n int // bins = radial bins, n = number of lines per
+	rMin, rMax     float64
+	rs             []float64
 
 	ringVecs [][2]float64
 	ringPhis []float64
-	dPhi float64
+	dPhi     float64
 
 	rots, irots []mat.Matrix32
-	norms [][3]float32
-	profs []ProfileRing
+	norms       [][3]float32
+	profs       []ProfileRing
 
 	defaultRho float64
 }
@@ -146,13 +146,17 @@ func (h *Halo) Join(hs []Halo) {
 //
 // Intersect must be called after Transform is called on the vectors.
 func (h *Halo) Intersect(vecs [][3]float32, r float64, intr []bool) {
-	rMin, rMax := h.rMin - r, h.rMax + r
-	if rMin < 0 { rMin = 0 }
+	rMin, rMax := h.rMin-r, h.rMax+r
+	if rMin < 0 {
+		rMin = 0
+	}
 	rMin2, rMax2 := float32(rMin*rMin), float32(rMax*rMax)
-	
-	if len(intr) != len(vecs) { panic("len(intr) != len(vecs)") }
 
-	x0, y0, z0 := float32(h.origin[0]),float32(h.origin[1]),float32(h.origin[2])
+	if len(intr) != len(vecs) {
+		panic("len(intr) != len(vecs)")
+	}
+
+	x0, y0, z0 := float32(h.origin[0]), float32(h.origin[1]), float32(h.origin[2])
 	for i, vec := range vecs {
 		x, y, z := vec[0]-x0, vec[1]-y0, vec[2]-z0
 		r2 := x*x + y*y + z*z
@@ -168,28 +172,28 @@ func (h *Halo) Transform(vecs [][3]float32, totalWidth float64) {
 	z0 := float32(h.origin[2])
 	tw := float32(totalWidth)
 	tw2 := tw / 2
-	
+
 	for i, vec := range vecs {
 		x, y, z := vec[0], vec[1], vec[2]
-		dx, dy, dz := x - x0, y - y0, z - z0
-		
-        if dx > tw2 {
-            vecs[i][0] -= tw
-        } else if dx < -tw2 {
-            vecs[i][0] += tw
-        }
+		dx, dy, dz := x-x0, y-y0, z-z0
 
-        if dy > tw2 {
-            vecs[i][1] -= tw
-        } else if dy < -tw2 {
-            vecs[i][1] += tw
-        }
+		if dx > tw2 {
+			vecs[i][0] -= tw
+		} else if dx < -tw2 {
+			vecs[i][0] += tw
+		}
 
-        if dz > tw2 {
-            vecs[i][2] -= tw
-        } else if dz < -tw2 {
-            vecs[i][2] += tw
-        }
+		if dy > tw2 {
+			vecs[i][1] -= tw
+		} else if dy < -tw2 {
+			vecs[i][1] += tw
+		}
+
+		if dz > tw2 {
+			vecs[i][2] -= tw
+		} else if dz < -tw2 {
+			vecs[i][2] += tw
+		}
 	}
 }
 
@@ -217,7 +221,7 @@ func (h *Halo) sphereIntersectRing(
 ) bool {
 	norm := h.norms[ring]
 	dot := float64(norm[0]*vec[0] + norm[1]*vec[1] + norm[2]*vec[2])
-	return dot < radius && dot > -radius 
+	return dot < radius && dot > -radius
 }
 
 // insertToRing inserts a sphere of the given center, radius, and density to
@@ -231,8 +235,10 @@ func (h *Halo) insertToRing(
 	cx, cy, cz := float64(vec[0]), float64(vec[1]), float64(vec[2])
 	projDist2 := cx*cx + cy*cy
 	projRad2 := radius*radius - cz*cz
-	if projRad2 < 0 { projRad2 = 0 }
-	
+	if projRad2 < 0 {
+		projRad2 = 0
+	}
+
 	if projRad2 > projDist2 {
 		// Circle contains center.
 
@@ -251,17 +257,21 @@ func (h *Halo) insertToRing(
 		iLo1, iHi1, iLo2, iHi2 := h.idxRange(phiStart, phiEnd)
 
 		for i := iLo1; i < iHi1; i++ {
-			// b = impact parameter			
+			// b = impact parameter
 			b := cy*h.ringVecs[i][0] - cx*h.ringVecs[i][1]
 			rLo, rHi := twoValIntrDist(projDist2, projRad2, b)
-			if math.IsNaN(rLo) || math.IsNaN(rHi) { continue }
+			if math.IsNaN(rLo) || math.IsNaN(rHi) {
+				continue
+			}
 			h.profs[ring].Insert(math.Log(rLo), math.Log(rHi), rho, i)
 		}
 
 		for i := iLo2; i < iHi2; i++ {
 			b := cy*h.ringVecs[i][0] - cx*h.ringVecs[i][1]
 			rLo, rHi := twoValIntrDist(projDist2, projRad2, b)
-			if math.IsNaN(rLo) || math.IsNaN(rHi) { continue }
+			if math.IsNaN(rLo) || math.IsNaN(rHi) {
+				continue
+			}
 			h.profs[ring].Insert(math.Log(rLo), math.Log(rHi), rho, i)
 		}
 	}
@@ -280,22 +290,22 @@ func (h *Halo) idxRange(
 	switch {
 	case phiHi > 2*math.Pi:
 		// phiHi wraps around.
-		iLo1 = int(phiLo/h.dPhi)
+		iLo1 = int(phiLo / h.dPhi)
 		iHi1 = h.n
 		iLo2 = 0
-		iHi2 = int((phiHi - 2*math.Pi)/h.dPhi) + 1
+		iHi2 = int((phiHi-2*math.Pi)/h.dPhi) + 1
 		return iLo1, iHi1, iLo2, iHi2
 	case phiLo < 0:
 		// phiLo wraps around.
-		iLo1 = int((phiLo + 2*math.Pi)/h.dPhi)
+		iLo1 = int((phiLo + 2*math.Pi) / h.dPhi)
 		iHi1 = h.n
 		iLo2 = 0
 		iHi2 = int(phiHi/h.dPhi) + 1
 		return iLo1, iHi1, iLo2, iHi2
 	default:
 		// not wrapping around at all.
-		iLo := int(phiLo/h.dPhi)
-		iHi := int(phiHi/h.dPhi)+  1
+		iLo := int(phiLo / h.dPhi)
+		iHi := int(phiHi/h.dPhi) + 1
 		return iLo, iHi, 0, 0
 	}
 }
@@ -304,9 +314,8 @@ func (h *Halo) idxRange(
 // squared distance of dist2 and a squared radius of r2. It's assumed that
 // the circle does not contain the origin.
 func halfAngularWidth(dist2, r2 float64) float64 {
-	return math.Asin(math.Sqrt(r2/dist2))
+	return math.Asin(math.Sqrt(r2 / dist2))
 }
-
 
 // twoValIntrDist returns both the intersection distances for a ray which
 // passes through a circle at two points. dist2 is the squared distance
@@ -314,10 +323,10 @@ func halfAngularWidth(dist2, r2 float64) float64 {
 // squared radius of the circle, and b is the impact parameter of the
 // ray and the center of the circle.
 func twoValIntrDist(dist2, rad2, b float64) (lo, hi float64) {
-	b2 := b*b
+	b2 := b * b
 	midDist := math.Sqrt(dist2 - b2)
 	diff := math.Sqrt(rad2 - b2)
-	return midDist-diff, midDist+diff
+	return midDist - diff, midDist + diff
 }
 
 // twoValIntrDist returns both the intersection distances for a ray which
@@ -327,7 +336,7 @@ func twoValIntrDist(dist2, rad2, b float64) (lo, hi float64) {
 // ray and the center of the circle, and dir is the dot product of the
 // the circle's position vector and the normal vector of .
 func oneValIntrDist(dist2, rad2, b, dir float64) float64 {
-	b2 := b*b
+	b2 := b * b
 	radMidDist := math.Sqrt(rad2 - b2)
 	cMidDist := math.Sqrt(dist2 - b2)
 	if dir > 0 {
@@ -342,27 +351,33 @@ func oneValIntrDist(dist2, rad2, b, dir float64) float64 {
 func (h *Halo) GetRhos(ring, losIdx int, buf []float64) {
 	h.profs[ring].Retrieve(losIdx, buf)
 	for i, rho := range buf {
-		if rho < h.defaultRho { buf[i] = h.defaultRho }
+		if rho < h.defaultRho {
+			buf[i] = h.defaultRho
+		}
 	}
 }
 
 // GetRs writes the radial values of each bin into a a buffer.
 func (h *Halo) GetRs(buf []float64) {
-	if len(buf) != h.bins { panic("|buf| != h.bins") }
+	if len(buf) != h.bins {
+		panic("|buf| != h.bins")
+	}
 
-	dlr := (math.Log(h.rMax) - math.Log(h.rMin))/float64(h.bins)
+	dlr := (math.Log(h.rMax) - math.Log(h.rMin)) / float64(h.bins)
 	lrMin := math.Log(h.rMin)
-	for i := range buf { buf[i] = math.Exp(lrMin + dlr*(float64(i)+0.5)) }
+	for i := range buf {
+		buf[i] = math.Exp(lrMin + dlr*(float64(i)+0.5))
+	}
 }
 
 // MedianProfile computes the median value of all the halo's LoS profiles.
 func (h *Halo) MedianProfile() []float64 {
 	// Read Densities
-	rhoBufs := make([][]float64, h.n * h.rings)
+	rhoBufs := make([][]float64, h.n*h.rings)
 	for i := range rhoBufs {
 		rhoBufs[i] = make([]float64, h.bins)
 	}
-	
+
 	idx := 0
 	for r := 0; r < h.rings; r++ {
 		for prof := 0; prof < h.n; prof++ {
@@ -370,9 +385,9 @@ func (h *Halo) MedianProfile() []float64 {
 			idx++
 		}
 	}
-	
+
 	// Find median of each radial bin.
-	medBuf := make([]float64, h.n * h.rings)
+	medBuf := make([]float64, h.n*h.rings)
 	out := make([]float64, h.bins)
 	for j := 0; j < h.bins; j++ {
 		for i := range medBuf {
@@ -380,7 +395,7 @@ func (h *Halo) MedianProfile() []float64 {
 		}
 		out[j] = sort.Median(medBuf, medBuf)
 	}
-	
+
 	return out
 }
 
@@ -388,17 +403,21 @@ func (h *Halo) MedianProfile() []float64 {
 func (h *Halo) MeanProfile() []float64 {
 	mean := make([]float64, h.bins)
 	buf := make([]float64, h.bins)
-	
+
 	// Find the spherically averaged rho profile
 	for r := 0; r < h.rings; r++ {
 		for i := 0; i < h.n; i++ {
 			h.GetRhos(r, i, buf)
-			for j := range buf { mean[j] += buf[j] }
+			for j := range buf {
+				mean[j] += buf[j]
+			}
 		}
 	}
 
 	n := float64(h.rings * h.n)
-	for j := range mean { mean[j] /= n }
+	for j := range mean {
+		mean[j] /= n
+	}
 	return mean
 }
 
@@ -408,24 +427,24 @@ func (h *Halo) Phi(losIdx int) float64 { return h.ringPhis[losIdx] }
 // LineSegment calculates a line segment corresponding to a given profile
 // and writes it to out.
 func (h *Halo) LineSegment(ring, losIdx int, out *geom.LineSegment) {
-	vec :=[3]float32{}
-    sin, cos := math.Sincos(float64(h.ringPhis[losIdx]))
-    vec[0], vec[1] = float32(cos), float32(sin)
-    geom.RotateVec(&vec, &h.irots[ring])
+	vec := [3]float32{}
+	sin, cos := math.Sincos(float64(h.ringPhis[losIdx]))
+	vec[0], vec[1] = float32(cos), float32(sin)
+	geom.RotateVec(&vec, &h.irots[ring])
 
 	origin := [3]float32{
 		float32(h.origin[0]), float32(h.origin[1]), float32(h.origin[2]),
 	}
 
-	*out = geom.LineSegment{ Origin: origin, Dir: vec,
-		StartR: float32(h.rMin), EndR: float32(h.rMax) }
+	*out = geom.LineSegment{Origin: origin, Dir: vec,
+		StartR: float32(h.rMin), EndR: float32(h.rMax)}
 }
 
 func wrapDist(x1, x2, width float64) float64 {
 	dist := x1 - x2
-	if dist > width / 2 {
+	if dist > width/2 {
 		return dist - width
-	} else if dist < width / -2 {
+	} else if dist < width/-2 {
 		return dist + width
 	} else {
 		return dist
@@ -433,7 +452,7 @@ func wrapDist(x1, x2, width float64) float64 {
 }
 
 func inRange(x, r, low, width, tw float64) bool {
-	return wrapDist(x, low, tw) > -r && wrapDist(x, low + width, tw) < r
+	return wrapDist(x, low, tw) > -r && wrapDist(x, low+width, tw) < r
 }
 
 // SheetIntersect returns true if the given halo and sheet intersect one another
@@ -441,10 +460,10 @@ func inRange(x, r, low, width, tw float64) bool {
 func (h *Halo) SheetIntersect(hd *io.Header) bool {
 	return inRange(h.origin[0], h.rMax, float64(hd.Origin[0]),
 		float64(hd.Width[0]), hd.TotalWidth) &&
-			inRange(h.origin[1], h.rMax, float64(hd.Origin[1]),
+		inRange(h.origin[1], h.rMax, float64(hd.Origin[1]),
 			float64(hd.Width[1]), hd.TotalWidth) &&
-				inRange(h.origin[2], h.rMax, float64(hd.Origin[2]), 
-				float64(hd.Width[2]), hd.TotalWidth)
+		inRange(h.origin[2], h.rMax, float64(hd.Origin[2]),
+			float64(hd.Width[2]), hd.TotalWidth)
 }
 
 // PlaneToVolume converts an (x, y) coordinate in the coordinate system of

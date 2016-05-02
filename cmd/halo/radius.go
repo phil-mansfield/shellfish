@@ -4,11 +4,12 @@ import (
 	"math"
 	"strings"
 
-	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/cosmo"
+	"github.com/phil-mansfield/shellfish/io"
 )
 
 type Radius int
+
 const (
 	RVirial Radius = iota
 	R200c
@@ -71,7 +72,7 @@ func (r Radius) Radius(c *io.CosmologyHeader, ms, out []float64) {
 	factor := rho * 4 * math.Pi / 3
 
 	for i, m := range ms {
-		out[i] = math.Pow(m / factor, 1.0/3) / a
+		out[i] = math.Pow(m/factor, 1.0/3) / a
 	}
 }
 
@@ -99,7 +100,6 @@ func (r Radius) Mass(c *io.CosmologyHeader, rs, out []float64) {
 		out[i] = factor * (r * r * r)
 	}
 }
-
 
 func (r Radius) RockstarColumn() int {
 	switch r {

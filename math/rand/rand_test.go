@@ -21,20 +21,20 @@ func benchmarkUniformAt(gt GeneratorType, tLen int, b *testing.B) {
 
 	n := 0
 	for n < b.N {
-		if n + tLen > b.N { target = target[0: b.N - n] }
+		if n+tLen > b.N {
+			target = target[0 : b.N-n]
+		}
 		gen.UniformAt(0, 13, target)
 		n += tLen
 	}
 }
 
-
-
-func BenchmarkUniformGolang(b *testing.B) { benchmarkUniform(Golang, b) }
-func BenchmarkUniformXorshift(b *testing.B) { benchmarkUniform(Xorshift, b) }
+func BenchmarkUniformGolang(b *testing.B)     { benchmarkUniform(Golang, b) }
+func BenchmarkUniformXorshift(b *testing.B)   { benchmarkUniform(Xorshift, b) }
 func BenchmarkUniformTausworthe(b *testing.B) { benchmarkUniform(Tausworthe, b) }
 
-func BenchmarkUniformAtGolang(b *testing.B) { benchmarkUniformAt(Golang, DefaultBufSize, b) }
-func BenchmarkUniformAtXorshift(b *testing.B) { benchmarkUniformAt(Xorshift, DefaultBufSize, b) }
+func BenchmarkUniformAtGolang(b *testing.B)     { benchmarkUniformAt(Golang, DefaultBufSize, b) }
+func BenchmarkUniformAtXorshift(b *testing.B)   { benchmarkUniformAt(Xorshift, DefaultBufSize, b) }
 func BenchmarkUniformAtTausworthe(b *testing.B) { benchmarkUniformAt(Tausworthe, DefaultBufSize, b) }
 
 func BenchmarkNewSobolSequence(b *testing.B) {

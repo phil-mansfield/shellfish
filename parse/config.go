@@ -1,10 +1,10 @@
 package parse
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 /////////////////////
@@ -12,6 +12,7 @@ import (
 /////////////////////
 
 type varType int
+
 const (
 	intVar varType = iota
 	intsVar
@@ -25,14 +26,22 @@ const (
 
 func (v varType) String() string {
 	switch v {
-	case intVar: return "int"
-	case intsVar: return "int list"
-	case floatVar: return "float"
-	case floatsVar: return "float list"
-	case stringVar: return "string"
-	case stringsVar: return "string list"
-	case boolVar: return "bool"
-	case boolsVar: return "bool list"
+	case intVar:
+		return "int"
+	case intsVar:
+		return "int list"
+	case floatVar:
+		return "float"
+	case floatsVar:
+		return "float list"
+	case stringVar:
+		return "string"
+	case stringsVar:
+		return "string list"
+	case boolVar:
+		return "bool"
+	case boolsVar:
+		return "bool list"
 	}
 	panic("Impossible")
 }
@@ -40,16 +49,18 @@ func (v varType) String() string {
 type conversionFunc func(string) bool
 
 type ConfigVars struct {
-	name string
-	varNames []string
-	varTypes []varType
+	name            string
+	varNames        []string
+	varTypes        []varType
 	conversionFuncs []conversionFunc
 }
 
 func intConv(ptr *int64) conversionFunc {
 	return func(s string) bool {
 		i, err := strconv.Atoi(s)
-		if err != nil { return false }
+		if err != nil {
+			return false
+		}
 		*ptr = int64(i)
 		return true
 	}
@@ -58,7 +69,9 @@ func intConv(ptr *int64) conversionFunc {
 func floatConv(ptr *float64) conversionFunc {
 	return func(s string) bool {
 		f, err := strconv.ParseFloat(s, 64)
-		if err != nil { return false }
+		if err != nil {
+			return false
+		}
 		*ptr = f
 		return true
 	}
@@ -74,7 +87,9 @@ func stringConv(ptr *string) conversionFunc {
 func boolConv(ptr *bool) conversionFunc {
 	return func(s string) bool {
 		b, err := strconv.ParseBool(s)
-		if err != nil { return false }
+		if err != nil {
+			return false
+		}
 		*ptr = b
 		return true
 	}
@@ -94,7 +109,9 @@ func intsConv(ptr *[]int64) conversionFunc {
 		*ptr = (*ptr)[:0]
 		for j := range toks {
 			i, err := strconv.Atoi(toks[j])
-			if err != nil { return false }
+			if err != nil {
+				return false
+			}
 			*ptr = append(*ptr, int64(i))
 		}
 		return true
@@ -106,7 +123,9 @@ func floatsConv(ptr *[]float64) conversionFunc {
 		toks := strToList(s)
 		for j := range toks {
 			f, err := strconv.ParseFloat(toks[j], 64)
-			if err != nil { return false }
+			if err != nil {
+				return false
+			}
 			*ptr = append(*ptr, f)
 		}
 		return true
@@ -123,13 +142,14 @@ func stringsConv(ptr *[]string) conversionFunc {
 	}
 }
 
-
 func boolsConv(ptr *[]bool) conversionFunc {
 	return func(s string) bool {
 		toks := strToList(s)
 		for j := range toks {
 			b, err := strconv.ParseBool(toks[j])
-			if err != nil { return false }
+			if err != nil {
+				return false
+			}
 			*ptr = append(*ptr, b)
 		}
 		return true
@@ -206,40 +226,44 @@ func ReadConfig(fname string, vars *ConfigVars) error {
 	}
 
 	bs, err := ioutil.ReadFile(fname)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	lines := strings.Split(string(bs), "\n")
 	lines, lineNums := removeComments(lines)
-	for i := range lineNums { lineNums[i] ++ }
+	for i := range lineNums {
+		lineNums[i]++
+	}
 
 	if len(lines) == 0 || lines[0] != fmt.Sprintf("[%s]", vars.name) {
 		return fmt.Errorf(
-			"I expected the config file %s to have the header " +
-			"[%s] at the top, but didn't find it.", fname, vars.name,
+			"I expected the config file %s to have the header "+
+				"[%s] at the top, but didn't find it.", fname, vars.name,
 		)
 	}
 	lines = lines[1:]
 
 	names, vals, errLine := associationList(lines)
-	if errLine !=  -1 {
+	if errLine != -1 {
 		return fmt.Errorf(
-			"I could not parse line %d of the config file %s because it " +
-			"did not take the form of a variable assignment.",
+			"I could not parse line %d of the config file %s because it "+
+				"did not take the form of a variable assignment.",
 			lineNums[errLine+1], fname,
 		)
 	}
 
 	if errLine = checkValidNames(names, vars); errLine != -1 {
 		return fmt.Errorf(
-			"Line %d of the config file %s assigns a value to the " +
-			"variable '%s', but config files of type %s don't have that " +
-			"variable.", lineNums[errLine+1], fname, names[errLine], vars.name,
+			"Line %d of the config file %s assigns a value to the "+
+				"variable '%s', but config files of type %s don't have that "+
+				"variable.", lineNums[errLine+1], fname, names[errLine], vars.name,
 		)
 	}
 
 	if errLine1, errLine2 := checkDuplicateNames(names); errLine1 != -1 {
 		return fmt.Errorf(
-			"Lines %d and %d of the config file %s both assign a value to " +
-			"the variable '%s'.", lineNums[errLine1+1], lineNums[errLine2+1],
+			"Lines %d and %d of the config file %s both assign a value to "+
+				"the variable '%s'.", lineNums[errLine1+1], lineNums[errLine2+1],
 			fname, names[errLine1],
 		)
 	}
@@ -247,15 +271,19 @@ func ReadConfig(fname string, vars *ConfigVars) error {
 	if errLine = convertAssoc(names, vals, vars); errLine != -1 {
 		j := 0
 		for ; j < len(vars.varNames); j++ {
-			if vars.varNames[j] == names[errLine] { break }
+			if vars.varNames[j] == names[errLine] {
+				break
+			}
 		}
 		typeName := vars.varTypes[j].String()
 		a := "a"
-		if typeName[0] == 'i' { a = "an" }
+		if typeName[0] == 'i' {
+			a = "an"
+		}
 		return fmt.Errorf(
-			"I could not parse line %d of the config file %s because '%s' " +
-			"expects values of type %s and '%s' cannnot be converted to " +
-			"%s %s.", lineNums[errLine+1], fname, vars.varNames[j], typeName,
+			"I could not parse line %d of the config file %s because '%s' "+
+				"expects values of type %s and '%s' cannnot be converted to "+
+				"%s %s.", lineNums[errLine+1], fname, vars.varNames[j], typeName,
 			vals[j], a, typeName,
 		)
 	}
@@ -270,14 +298,18 @@ func removeComments(lines []string) ([]string, []int) {
 
 	for i := range lines {
 		comment := strings.Index(lines[i], "#")
-		if comment == -1 { continue }
+		if comment == -1 {
+			continue
+		}
 		lines[i] = lines[i][:comment]
 	}
 
 	out, lineNums := []string{}, []int{}
 	for i := range lines {
 		line := strings.Trim(lines[i], " ")
-		if len(line) == 0 { continue }
+		if len(line) == 0 {
+			continue
+		}
 		out = append(out, line)
 		lineNums = append(lineNums, i)
 	}
@@ -289,12 +321,18 @@ func associationList(lines []string) ([]string, []string, int) {
 	names, vals := []string{}, []string{}
 	for i := range lines {
 		eq := strings.Index(lines[i], "=")
-		if eq == -1 { return nil, nil, i }
+		if eq == -1 {
+			return nil, nil, i
+		}
 		name := lines[i][:eq]
 		val := ""
-		if len(lines[i]) - 1 > eq { val = lines[i][eq+1:] }
+		if len(lines[i])-1 > eq {
+			val = lines[i][eq+1:]
+		}
 		names = append(names, strings.ToLower(strings.Trim(name, " ")))
-		if len(names[len(names) - 1]) == 0 { return nil, nil, i }
+		if len(names[len(names)-1]) == 0 {
+			return nil, nil, i
+		}
 		vals = append(vals, strings.Trim(val, " "))
 	}
 	return names, vals, -1
@@ -309,7 +347,9 @@ func checkValidNames(names []string, vars *ConfigVars) int {
 				break
 			}
 		}
-		if !found { return i }
+		if !found {
+			return i
+		}
 	}
 	return -1
 }
@@ -317,7 +357,9 @@ func checkValidNames(names []string, vars *ConfigVars) int {
 func checkDuplicateNames(names []string) (int, int) {
 	for i := range names {
 		for j := i + 1; j < len(names); j++ {
-			if names[i] == names[j] { return i, j }
+			if names[i] == names[j] {
+				return i, j
+			}
 		}
 	}
 	return -1, -1
@@ -327,11 +369,15 @@ func convertAssoc(names, vals []string, vars *ConfigVars) int {
 	for i := range names {
 		j := 0
 		for ; j < len(vars.varNames); j++ {
-			if vars.varNames[j] == names[i] { break }
+			if vars.varNames[j] == names[i] {
+				break
+			}
 		}
 
 		ok := vars.conversionFuncs[j](vals[i])
-		if !ok { return i }
+		if !ok {
+			return i
+		}
 	}
 	return -1
 }

@@ -13,7 +13,9 @@ func (cat *Catalogs) InitLGadget2(info *ParticleInfo, validate bool) error {
 	for i := range cols {
 		var err error
 		cols[i], snapAligned[i], err = info.GetColumn(i)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 	}
 
 	formatArgs := interleave(cols, snapAligned)
@@ -28,7 +30,9 @@ func (cat *Catalogs) InitLGadget2(info *ParticleInfo, validate bool) error {
 		cat.names = append(cat.names, names)
 	}
 
-	if validate { panic("File validation not yet implemented.") }
+	if validate {
+		panic("File validation not yet implemented.")
+	}
 
 	return nil
 }

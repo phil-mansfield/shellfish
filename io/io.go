@@ -11,7 +11,7 @@ import (
 // Not threadsafe, obviously.
 type VectorBuffer interface {
 	// Positions in Mpc/h and masses in Msun/h.
-	Read(fname string) (xs [][3]float32,  ms []float32, err error)
+	Read(fname string) (xs [][3]float32, ms []float32, err error)
 	Close()
 	IsOpen() bool
 	ReadHeader(fname string, out *Header) error
@@ -29,9 +29,9 @@ type CosmologyHeader struct {
 }
 
 type Header struct {
-	Cosmo CosmologyHeader
-	N int64
-	TotalWidth float64
+	Cosmo         CosmologyHeader
+	N             int64
+	TotalWidth    float64
 	Origin, Width [3]float32
 }
 
@@ -41,15 +41,17 @@ func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {
 	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))
 	hd.Len *= 12
 	hd.Cap *= 12
-	
+
 	byteBuf := *(*[]byte)(unsafe.Pointer(&hd))
 	_, err := rd.Read(byteBuf)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	if !IsSysOrder(end) {
-		for i := 0; i < bufLen * 3; i++ {
+		for i := 0; i < bufLen*3; i++ {
 			for j := 0; j < 2; j++ {
-				idx1, idx2 := i*4 + j, i*4 + 3 - j
+				idx1, idx2 := i*4+j, i*4+3-j
 				byteBuf[idx1], byteBuf[idx2] = byteBuf[idx2], byteBuf[idx1]
 			}
 		}
@@ -67,15 +69,17 @@ func readInt64AsByte(rd io.Reader, end binary.ByteOrder, buf []int64) error {
 	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))
 	hd.Len *= 8
 	hd.Cap *= 8
-	
+
 	byteBuf := *(*[]byte)(unsafe.Pointer(&hd))
 	_, err := rd.Read(byteBuf)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	if !IsSysOrder(end) {
 		for i := 0; i < bufLen; i++ {
 			for j := 0; j < 4; j++ {
-				idx1, idx2 := i*8 + j, i*8 + 7 - j
+				idx1, idx2 := i*8+j, i*8+7-j
 				byteBuf[idx1], byteBuf[idx2] = byteBuf[idx2], byteBuf[idx1]
 			}
 		}
@@ -106,23 +110,23 @@ func boundingBox(
 ) (origin, width [3]float32) {
 	// Assumes that the slice has already been checked for corruption.
 	origin = xs[0]
-	width = [3]float32{ 0, 0, 0 }
-	tw, tw2 := float32(totalWidth), float32(totalWidth) / 2
+	width = [3]float32{0, 0, 0}
+	tw, tw2 := float32(totalWidth), float32(totalWidth)/2
 
 	for i := range xs {
 		for j := 0; j < 3; j++ {
-			x, x0, w :=  xs[i][j], origin[j], width[j]
+			x, x0, w := xs[i][j], origin[j], width[j]
 
-			if x - x0 > tw2 {
+			if x-x0 > tw2 {
 				x -= tw
-			} else if x0 - x > tw2 {
+			} else if x0-x > tw2 {
 				x += tw
 			}
 
 			if x < x0 {
 				origin[j] = x
-			} else if x - x0 > w {
-			 width[j] = x - x0
+			} else if x-x0 > w {
+				width[j] = x - x0
 			}
 		}
 	}

@@ -16,22 +16,21 @@ import (
 	"github.com/phil-mansfield/shellfish/version"
 )
 
-var helpStrings = map[string]string {
+var helpStrings = map[string]string{
 	"setup": `The setup mode isn't implemented yet.`,
-	"id": `Mode specifcations will be documented in version 0.3.0.`,
-	"tree": `Mode specifcations will be documented in version 0.3.0.`,
+	"id":    `Mode specifcations will be documented in version 0.3.0.`,
+	"tree":  `Mode specifcations will be documented in version 0.3.0.`,
 	"coord": `Mode specifcations will be documented in version 0.3.0.`,
 	"shell": `Mode specifcations will be documented in version 0.3.0.`,
 	"stats": `Mode specifcations will be documented in version 0.3.0.`,
 
-	"config": new(cmd.GlobalConfig).ExampleConfig(),
+	"config":       new(cmd.GlobalConfig).ExampleConfig(),
 	"setup.config": `The setup mode does not have a non-global config file.`,
-	"id.config": cmd.ModeNames["id"].ExampleConfig(),
-	"tree.config": `The tree mode does not have a non-global config file.`,
+	"id.config":    cmd.ModeNames["id"].ExampleConfig(),
+	"tree.config":  `The tree mode does not have a non-global config file.`,
 	"coord.config": `The coord mode does not have a non-global config file.`,
 	"shell.config": cmd.ModeNames["shell"].ExampleConfig(),
 	"stats.config": cmd.ModeNames["stats"].ExampleConfig(),
-
 }
 
 var modeDescriptions = `My help modes are:
@@ -53,12 +52,11 @@ func main() {
 	args := os.Args
 	if len(args) <= 1 {
 		fmt.Fprintf(
-			os.Stderr, "I was not supplied with a mode.\nFor help, type " +
-			"'./shellfish help'.\n",
+			os.Stderr, "I was not supplied with a mode.\nFor help, type "+
+				"'./shellfish help'.\n",
 		)
 		os.Exit(1)
 	}
-
 
 	if args[1] == "setup" {
 		// TODO: Implement the setup command.
@@ -87,8 +85,8 @@ func main() {
 	mode, ok := cmd.ModeNames[args[1]]
 	if !ok {
 		fmt.Fprintf(
-			os.Stderr, "You passed me the mode '%s', which I don't " +
-			"recognize.\nFor help, type './shellfish help'\n", args[1],
+			os.Stderr, "You passed me the mode '%s', which I don't "+
+				"recognize.\nFor help, type './shellfish help'\n", args[1],
 		)
 		os.Exit(1)
 	}
@@ -142,9 +140,10 @@ func main() {
 		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
 	}
 
-	for i := range out { fmt.Println(out[i]) }
+	for i := range out {
+		fmt.Println(out[i])
+	}
 }
-
 
 // stdinLines reads stdin and splits it into lines.
 func stdinLines() ([]string, error) {
@@ -156,13 +155,15 @@ func stdinLines() ([]string, error) {
 	}
 	text := string(bs)
 	lines := strings.Split(text, "\n")
-	if lines[len(lines) - 1] == "" { lines = lines[:len(lines) - 1] }
+	if lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
 	return lines, nil
 }
 
 // getFlags reutrns the flag tokens from the command line arguments.
-func getFlags(args []string) ([]string) {
-	return args[1:len(args) - 1 - configNum(args)]
+func getFlags(args []string) []string {
+	return args[1 : len(args)-1-configNum(args)]
 }
 
 // getGlobalConfig returns the name of the base config file from the command
@@ -178,7 +179,9 @@ func getGlobalConfig(args []string) (string, *cmd.GlobalConfig, error) {
 
 		config := &cmd.GlobalConfig{}
 		err := config.ReadConfig(name)
-		if err != nil { return "", nil, err }
+		if err != nil {
+			return "", nil, err
+		}
 		return name, config, nil
 	}
 
@@ -187,16 +190,18 @@ func getGlobalConfig(args []string) (string, *cmd.GlobalConfig, error) {
 		return "", nil, fmt.Errorf("No config files provided in command " +
 			"line arguments.")
 	case 1:
-		name = args[len(args) - 1]
+		name = args[len(args)-1]
 	case 2:
-		name = args[len(args) - 2]
+		name = args[len(args)-2]
 	default:
 		return "", nil, fmt.Errorf("Passed too many config files as arguments.")
 	}
 
 	config := &cmd.GlobalConfig{}
 	err := config.ReadConfig(name)
-	if err != nil { return "", nil, err }
+	if err != nil {
+		return "", nil, err
+	}
 	return name, config, nil
 }
 
@@ -204,11 +209,11 @@ func getGlobalConfig(args []string) (string, *cmd.GlobalConfig, error) {
 // line arguments.
 func getConfig(args []string) (string, bool) {
 	if os.Getenv("SHELLFISH_GLOBAL_CONFIG") != "" && configNum(args) == 1 {
-		return args[len(args) - 1], true
+		return args[len(args)-1], true
 	} else if os.Getenv("SHELLFISH_GLOBAL_CONFIG") == "" &&
 		configNum(args) == 2 {
 
-		return args[len(args) - 1], true
+		return args[len(args)-1], true
 	}
 	return "", false
 }
@@ -217,7 +222,7 @@ func getConfig(args []string) (string, bool) {
 // argument list (up to 2).
 func configNum(args []string) int {
 	num := 0
-	for i := len(args) - 1; i >= 0 ; i-- {
+	for i := len(args) - 1; i >= 0; i-- {
 		if isConfig(args[i]) {
 			num++
 		} else {
@@ -229,7 +234,7 @@ func configNum(args []string) int {
 
 // isConfig returns true if the fiven string is a config file name.
 func isConfig(s string) bool {
-	return len(s) >= 7 &&  s[len(s) - 7:] == ".config"
+	return len(s) >= 7 && s[len(s)-7:] == ".config"
 }
 
 // cehckMemoDir checks whether the given MemoDir corresponds to a GlobalConfig
@@ -238,7 +243,7 @@ func isConfig(s string) bool {
 // one will be copied in.
 func checkMemoDir(memoDir, configFile string) error {
 	memoConfigFile := path.Join(memoDir, "memo.config")
-	
+
 	if _, err := os.Stat(memoConfigFile); err != nil {
 		// File doesn't exist, directory is clean.
 		err = copyFile(memoConfigFile, configFile)
@@ -246,12 +251,16 @@ func checkMemoDir(memoDir, configFile string) error {
 	}
 
 	config, memoConfig := &cmd.GlobalConfig{}, &cmd.GlobalConfig{}
-	if err := config.ReadConfig(configFile); err != nil { return err }
-	if err := memoConfig.ReadConfig(memoConfigFile); err != nil { return err }
+	if err := config.ReadConfig(configFile); err != nil {
+		return err
+	}
+	if err := memoConfig.ReadConfig(memoConfigFile); err != nil {
+		return err
+	}
 
 	if !configEqual(config, memoConfig) {
-		return fmt.Errorf("The variables in the config file '%s' do not " +
-			"match the varables used when creating the MemoDir, '%s.' These " +
+		return fmt.Errorf("The variables in the config file '%s' do not "+
+			"match the varables used when creating the MemoDir, '%s.' These "+
 			"variables can be compared by inspecting '%s' and '%s'",
 			configFile, memoDir, configFile, memoConfigFile,
 		)
@@ -262,14 +271,20 @@ func checkMemoDir(memoDir, configFile string) error {
 // copyFile copies a file from src to dst.
 func copyFile(dst, src string) error {
 	srcFile, err := os.Open(src)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer srcFile.Close()
 
 	dstFile, err := os.Create(dst)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer dstFile.Close()
 
-	if _, err = io.Copy(dstFile, srcFile); err != nil { return err }
+	if _, err = io.Copy(dstFile, srcFile); err != nil {
+		return err
+	}
 	return dstFile.Sync()
 }
 
@@ -298,17 +313,25 @@ func configEqual(m, c *cmd.GlobalConfig) bool {
 }
 
 func int64sEqual(xs, ys []int64) bool {
-	if len(xs) != len(ys) { return false }
+	if len(xs) != len(ys) {
+		return false
+	}
 	for i := range xs {
-		if xs[i] != ys[i] { return false }
+		if xs[i] != ys[i] {
+			return false
+		}
 	}
 	return true
 }
 
 func stringsEqual(xs, ys []string) bool {
-	if len(xs) != len(ys) { return false }
+	if len(xs) != len(ys) {
+		return false
+	}
 	for i := range xs {
-		if xs[i] != ys[i] { return false }
+		if xs[i] != ys[i] {
+			return false
+		}
 	}
 	return true
 }
@@ -317,22 +340,23 @@ func initHalos(
 	mode string, gConfig *cmd.GlobalConfig, e *env.Environment,
 ) error {
 	switch mode {
-	case "shell", "stats": return nil
+	case "shell", "stats":
+		return nil
 	}
 
 	switch gConfig.HaloType {
 	case "nil":
-		return fmt.Errorf("You may not use nil as a HaloType for the " +
+		return fmt.Errorf("You may not use nil as a HaloType for the "+
 			"mode '%s.'\n", mode)
 	case "Text":
 		return e.InitTextHalo(&gConfig.HaloInfo)
-		if gConfig.TreeType != "consistent-trees"{
+		if gConfig.TreeType != "consistent-trees" {
 			return fmt.Errorf("You're trying to use the '%s' TreeType with " +
 				"the 'Text' HaloType.")
 		}
 	}
 	if gConfig.TreeType == "nil" {
-		return fmt.Errorf("You may not use nil as a TreeType for the " +
+		return fmt.Errorf("You may not use nil as a TreeType for the "+
 			"mode '%s.'\n", mode)
 	}
 

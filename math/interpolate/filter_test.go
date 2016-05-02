@@ -24,10 +24,12 @@ func BenchmarkNewSavGolKernel21(b *testing.B) {
 }
 
 func almostEq(xs, ys []float64) bool {
-	if len(xs) != len(ys) { return false }
+	if len(xs) != len(ys) {
+		return false
+	}
 	eps := 1e-3
 	for i := range xs {
-		if !(xs[i] + eps > ys[i] && xs[i] - eps < ys[i]) {
+		if !(xs[i]+eps > ys[i] && xs[i]-eps < ys[i]) {
 			return false
 		}
 	}
@@ -35,10 +37,10 @@ func almostEq(xs, ys []float64) bool {
 }
 
 func TestSavGolKernel(t *testing.T) {
-	table := []struct{
+	table := []struct {
 		order, width int
-		cs []float64
-	} {
+		cs           []float64
+	}{
 		{2, 5, []float64{-0.086, 0.343, 0.486, 0.343, -0.086}},
 		{2, 11, []float64{-0.084, 0.021, 0.103, 0.161, 0.196,
 			0.207, 0.196, 0.161, 0.103, 0.021, -0.084}},
@@ -58,9 +60,11 @@ func TestSavGolKernel(t *testing.T) {
 
 func linspace(low, high float64, n int) []float64 {
 	xs := make([]float64, n)
-	dx := (high - low) / float64(n - 1)
-	for i := range xs { xs[i] = low + dx*float64(i) }
-	xs[len(xs) - 1] = high
+	dx := (high - low) / float64(n-1)
+	for i := range xs {
+		xs[i] = low + dx*float64(i)
+	}
+	xs[len(xs)-1] = high
 	return xs
 }
 
@@ -69,7 +73,7 @@ func gaussian(x0, sigma, A, x float64) float64 {
 }
 
 func rawSavGolFunc(x float64) float64 {
-	return gaussian(2, 1, 1.5, x) + gaussian(4, 0.5, 1.5, x) + 
+	return gaussian(2, 1, 1.5, x) + gaussian(4, 0.5, 1.5, x) +
 		gaussian(5.5, 0.125, 1.5, x) + gaussian(0.5, 0.125, 1.5, x)
 }
 
@@ -86,11 +90,11 @@ func TestPyplotSavGol(t *testing.T) {
 	}
 
 	window := 41
-	windowSize := float64(window) / float64(len(xs)) * (xs[len(xs)-1]-xs[0])
+	windowSize := float64(window) / float64(len(xs)) * (xs[len(xs)-1] - xs[0])
 	sigma := windowSize / 5
 
 	tk := NewTophatKernel(window)
-	gk:= NewGaussianKernel(window, sigma, xs[1]-xs[0])
+	gk := NewGaussianKernel(window, sigma, xs[1]-xs[0])
 	sgk := NewSavGolKernel(4, window)
 
 	plt.Reset()

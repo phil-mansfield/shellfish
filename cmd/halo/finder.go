@@ -7,7 +7,7 @@ import (
 // SubhaloFinder computes which halos in a collection are subhalos of other
 // halos in that collection based purely off of position information.
 type SubhaloFinder struct {
-	g *Grid
+	g                       *Grid
 	subhaloStarts, subhalos []int
 }
 
@@ -20,10 +20,14 @@ type Bounds struct {
 // sphere within a box with periodic boundary conditions.
 func (b *Bounds) SphereBounds(pos [3]float64, r, cw, width float64) {
 	for i := 0; i < 3; i++ {
-		min, max := pos[i] - r, pos[i] + r
-		if min < 0 { min += width }
-		if min > max { max +=  width }
-		minCell, maxCell := int(min / cw), int(max / cw)
+		min, max := pos[i]-r, pos[i]+r
+		if min < 0 {
+			min += width
+		}
+		if min > max {
+			max += width
+		}
+		minCell, maxCell := int(min/cw), int(max/cw)
 		b.Origin[i] = minCell
 		b.Span[i] = maxCell - minCell + 1
 	}
@@ -32,22 +36,28 @@ func (b *Bounds) SphereBounds(pos [3]float64, r, cw, width float64) {
 // ConvertIndices converts non-periodic indices to periodic indices.
 func (b *Bounds) ConvertIndices(x, y, z, width int) (bx, by, bz int) {
 	bx = x - b.Origin[0]
-	if bx < 0 { bx += width }
+	if bx < 0 {
+		bx += width
+	}
 	by = y - b.Origin[1]
-	if by < 0 { by += width }
+	if by < 0 {
+		by += width
+	}
 	bz = z - b.Origin[2]
-	if bz < 0 { bz += width }
+	if bz < 0 {
+		bz += width
+	}
 	return bx, by, bz
 }
 
 // Inside returns true if the given value is within the bounding box along the
 // given dimension. The periodic box width is given by width.
 func (b *Bounds) Inside(val int, width int, dim int) bool {
-	lo, hi := b.Origin[dim], b.Origin[dim] + b.Span[dim]
+	lo, hi := b.Origin[dim], b.Origin[dim]+b.Span[dim]
 	if val >= hi {
 		val -= width
 	} else if val < lo {
-		val += width 
+		val += width
 	}
 	return val < hi && val >= lo
 }
@@ -56,9 +66,9 @@ func (b *Bounds) Inside(val int, width int, dim int) bool {
 // Grid.
 func NewSubhaloFinder(g *Grid) *SubhaloFinder {
 	i := &SubhaloFinder{
-		g: g,
+		g:             g,
 		subhaloStarts: make([]int, len(g.Next)),
-		subhalos: make([]int, 0, int(2.5 * float64(len(g.Next)))),
+		subhalos:      make([]int, 0, int(2.5*float64(len(g.Next)))),
 	}
 
 	return i
@@ -71,9 +81,11 @@ func (sf *SubhaloFinder) FindSubhalos(
 	b := &Bounds{}
 	pos := [3]float64{}
 	c := sf.g.Cells
-	
+
 	buf := make([]int, 0, sf.g.MaxLength())
-	for i := range rs { rs[i] *= mult }
+	for i := range rs {
+		rs[i] *= mult
+	}
 	cMax := cumulativeMax(rs)
 
 	vol := 0.0
@@ -82,21 +94,27 @@ func (sf *SubhaloFinder) FindSubhalos(
 		maxSR := cMax[ih]
 
 		pos[0], pos[1], pos[2] = xs[ih], ys[ih], zs[ih]
-		b.SphereBounds(pos, rh + maxSR, sf.g.cw, sf.g.Width)
+		b.SphereBounds(pos, rh+maxSR, sf.g.cw, sf.g.Width)
 		vol += float64(b.Span[0] * b.Span[1] * b.Span[2])
 
 		for dz := 0; dz < b.Span[2]; dz++ {
 			z := b.Origin[2] + dz
-			if z >= c { z -= c}
+			if z >= c {
+				z -= c
+			}
 			zOff := z * c * c
 			for dy := 0; dy < b.Span[1]; dy++ {
 				y := b.Origin[1] + dy
-				if y >= c { y -= c }
+				if y >= c {
+					y -= c
+				}
 				yOff := y * c
 				for dx := 0; dx < b.Span[0]; dx++ {
 					x := b.Origin[0] + dx
-					if x >= c { x -= c }
-					
+					if x >= c {
+						x -= c
+					}
+
 					idx := zOff + yOff + x
 
 					buf = sf.g.ReadIndexes(idx, buf)
@@ -107,11 +125,13 @@ func (sf *SubhaloFinder) FindSubhalos(
 	}
 
 	sf.crossMatch()
-	for i := range rs { rs[i] /= mult }
+	for i := range rs {
+		rs[i] /= mult
+	}
 }
 
 func (sf *SubhaloFinder) StartEnd(ih int) (start, end int) {
-	if ih == len(sf.subhaloStarts) - 1 {
+	if ih == len(sf.subhaloStarts)-1 {
 		return sf.subhaloStarts[ih], len(sf.subhalos)
 	} else {
 		return sf.subhaloStarts[ih], sf.subhaloStarts[ih+1]
@@ -126,7 +146,9 @@ func (sf *SubhaloFinder) IntersectCount(ih int) int {
 func (sf *SubhaloFinder) HostCount(ih int) int {
 	is := sf.Intersects(ih)
 	for i, sh := range is {
-		if sh > ih { return i }
+		if sh > ih {
+			return i
+		}
 	}
 	return len(is)
 }
@@ -137,7 +159,7 @@ func (sf *SubhaloFinder) SubhaloCount(ih int) int {
 
 func (sf *SubhaloFinder) Intersects(ih int) []int {
 	start, end := sf.StartEnd(ih)
-	return sf.subhalos[start: end]
+	return sf.subhalos[start:end]
 }
 
 func (sf *SubhaloFinder) Hosts(ih int) []int {
@@ -162,7 +184,7 @@ func (sf *SubhaloFinder) crossMatch() {
 
 	hostStarts := make([]int, len(counts))
 	for i := 1; i < len(counts); i++ {
-		hostStarts[i] = hostStarts[i - 1] + counts[i - 1]
+		hostStarts[i] = hostStarts[i-1] + counts[i-1]
 	}
 
 	hosts := make([]int, len(sf.subhalos))
@@ -175,11 +197,13 @@ func (sf *SubhaloFinder) crossMatch() {
 		}
 	}
 
-	for i := range counts { hostStarts[i] -= counts[i] }
+	for i := range counts {
+		hostStarts[i] -= counts[i]
+	}
 
 	subStarts := sf.subhaloStarts
 	subs := sf.subhalos
-	newSubhalos := make([]int, len(hosts) + len(sf.subhalos))
+	newSubhalos := make([]int, len(hosts)+len(sf.subhalos))
 	newStarts := make([]int, len(subStarts))
 	j := 0
 	for ih := 0; ih < len(counts); ih++ {
@@ -216,10 +240,12 @@ func (sf *SubhaloFinder) markSubhalos(
 ) {
 	hx, hy, hz, hr := xs[ih], ys[ih], zs[ih], rs[ih]
 	for _, j := range idxs {
-		if j <= ih { continue }
+		if j <= ih {
+			continue
+		}
 		sx, sy, sz, sr := xs[j], ys[j], zs[j], rs[j]
-		dx, dy, dz, dr := hx - sx, hy - sy, hz - sz, hr + sr
-		if dr*dr >= dx*dx + dy*dy + dz*dz {
+		dx, dy, dz, dr := hx-sx, hy-sy, hz-sz, hr+sr
+		if dr*dr >= dx*dx+dy*dy+dz*dz {
 			sf.subhalos = append(sf.subhalos, j)
 		}
 	}
@@ -227,10 +253,12 @@ func (sf *SubhaloFinder) markSubhalos(
 
 func cumulativeMax(xs []float64) []float64 {
 	ms := make([]float64, len(xs))
-	max := xs[len(xs) - 1]
+	max := xs[len(xs)-1]
 	for i := len(xs) - 1; i >= 0; i-- {
 		x := xs[i]
-		if x > max { max = x }
+		if x > max {
+			max = x
+		}
 		ms[i] = max
 	}
 	return ms

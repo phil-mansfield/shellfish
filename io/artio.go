@@ -211,7 +211,8 @@ func (buf *ARTIOBuffer) IsOpen() bool {
 
 func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 	xs, _, err := buf.Read(fileNumStr)
-
+	defer buf.Close()
+	
 	h, err := artio.FilesetOpen(
 		buf.fileset, artio.OpenHeader, artio.NullContext,
 	)

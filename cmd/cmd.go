@@ -334,17 +334,13 @@ HaloPositionColumns = -1, -1, -1
 # These next couple of variables are neccessarys evil due to the fact that there
 # are a wide range of directory structures used in different simulations. They
 # will be sufficient to specify the location of snapshots in the vast majority
-# of cases.
-
-# SnapshotFormat is a format string (a la printf()) which can be passed
-# snapshot indices, scale factors, and an arbitrary number of block IDs.
+# of cases. I give an in-dpeth description of how to use them in the file
+# doc/directory_config.md.
 SnapshotFormat = path/to/snapshots/snapdir_%%03d/snapshot_%%03d.%%d
-# Use one of [Snapshot | ScaleFactor | Block | Block<format_range> ] for each
-# element. ScaleFactor should correspond to a '%%s' specifier, and the others
-# should correspond to some type of integer specifier.
+# Valid values are "Snapshot", "ScaleFactor", "Block", "Block0", "Block1", ...
+# BlockN will reference the Nth element of the BlockMins and Block Maxes
+# variables.
 SnapshotFormatMeanings = Snapshot, Snapshot, Block
-# BlockMins and FormatBlock can be lists if your filenames use multiple
-# bock IDs.
 BlockMins = 0
 BlockMaxes = 511
 SnapMin = 0
@@ -353,7 +349,7 @@ SnapMax = 100
 # ScaleFactorFile should only be set if one of the elements of
 # SnapshotFormatMeanings is 'ScaleFactor'. This should point to a file which
 # contains the scale factors of your files. A file like this can usually be
-# generated in a few lines of Python: look in doc/example_scale_factor_getter.py
+# generated in a few lines of Python: look in doc/scale_factor_ex.py
 # for an example.
 # ScaleFactorFile = path/to/file.txt
 
@@ -364,8 +360,9 @@ HaloDir = path/to/halos/dir/
 TreeDir = path/to/merger/tree/dir/
 
 # A directory you create the first time you run Shellfish for a particular
-# simulation. Shellfish will memoize certain partial results in this directoy
-# (most importantly: the first couple of halos in )
+# simulation. Shellfish will memoize certain partial results in this directoy.
+# Every time a value is changed in this file, you must change the location of
+# this directory.
 MemoDir = path/to/memo/dir/
 
 # Endianness of any external binary files read by Shellfish. It should be set

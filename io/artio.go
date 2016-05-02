@@ -57,7 +57,7 @@ func NewARTIOBuffer(filename string) (VectorBuffer, error) {
 	} else {
 		h100 = h.GetDouble(h.Key("hubble"))[0]
 	}
-	massUnit := (h100 / cosmo.MSunMks * 1000) *
+	massUnit := (h100 / (cosmo.MSunMks * 1000)) *
 		h.GetDouble(h.Key("mass_unit"))[0]
 	for i := range sMasses {
 		sMasses[i] *= float32(massUnit)
@@ -244,7 +244,7 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 		(h100 / (cosmo.MpcMks * 100))
 	out.Origin, out.Width = boundingBox(xs, out.TotalWidth)
 	out.N = int64(len(xs))
-
+	
 	min, max := xs[0], xs[0]
 	for i := range xs {
 		for j := 0; j < 3; j++ {

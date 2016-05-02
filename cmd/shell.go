@@ -385,7 +385,7 @@ func loadSphereVecs(
 	}
 
 	h.Split(sphWorkers)
-
+	
 	for i := range sphWorkers {
 		wh := &sphBuf.sphWorkers[i]
 		go chanLoadSphereVec(wh, xs, ms, intr, i, workers, hd, c, sync)

@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"reflect"
-
+	
 	"unsafe"
 )
 
@@ -113,6 +113,8 @@ func boundingBox(
 	width = [3]float32{0, 0, 0}
 	tw, tw2 := float32(totalWidth), float32(totalWidth)/2
 
+	max, min := origin, origin
+	
 	for i := range xs {
 		for j := 0; j < 3; j++ {
 			x, x0, w := xs[i][j], origin[j], width[j]
@@ -124,12 +126,15 @@ func boundingBox(
 			}
 
 			if x < x0 {
+				width[j] += x0 - x
 				origin[j] = x
+				min[j] = x
 			} else if x-x0 > w {
 				width[j] = x - x0
+				max[j] = x
 			}
 		}
 	}
-
+	
 	return origin, width
 }

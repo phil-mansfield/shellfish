@@ -174,7 +174,7 @@ The only confusing variable is `SnapshotFormat`, which is used to specify the
 names of your particle snapshots. This is a neccessary evil that comes from
 the wide range of file naming conventions that different simulations use. The
 idea is to write a format string (like the one used by `printf`). I describe
-how to use it [here](https://github.com/phil-mansfield/shellfish/tree/master/doc).
+how to use it [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/directory_config.md).
 
 The other config file that most users will need to set is the
 `shellfish id`-specifc config file. Its sole purpose to concisely communicate to

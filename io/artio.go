@@ -30,7 +30,12 @@ type ARTIOBuffer struct {
 	fileset string
 }
 
-func NewARTIOBuffer(fileset string) (VectorBuffer, error) {
+func NewARTIOBuffer(filename string) (VectorBuffer, error) {
+	fileset, _, err := parseARTIOFilename(filename)
+	if err != nil {
+		return nil, err
+	}
+
 	h, err := artio.FilesetOpen(fileset, artio.OpenHeader, artio.NullContext)
 	if err != nil {
 		return nil, err
@@ -38,7 +43,6 @@ func NewARTIOBuffer(fileset string) (VectorBuffer, error) {
 	defer h.Close()
 
 	numSpecies := h.GetInt(h.Key("num_particle_species"))[0]
-
 	sMasses := h.GetFloat(h.Key("particle_species_mass"))
 
 	var h100 float64
@@ -80,7 +84,7 @@ func parseARTIOFilename(fname string) (fileset string, block int, err error) {
 	}
 
 	fileset, blockString := fname[:split], fname[split+1:]
-	block, err = strconv.Atoi(blockString)
+	block, err = strconv.Atoi(strings.Trim(blockString, "p"))
 	if err != nil {
 		return "", -1, fmt.Errorf(
 			"'%s' is not the name of an ARTIO block.", fname,
@@ -91,7 +95,7 @@ func parseARTIOFilename(fname string) (fileset string, block int, err error) {
 }
 
 func (buf *ARTIOBuffer) Read(
-	fileNumStr string,
+	filename string,
 ) ([][3]float32, []float32, error) {
 	// Open the file.
 	if buf.open {
@@ -122,7 +126,7 @@ func (buf *ARTIOBuffer) Read(
 	}
 
 	// Get SFC range.
-	fIdx, err := strconv.Atoi(fileNumStr)
+	_, fIdx, err := parseARTIOFilename(filename)
 	fileIdxs := h.GetLong(h.Key("particle_file_sfc_index"))
 	sfcStart, sfcEnd := fileIdxs[fIdx], fileIdxs[fIdx+1]-1
 

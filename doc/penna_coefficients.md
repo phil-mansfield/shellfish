@@ -1,4 +1,4 @@
-### Penna Coefficients
+# Penna Coefficients
 
 Coming soon!
 

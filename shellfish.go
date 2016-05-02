@@ -274,23 +274,38 @@ func copyFile(dst, src string) error {
 }
 
 func configEqual(m, c *cmd.GlobalConfig) bool {
+	// Well, equal up to the variables that actually matter.
+	// (i.e. changing something like Threads shouldn't flush the memoization
+	// buffer. Otherwise, I'd just use reflection.)
 	return c.Version == m.Version &&
 		c.SnapshotFormat == m.SnapshotFormat &&
 		c.SnapshotType == m.SnapshotType &&
 		c.HaloDir == m.HaloDir &&
 		c.HaloType == m.HaloType &&
 		c.TreeDir == m.TreeDir &&
-		c.TreeType == m.TreeType &&
-		c.MemoDir == m.MemoDir &&
+		c.MemoDir == m.MemoDir && // (this is impossible)
 		int64sEqual(c.BlockMins, m.BlockMins) &&
 		int64sEqual(c.BlockMaxes, m.BlockMaxes) &&
 		c.SnapMin == m.SnapMin &&
 		c.SnapMax == m.SnapMax &&
-		c.Endianness == m.Endianness &&
-		c.ValidateFormats == m.ValidateFormats
+		stringsEqual(c.SnapshotFormatMeanings, m.SnapshotFormatMeanings) &&
+		c.HaloPositionUnits == m.HaloPositionUnits &&
+		c.HaloMassUnits == m.HaloMassUnits &&
+		c.HaloIDColumn == m.HaloIDColumn &&
+		c.HaloM200mColumn == m.HaloM200mColumn &&
+		int64sEqual(c.HaloPositionColumns, m.HaloPositionColumns) &&
+		c.Endianness == m.Endianness
 }
 
 func int64sEqual(xs, ys []int64) bool {
+	if len(xs) != len(ys) { return false }
+	for i := range xs {
+		if xs[i] != ys[i] { return false }
+	}
+	return true
+}
+
+func stringsEqual(xs, ys []string) bool {
 	if len(xs) != len(ys) { return false }
 	for i := range xs {
 		if xs[i] != ys[i] { return false }

@@ -366,6 +366,7 @@ func loadSphereVecs(
 	}
 	runtime.GOMAXPROCS(workers)
 	sphWorkers, xs := sphBuf.sphWorkers, sphBuf.xs
+	sphBuf.intr = expandBools(sphBuf.intr[:0], len(xs))
 	ms, intr := sphBuf.ms, sphBuf.intr
 	if len(sphWorkers)+1 != workers {
 		panic("impossible")
@@ -396,6 +397,18 @@ func loadSphereVecs(
 	}
 
 	h.Join(sphWorkers)
+}
+
+func expandBools(scalars []bool, n int) []bool {
+	switch {
+	case cap(scalars) >= n:
+		return scalars[:n]
+	case int(float64(cap(scalars))*1.5) > n:
+		return append(scalars[:cap(scalars)],
+			make([]bool, n-cap(scalars))...)
+	default:
+		return make([]bool, n)
+	}
 }
 
 func chanLoadSphereVec(

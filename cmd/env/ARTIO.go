@@ -19,6 +19,7 @@ func (cat *Catalogs) InitARTIO(info *ParticleInfo, validate bool) error {
 	}
 
 	formatArgs := interleave(cols, snapAligned)
+
 	cat.names = [][]string{}
 	for snap := range formatArgs {
 		names := []string{}

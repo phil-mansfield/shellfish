@@ -123,7 +123,7 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	switch config.SnapshotType {
-	case "gotetra", "LGadget-2":
+	case "gotetra", "LGadget-2", "ARTIO":
 	case "":
 		return fmt.Errorf("The 'SnapshotType variable isn't set.'")
 	default:

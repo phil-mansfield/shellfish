@@ -197,11 +197,9 @@ func interleave(cols [][]interface{}, snapAligned []bool) [][][]interface{} {
 		}
 	}
 	
-	// This is safe to think of as an internal error.
-	if snaps == 1 {
-		panic("All values in snapAligned are false.")
+	if snaps == -1 {
+		snaps = 1
 	}
-
 	out := [][][]interface{}{}
 
 	for snap := 0; snap < snaps; snap++ {

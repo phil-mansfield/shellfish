@@ -27,7 +27,7 @@ type ARTIOBuffer struct {
 	msBufs  [][]float32
 	sMasses []float32
 	sFlags  []bool // True if the species is "N-BODY" type.
-	fileset string
+	fileset, exFilename string
 }
 
 func NewARTIOBuffer(filename string) (VectorBuffer, error) {
@@ -70,8 +70,11 @@ func NewARTIOBuffer(filename string) (VectorBuffer, error) {
 
 	return &ARTIOBuffer{
 		xsBufs:  make([][][3]float32, numSpecies),
+		msBufs: make([][]float32, numSpecies),
 		sMasses: sMasses,
 		sFlags:  sFlags,
+		fileset: fileset,
+		exFilename: filename,
 	}, nil
 }
 
@@ -127,22 +130,24 @@ func (buf *ARTIOBuffer) Read(
 
 	// Get SFC range.
 	_, fIdx, err := parseARTIOFilename(filename)
+	if err != nil { return nil, nil, err }
 	fileIdxs := h.GetLong(h.Key("particle_file_sfc_index"))
 	sfcStart, sfcEnd := fileIdxs[fIdx], fileIdxs[fIdx+1]-1
 
 	// Counts and buffer manipulation. Do the reading.
 	sCounts, err := h.CountInRange(sfcStart, sfcEnd)
 	totCount := int64(0)
+
 	for i := range sCounts {
 		if flags[i] {
 			totCount += sCounts[i]
-			expandVectors(buf.xsBufs[i][:0], int(sCounts[i]))
+			buf.xsBufs[i] = expandVectors(buf.xsBufs[i][:0], int(sCounts[i]))
 			err = h.GetPositionsAt(i, sfcStart, sfcEnd, buf.xsBufs[i])
 			if err != nil {
 				return nil, nil, err
 			}
 
-			expandScalars(buf.msBufs[i][:0], int(sCounts[i]))
+			buf.msBufs[i] = expandScalars(buf.msBufs[i][:0], int(sCounts[i]))
 			for j := range buf.msBufs[i] {
 				buf.msBufs[i][j] = buf.sMasses[i]
 			}
@@ -150,8 +155,8 @@ func (buf *ARTIOBuffer) Read(
 	}
 
 	// Copy to output buffer.
-	expandVectors(buf.xsBuf, int(totCount))
-	expandScalars(buf.msBuf, int(totCount))
+	buf.xsBuf = expandVectors(buf.xsBuf[:0], int(totCount))
+	buf.msBuf = expandScalars(buf.msBuf[:0], int(totCount))
 	k := 0
 	for j := range buf.xsBufs {
 		for i := range buf.xsBufs[j] {
@@ -174,7 +179,8 @@ func (buf *ARTIOBuffer) Read(
 		h100 = float32(h.GetDouble(h.Key("hubble"))[0])
 	}
 
-	lengthUnit := float32(h100) / (cosmo.MpcMks * 100)
+	lengthUnit := float32(h100) / (cosmo.MpcMks * 100) *
+		float32(h.GetDouble(h.Key("length_unit"))[0])
 	for i := range buf.xsBuf {
 		buf.xsBuf[i][0] *= lengthUnit
 		buf.xsBuf[i][1] *= lengthUnit
@@ -239,6 +245,14 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 	out.Origin, out.Width = boundingBox(xs, out.TotalWidth)
 	out.N = int64(len(xs))
 
+	min, max := xs[0], xs[0]
+	for i := range xs {
+		for j := 0; j < 3; j++ {
+			if xs[i][j] < min[j] { min[j] = xs[i][j] }
+			if xs[i][j] > max[j] { max[j] = xs[i][j] }
+		}
+	}
+	
 	switch {
 	case !h.HasKey("auni"):
 		return fmt.Errorf("ARTIO header does not contain 'auni' field.")

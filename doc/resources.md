@@ -1,4 +1,4 @@
-### Shellfish Resource Consumption
+# Shellfish Resource Consumption
 
 ##### Setup
 The first time Shellfish is run on a particular snapshot of a simulation, it

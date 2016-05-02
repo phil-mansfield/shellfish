@@ -32,8 +32,8 @@ split the analysis up into multiple calls manually.
 
 Rigorous benchmarks coming soon!
 
-(On my machine with the default `shell.config` parameters, analysis takes about
-one or two CPU seconds for every 100,000 particles within the R200m radii of all
+(On my machine with the default `shell.config` parameters, single-threaded analysis
+takes about eight seconds for every 100,000 particles within the R200m radii of all
 the analyzed halos. If you find that you are getting significantly worse performance
 on your machine, [let me know](https://github.com/phil-mansfield/shellfish/issues).)
 

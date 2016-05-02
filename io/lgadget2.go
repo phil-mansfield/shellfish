@@ -115,7 +115,7 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 
 func expandVectors(vecs [][3]float32, n int) [][3]float32 {
 	switch {
-	case cap(vecs) <= n:
+	case cap(vecs) >= n:
 		return vecs[:n]
 	case int(float64(cap(vecs))*1.5) > n:
 		return append(vecs[:cap(vecs)],
@@ -127,7 +127,7 @@ func expandVectors(vecs [][3]float32, n int) [][3]float32 {
 
 func expandScalars(scalars []float32, n int) []float32 {
 	switch {
-	case cap(scalars) <= n:
+	case cap(scalars) >= n:
 		return scalars[:n]
 	case int(float64(cap(scalars))*1.5) > n:
 		return append(scalars[:cap(scalars)],

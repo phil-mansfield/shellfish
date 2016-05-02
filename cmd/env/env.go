@@ -92,7 +92,7 @@ func (info *ParticleInfo) GetColumn(
 		}
 		return anonymize(out), true, nil
 
-	case len(m) > 5 && m[:5] == "Block":
+	case len(m) >= 5 && m[:5] == "Block":
 		idx := 0
 		if len(m) > 5 {
 			var err error
@@ -196,7 +196,7 @@ func interleave(cols [][]interface{}, snapAligned []bool) [][][]interface{} {
 			nonSnaps *= len(cols[i])
 		}
 	}
-
+	
 	// This is safe to think of as an internal error.
 	if snaps == 1 {
 		panic("All values in snapAligned are false.")

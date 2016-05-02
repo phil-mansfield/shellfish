@@ -4,9 +4,10 @@ Shellfish (**SHELL** **F**inding **I**n **S**pheroidal **H**alos) is a toolchain
 the splashback shells of individual halos within cosmological simulations. Shellfish
 is written in the programming langue [Go](https://golang.org/).
 
-Shellfish is currently in version 0.1.0 with the next planned release being version
-0.2.0. It is not yet stable, is not yet fully documented, and does not yet have a
-C-compatible API. The current maintainer in Phil Mansfield at the University of Chicago.
+Shellfish is currently in version 0.2.0 with the next planned release being version
+0.3.0. Its conifguration file API is mostly stable, it is not yet fully documented,
+and does not yet have a C-compatible API. The current maintainer in Phil Mansfield
+at the University of Chicago.
 
 ### Installation
 
@@ -84,6 +85,8 @@ automatically.
 Currently supported particle catalog types:
 
 * gotetra
+* LGadget-2
+* ARTIO
 
 Currently supported halo catalog types:
 

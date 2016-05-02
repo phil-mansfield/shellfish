@@ -189,7 +189,7 @@ func (config *ShellConfig) Run(
 		gConfig.SnapshotType, gConfig.Endianness,
 	)
 
-	err = loop(ids, snaps, coords, config, buf, e, out)
+	err = loop(ids, snaps, coords, config, buf, e, out, gConfig.Threads)
 	if err != nil { return nil, err }
 
 	intNames := []string{"ID", "Snapshot"}
@@ -233,6 +233,7 @@ func transpose(in [][]float64) [][]float64 {
 func loop(
 	ids, snaps []int, coords [][]float64, c *ShellConfig,
 	buf io.VectorBuffer, e *env.Environment, out [][]float64,
+	threads int64,
 ) error {
 	snapBins, idxBins := binBySnap(snaps, ids)
 	ringBuf := make([]analyze.RingBuffer, c.rings)
@@ -249,6 +250,7 @@ func loop(
 	minMass := buf.MinMass()
 
 	workers := runtime.NumCPU()
+	if threads > 0 { workers = int(threads) }
 	sphBuf := &sphBuffers{
 		intr: make([]bool, hds[0].N),
 		xs: [][3]float32{},
@@ -275,8 +277,9 @@ func loop(
 		halos, err := createHalos(snapCoords, &hds[0], c, e, minMass)
 		if err != nil { return err }
 
+		// I'm so sorry about having ten arguments to this function.
 		if err = sphereLoop(snap, ids, idxs, halos, c,
-			buf, e, sphBuf, out); err != nil {
+			buf, e, sphBuf, threads, out); err != nil {
 
 			return err
 		}
@@ -295,7 +298,7 @@ func loop(
 func sphereLoop(
 	snap int, IDs, ids []int, halos []*los.Halo, c *ShellConfig,
 	buf io.VectorBuffer, e *env.Environment, sphBuf *sphBuffers,
-	out [][]float64,
+	threads int64, out [][]float64,
 ) error {
 	hds, files, err := memo.ReadHeaders(snap, buf, e)
 	if err != nil { return err }
@@ -310,7 +313,7 @@ func sphereLoop(
 
 		binHs := intrBins[i]
 		for j := range binHs {
-			loadSphereVecs(binHs[j], sphBuf, &hds[i], c)
+			loadSphereVecs(binHs[j], sphBuf, &hds[i], c, threads)
 		}
 
 		buf.Close()
@@ -328,8 +331,10 @@ type sphBuffers struct {
 
 func loadSphereVecs(
 	h *los.Halo, sphBuf *sphBuffers, hd *io.Header, c *ShellConfig,
+	threads int64,
 ) {
 	workers := runtime.NumCPU()
+	if threads > 0 { workers = int(threads) }
 	runtime.GOMAXPROCS(workers)
 	sphWorkers, xs := sphBuf.sphWorkers, sphBuf.xs
 	ms, intr := sphBuf.ms, sphBuf.intr

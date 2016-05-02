@@ -60,8 +60,8 @@ type GlobalConfig struct {
 	HaloMassUnits       string
 
 	Endianness          string
-
 	ValidateFormats     bool
+	Threads int64
 }
 
 var _ Mode = &GlobalConfig{}
@@ -96,6 +96,8 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Int(&config.SnapMax, "SnapMax", -1)
 	vars.String(&config.Endianness, "Endianness", "")
 	vars.Bool(&config.ValidateFormats, "ValidateFormats", false)
+
+	vars.Int(&config.Threads, "Threads", -1)
 
 	if err := parse.ReadConfig(fname, vars); err != nil { return err }
 	config.HSnapMax = config.SnapMax
@@ -381,7 +383,15 @@ Endianness = SystemOrder
 # is a lot of system calls and can take minutes. That said, it's generally a
 # good idea to check at least once after making the config file that you aren't
 # accidentally specifying nonexistent files.
-ValidateFormats = false`, version.SourceVersion)
+ValidateFormats = false
+
+# Threads is the number of threads that should be run simultaneously. If Threads
+# is set to a non-positive value (as it iis by default), it will automatically
+# be set equal to the number of available cores on the current node. All threads
+# will be balanced across available cores. Setting this to a value larger than
+# the number of cores on the node will result in slightly suboptimal
+# performance.
+Threads = -1`, version.SourceVersion)
 }
 
 // Run is a dummy method which allows GlobalConfig to conform to the Mode

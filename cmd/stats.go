@@ -204,6 +204,7 @@ func (config *StatsConfig) Run(
 				masses[idxs[j]] += massContained(
 					&hds[i], xs, ms, snapCoeffs[j],
 					hBounds[j], rLows[j], rHighs[j],
+					gConfig.Threads,
 				)
 			}
 
@@ -326,10 +327,11 @@ func rangeSp(coeffs []float64) (rmin, rmax float64) {
 
 func massContained(
 	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
-	sphere geom.Sphere, rLow, rHigh float64,
+	sphere geom.Sphere, rLow, rHigh float64, threads int64,
 ) float64 {
 
 	cpu := runtime.NumCPU()
+	if threads > 0 { cpu = int(threads) }
 	workers := int64(runtime.GOMAXPROCS(cpu))
 	outChan := make(chan float64, workers)
 	for i := int64(0); i < workers - 1; i++ {

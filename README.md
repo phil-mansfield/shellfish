@@ -84,6 +84,8 @@ automatically.
 Currently supported particle catalog types:
 
 * gotetra
+* LGadget-2
+* ARTIO
 
 Currently supported halo catalog types:
 

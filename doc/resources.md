@@ -4,13 +4,12 @@
 The first time Shellfish is run on a particular snapshot of a simulation, it
 will do some full-box analysis needed to accelerate future analysis commands.
 This can take some time depending on the underlying file format and simulation
-size. This can take around two to three minutes for a billion particle simulation
-and will require a few GB. If you find that more than 8 GB are being consumed
+size. This can take around two to three minutes sep snapshot for a billion particle
+simulation and will require a few GB. If you find that more than 8 GB are being consumed
 during this step, you should [let me know](https://github.com/phil-mansfield/shellfish/issues).
 
 This setup step will be performed every time the global configuration file is
-changed. If your usecase involves frequently changing this file and this setup time
-is becoming prohibitive, [let me know](https://github.com/phil-mansfield/shellfish/issues).
+changed.
 
 ##### Memory
 

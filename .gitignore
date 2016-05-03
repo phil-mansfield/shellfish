@@ -34,3 +34,5 @@ _testmain.go
 *.out
 *.config
 config/
+data/
+plots/

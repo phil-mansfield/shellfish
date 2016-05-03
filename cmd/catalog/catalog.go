@@ -6,19 +6,42 @@ import (
 	"strings"
 )
 
-func CommentString(intNames, floatNames []string, order []int) string {
+func CommentString(
+	intNames, floatNames []string, order, sizes []int,
+) string {
+
 	tokens := []string{"# Column contents:"}
-	n := 0
 	for i := range intNames {
-		tokens = append(tokens, fmt.Sprintf("%s(%d)", intNames[i], n))
-		n++
+		tokens = append(tokens, fmt.Sprintf("%s", intNames[i]))
 	}
 	for i := range floatNames {
-		tokens = append(tokens, fmt.Sprintf("%s(%d)", floatNames[i], n))
-		n++
+		tokens = append(tokens, fmt.Sprintf("%s", floatNames[i]))
 	}
 
-	return strings.Join(tokens, " ")
+	orderedTokens := []string{tokens[0]}
+	orderedSizes := []int{}
+	for _, idx := range order {
+		if idx >= len(intNames)+len(floatNames) {
+			panic("Column ordering out of range.")
+		}
+
+		orderedTokens = append(orderedTokens, tokens[idx+1])
+		orderedSizes = append(orderedSizes, sizes[idx])
+
+	}
+
+	n := 0
+	for i := 1; i < len(orderedTokens); i++ {
+		if orderedSizes[i-1] == 1 {
+			orderedTokens[i] = fmt.Sprintf("%s(%d)", orderedTokens[i], n)
+		} else {
+			orderedTokens[i] = fmt.Sprintf("%s(%d-%d)", orderedTokens[i],
+				n, n + orderedSizes[i-1] - 1)
+		}
+		n += orderedSizes[i-1]
+	}
+
+	return strings.Join(orderedTokens, " ")
 }
 
 func FormatCols(intCols [][]int, floatCols [][]float64, order []int) []string {

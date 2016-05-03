@@ -46,12 +46,12 @@ func (config *StatsConfig) ExampleConfig() string {
 # snap     - The snapshot index of the halo, as initially supplied.
 # r_sp     - The volume-weighted splashback radius of the halo.
 # m_sp     - The total mass contained within the splashback shell of the halo.
-# r_sp,max - The maximum radius of the splashback shell.
-# r_sp,min - The minimum radius of the splashback shell.
-# hist_r   - Histogram of LoS radii.
+# r_sp-max - The maximum radius of the splashback shell.
+# r_sp-min - The minimum radius of the splashback shell.
+# r_hist   - Histogram of LoS radii.
 #
 # WARNING: THIS IS NOT FULLY IMPLEMENTED
-Values = snap, id, m_sp, r_sp, r_sp,min, r_sp,max
+Values = snap, id, m_sp, r_sp, r_sp-min, r_sp-max
 
 #####################
 ## Optional Fields ##
@@ -104,7 +104,7 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 func (config *StatsConfig) validate() error {
 	for i, val := range config.values {
 		switch val {
-		case "snap", "id", "m_sp", "r_sp", "r_sp,min", "r_sp,max", "hist_r":
+		case "snap", "id", "m_sp", "r_sp", "r_sp-min", "r_sp-max", "r_hist":
 		default:
 			return fmt.Errorf("Item %d of variable 'Values' is set to '%s', "+
 				"which I don't recognize.", i, val)
@@ -163,7 +163,7 @@ func (config *StatsConfig) Run(
 	histRs := [][]float64{}
 	histNs := [][]float64{}
 	for _, val := range config.values {
-		if val == "hist_r" {
+		if val == "r_hist" {
 			makeHist = true
 			histRs = make([][]float64, len(ids))
 			histNs = make([][]float64, len(ids))
@@ -184,7 +184,6 @@ func (config *StatsConfig) Run(
 	if err != nil {
 		return nil, err
 	}
-
 
 	for _, snap := range sortedSnaps {
 		if snap == -1 {
@@ -253,20 +252,59 @@ func (config *StatsConfig) Run(
 		}
 	}
 
-	lines := catalog.FormatCols(
-		[][]int{ids, snaps},
-		[][]float64{masses, rads, rmins, rmaxes},
-		[]int{0, 1, 2, 3, 4, 5},
+	var(
+		cString string
+		lines []string
 	)
-	cString := catalog.CommentString(
-		[]string{"ID", "Snapshot"},
-		[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
-			"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]"},
-		[]int{0, 1, 2, 3, 4, 5},
-		[]int{1, 1, 1, 1, 1, 1},
-	)
-
+	if makeHist {
+		order := make([]int, 6 + 2*int(config.histogramBins) )
+		for i := range order { order[i] = i }
+		
+		lines = catalog.FormatCols(
+			[][]int{ids, snaps},
+			append(append([][]float64{masses, rads, rmins, rmaxes},
+				float64Transpose(histRs)...), float64Transpose(histNs)...),
+			order,
+		)
+		
+		cString = catalog.CommentString(
+			[]string{"ID", "Snapshot"},
+			[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
+				"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]",
+				"R_hist,i [Mpc/h]", "n_hist,i [1/(Mph/h)]"},
+			[]int{0, 1, 2, 3, 4, 5, 6, 7},
+			[]int{1, 1, 1, 1, 1, 1, int(config.histogramBins),
+				int(config.histogramBins)},
+		)
+	} else {
+		lines = catalog.FormatCols(
+			[][]int{ids, snaps},
+			[][]float64{masses, rads, rmins, rmaxes},
+			[]int{0, 1, 2, 3, 4, 5},
+		)
+		cString = catalog.CommentString(
+			[]string{"ID", "Snapshot"},
+			[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
+				"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]"},
+			[]int{0, 1, 2, 3, 4, 5},
+			[]int{1, 1, 1, 1, 1, 1},
+		)
+	}
+		
 	return append([]string{cString}, lines...), nil
+}
+
+func float64Transpose(rows [][]float64) [][]float64 {
+	nx, ny := len(rows[0]), len(rows)
+	cols := make([][]float64, nx)
+	for x := range cols { cols[x] = make([]float64, ny) }
+	
+	for y := 0; y < ny; y++ {
+		for x := 0; x < nx; x++ {
+			cols[x][y] = rows[y][x]
+		}
+	}
+	return cols
 }
 
 func wrapDist(x1, x2, width float32) float32 {
@@ -364,8 +402,8 @@ func rHist(
 	order := findOrder(coeffs)
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
 	return shell.RadiusHistogram(
-		int(c.monteCarloSamples),
-		int(c.histogramBins), rMin, rMax,
+		int(c.monteCarloSamples) * 10,
+		int(c.histogramBins), rMin*0.9, rMax*1.1,
 	)
 }
 

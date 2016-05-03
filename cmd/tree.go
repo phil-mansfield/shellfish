@@ -65,7 +65,7 @@ func (config *TreeConfig) Run(
 	}
 
 	cString := catalog.CommentString(
-		[]string{"ID", "Snapshot"}, []string{}, []int{0, 1},
+		[]string{"ID", "Snapshot"}, []string{}, []int{0, 1}, []int{1, 1},
 	)
 
 	return append([]string{cString}, fLines...), nil

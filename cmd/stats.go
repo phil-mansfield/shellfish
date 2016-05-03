@@ -242,6 +242,7 @@ func (config *StatsConfig) Run(
 		[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
 			"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]"},
 		[]int{0, 1, 2, 3, 4, 5},
+		[]int{1, 1, 1, 1, 1, 1},
 	)
 
 	return append([]string{cString}, lines...), nil

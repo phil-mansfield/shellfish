@@ -201,16 +201,7 @@ func (config *ShellConfig) Run(
 	}
 
 	intNames := []string{"ID", "Snapshot"}
-	floatNames := []string{"X", "Y", "Z", "R_200m"}
-	for k := 0; k < 2; k++ {
-		for j := 0; j < int(config.order); j++ {
-			for i := 0; i < int(config.order); i++ {
-				floatNames = append(
-					floatNames, fmt.Sprintf("P_i=%d,j=%d,k=%d", i, j, k),
-				)
-			}
-		}
-	}
+	floatNames := []string{"X", "Y", "Z", "R200m", "P_ijk"}
 
 	colOrder := make([]int, 2+4+2*config.order*config.order)
 	for i := range colOrder {
@@ -221,7 +212,10 @@ func (config *ShellConfig) Run(
 		[][]int{ids, snaps}, append(coords, transpose(out)...), colOrder,
 	)
 
-	cString := catalog.CommentString(intNames, floatNames, colOrder)
+	cString := catalog.CommentString(
+		intNames, floatNames, []int{0, 1, 2, 3, 4, 5, 6},
+		[]int{1, 1, 1, 1, 1, 1, 2*int(config.order*config.order)},
+	)
 	return append([]string{cString}, lines...), nil
 }
 

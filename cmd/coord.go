@@ -61,7 +61,10 @@ func (config *CoordConfig) Run(
 	)
 
 	cString := catalog.CommentString(
-		[]string{"ID", "Snapshot"}, []string{}, []int{0, 1},
+		[]string{"ID", "Snapshot"},
+		[]string{"X", "Y", "Z", "R200m"},
+		[]int{0, 1, 2, 3, 4, 5},
+		[]int{1, 1, 1, 1, 1, 1},
 	)
 
 	return append([]string{cString}, lines...), nil

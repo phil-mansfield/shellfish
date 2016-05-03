@@ -44,11 +44,14 @@ func (config *StatsConfig) ExampleConfig() string {
 # The supported columns are:
 # id       - The ID of the halo, as initially supplied.
 # snap     - The snapshot index of the halo, as initially supplied.
-# r-sp     - The volume-weighted splashback radius of the halo.
-# m-sp     - The total mass contained within the splashback shell of the halo.
-# r-sp-max - The maximum radius of the splashback shell.
-# r-sp-min - The minimum radius of the splashback shell.
-Values = snap, id, r-sp
+# r_sp     - The volume-weighted splashback radius of the halo.
+# m_sp     - The total mass contained within the splashback shell of the halo.
+# r_sp-max - The maximum radius of the splashback shell.
+# r_sp-min - The minimum radius of the splashback shell.
+# r_hist   - Histogram of LoS radii.
+#
+# WARNING: THIS IS NOT FULLY IMPLEMENTED
+Values = snap, id, m_sp, r_sp, r_sp-min, r_sp-max
 
 #####################
 ## Optional Fields ##
@@ -65,7 +68,7 @@ MonteCarloSamples = 10000
 # larger halo's splashback shell.
 #
 # The supported strategies are:
-# none    - Don't try to do this.
+# none    - Don't remove halos.
 # contain - Only halos which have a center inside a larger halo's splashback are
 #           excluded.
 # overlap - Halos which have a splashback shell that overlaps the splashback
@@ -101,7 +104,7 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 func (config *StatsConfig) validate() error {
 	for i, val := range config.values {
 		switch val {
-		case "snap", "id", "m-sp", "r-sp", "r-sp-min", "r-sp-max":
+		case "snap", "id", "m_sp", "r_sp", "r_sp-min", "r_sp-max", "r_hist":
 		default:
 			return fmt.Errorf("Item %d of variable 'Values' is set to '%s', "+
 				"which I don't recognize.", i, val)
@@ -155,6 +158,19 @@ func (config *StatsConfig) Run(
 	rmins := make([]float64, len(ids))
 	rmaxes := make([]float64, len(ids))
 
+	// TODO: This is a strictly incorrect hack.
+	makeHist := false
+	histRs := [][]float64{}
+	histNs := [][]float64{}
+	for _, val := range config.values {
+		if val == "r_hist" {
+			makeHist = true
+			histRs = make([][]float64, len(ids))
+			histNs = make([][]float64, len(ids))
+			break
+		}
+	}
+
 	sortedSnaps := []int{}
 	for snap := range snapBins {
 		sortedSnaps = append(sortedSnaps, snap)
@@ -188,8 +204,13 @@ func (config *StatsConfig) Run(
 		}
 
 		for j := range idxs {
-			rads[idxs[j]] = rSp(snapCoeffs[j])
-			rmins[idxs[j]], rmaxes[idxs[j]] = rangeSp(snapCoeffs[j])
+			rads[idxs[j]] = rSp(snapCoeffs[j], config)
+			rmins[idxs[j]], rmaxes[idxs[j]] = rangeSp(snapCoeffs[j], config)
+			if makeHist {
+				histRs[idxs[j]], histNs[idxs[j]] = rHist(
+					snapCoeffs[j], config, rmins[idxs[j]], rmaxes[idxs[j]],
+				)
+			}
 		}
 
 		hds, files, err := memo.ReadHeaders(snap, buf, e)
@@ -205,9 +226,8 @@ func (config *StatsConfig) Run(
 		rLows := make([]float64, len(snapCoeffs))
 		rHighs := make([]float64, len(snapCoeffs))
 		for i := range snapCoeffs {
-			order := findOrder(snapCoeffs[i])
-			shell := analyze.PennaFunc(snapCoeffs[i], order, order, 2)
-			rLows[i], rHighs[i] = shell.RadialRange(10 * 1000)
+			// TODO: Figure out what's going on here and refactor.
+			rLows[i], rHighs[i] = rangeSp(snapCoeffs[i], config)
 		}
 
 		for i := range hds {
@@ -232,19 +252,59 @@ func (config *StatsConfig) Run(
 		}
 	}
 
-	lines := catalog.FormatCols(
-		[][]int{ids, snaps},
-		[][]float64{masses, rads, rmins, rmaxes},
-		[]int{0, 1, 2, 3, 4, 5},
+	var(
+		cString string
+		lines []string
 	)
-	cString := catalog.CommentString(
-		[]string{"ID", "Snapshot"},
-		[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
-			"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]"},
-		[]int{0, 1, 2, 3, 4, 5},
-	)
-
+	if makeHist {
+		order := make([]int, 6 + 2*int(config.histogramBins) )
+		for i := range order { order[i] = i }
+		
+		lines = catalog.FormatCols(
+			[][]int{ids, snaps},
+			append(append([][]float64{masses, rads, rmins, rmaxes},
+				float64Transpose(histRs)...), float64Transpose(histNs)...),
+			order,
+		)
+		
+		cString = catalog.CommentString(
+			[]string{"ID", "Snapshot"},
+			[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
+				"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]",
+				"R_hist,i [Mpc/h]", "n_hist,i [1/(Mph/h)]"},
+			[]int{0, 1, 2, 3, 4, 5, 6, 7},
+			[]int{1, 1, 1, 1, 1, 1, int(config.histogramBins),
+				int(config.histogramBins)},
+		)
+	} else {
+		lines = catalog.FormatCols(
+			[][]int{ids, snaps},
+			[][]float64{masses, rads, rmins, rmaxes},
+			[]int{0, 1, 2, 3, 4, 5},
+		)
+		cString = catalog.CommentString(
+			[]string{"ID", "Snapshot"},
+			[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
+				"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]"},
+			[]int{0, 1, 2, 3, 4, 5},
+			[]int{1, 1, 1, 1, 1, 1},
+		)
+	}
+		
 	return append([]string{cString}, lines...), nil
+}
+
+func float64Transpose(rows [][]float64) [][]float64 {
+	nx, ny := len(rows[0]), len(rows)
+	cols := make([][]float64, nx)
+	for x := range cols { cols[x] = make([]float64, ny) }
+	
+	for y := 0; y < ny; y++ {
+		for x := 0; x < nx; x++ {
+			cols[x][y] = rows[y][x]
+		}
+	}
+	return cols
 }
 
 func wrapDist(x1, x2, width float32) float32 {
@@ -322,26 +382,29 @@ func wrap(x, tw2 float32) float32 {
 	return x
 }
 
-func coords(idx, cells int64) (x, y, z int64) {
-	x = idx % cells
-	y = (idx % (cells * cells)) / cells
-	z = idx / (cells * cells)
-	return x, y, z
-}
-
-func rSp(coeffs []float64) float64 {
+func rSp(coeffs []float64, c *StatsConfig) float64 {
 	order := findOrder(coeffs)
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
-	vol := shell.Volume(10 * 1000)
+	vol := shell.Volume(int(c.monteCarloSamples))
 	r := math.Pow(vol/(math.Pi*4/3), 0.33333)
 	return r
-	//return shell.MedianRadius(10 * 1000)
 }
 
-func rangeSp(coeffs []float64) (rmin, rmax float64) {
+func rangeSp(coeffs []float64, c *StatsConfig) (rmin, rmax float64) {
 	order := findOrder(coeffs)
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
-	return shell.RadialRange(10 * 1000)
+	return shell.RadialRange(int(c.monteCarloSamples))
+}
+
+func rHist(
+	coeffs []float64, c *StatsConfig, rMin, rMax float64,
+) (rs, ns []float64) {
+	order := findOrder(coeffs)
+	shell := analyze.PennaFunc(coeffs, order, order, 2)
+	return shell.RadiusHistogram(
+		int(c.monteCarloSamples) * 10,
+		int(c.histogramBins), rMin*0.9, rMax*1.1,
+	)
 }
 
 func massContained(

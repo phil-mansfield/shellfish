@@ -136,60 +136,37 @@ func (s Shell) RadialRange(samples int) (low, high float64) {
 	return low, high
 }
 
+func  (s Shell) RadiusHistogram(
+	samples, bins int, rMin, rMax float64,
+) (rs, ns []float64) {
+	rs, ns = make([]float64, bins), make([]float64, bins)
+	dr := (rMax - rMin) / float64(bins)
+	for i := range rs {
+		rs[i] = rMin + dr*(float64(i) + 0.5)
+	}
+
+	count := 0
+	for i := 0; i < samples; i++ {
+		phi, theta := randomAngle()
+		r := s(phi, theta)
+		ri := (r - rMin) / dr
+		if ri < 0 { continue }
+		idx := int(ri)
+		if idx >= bins { continue }
+		ns[idx]++
+		count++
+	}
+
+	for i := range ns {
+		ns[i] /= float64(count) * dr
+	}
+
+	return rs, ns
+}
+
 func (s Shell) Contains(x, y, z float64) bool {
 	r := math.Sqrt(x*x + y*y + z*z)
 	phi := math.Atan2(y, x)
 	theta := math.Acos(z / r)
 	return s(phi, theta) > r
-}
-
-type Tracers struct {
-	Vol, Sa, Ix, Iy, Iz float64
-}
-
-func CumulativeTracers(
-	shells [][]Shell, samples int,
-) (means, stds []Tracers) {
-	rings := len(shells[0])
-	sums, sqrs := make([]Tracers, rings), make([]Tracers, rings)
-
-	for ir := range shells[0] {
-		for ih := range shells {
-			shell := shells[ih][ir]
-
-			vol := shell.Volume(samples)
-			sa := shell.SurfaceArea(samples)
-			ix, iy, iz := shell.Moments(samples)
-
-			sums[ir].Vol += vol
-			sums[ir].Sa += sa
-			sums[ir].Ix += ix
-			sums[ir].Iy += iy
-			sums[ir].Iz += iz
-
-			sqrs[ir].Vol += vol * vol
-			sqrs[ir].Sa += sa * sa
-			sqrs[ir].Ix += ix * ix
-			sqrs[ir].Iy += iy * iy
-			sqrs[ir].Iz += iz * iz
-		}
-	}
-
-	means, stds = make([]Tracers, rings), make([]Tracers, rings)
-	n := float64(len(shells))
-	for i := range means {
-		means[i].Vol = sums[i].Vol / n
-		means[i].Sa = sums[i].Sa / n
-		means[i].Ix = sums[i].Ix / n
-		means[i].Iy = sums[i].Iy / n
-		means[i].Iz = sums[i].Iz / n
-
-		stds[i].Vol = math.Sqrt(sqrs[i].Vol/n - means[i].Vol*means[i].Vol)
-		stds[i].Sa = math.Sqrt(sqrs[i].Sa/n - means[i].Sa*means[i].Sa)
-		stds[i].Ix = math.Sqrt(sqrs[i].Ix/n - means[i].Ix*means[i].Ix)
-		stds[i].Iy = math.Sqrt(sqrs[i].Iy/n - means[i].Iy*means[i].Iy)
-		stds[i].Iz = math.Sqrt(sqrs[i].Iz/n - means[i].Iz*means[i].Iz)
-	}
-
-	return means, stds
 }

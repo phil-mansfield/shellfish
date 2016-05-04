@@ -36,6 +36,12 @@ takes about eight seconds for every 100,000 particles within the R200m radii of 
 the analyzed halos. If you find that you are getting significantly worse performance
 on your machine, [let me know](https://github.com/phil-mansfield/shellfish/issues).)
 
+**Note**: This is only true for isolated halos. Small halos which are close to clusters
+can take as long to analyze as the clusters themselves. The real figure of merit is how
+many particles are contained within 3*R200m, a value which is only loosely correlated
+with how many particles are contained within R200m. However, most halo catalogs do not
+contain this information.
+
 ##### Parallelism
 
 Shellfish will automatically detect the number of cores available to it on a single

@@ -29,6 +29,8 @@ Once you've done this, its time to download and install Shellfish's dependencies
 the following commands into your console:
 
 	$ go get github.com/gonum/matrix
+	$ go get github.com/gonum/floats
+	$ go get github.com/gonum/internal/asm
 	$ go get github.com/phil-mansfield/consistent_trees
 	$ go get github.com/phil-mansfield/go-artio
 	$ go get github.com/phil-mansfield/shellfish

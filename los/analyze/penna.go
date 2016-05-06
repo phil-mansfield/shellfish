@@ -19,10 +19,10 @@ func pinv(m, t *mat.Matrix) *mat.Matrix {
 	out2 := mat64.NewDense(m.Width, m.Height,
 		make([]float64, m.Height*m.Width))
 	out1.Mul(gm, gmt)
-	inv, err := mat64.Inverse(out1)
-	if err != nil {
-		panic(err.Error())
-	}
+
+	r, c := out1.Dims()
+	inv := mat64.NewDense(c, r, make([]float64, r*c))
+	inv.Inverse(out1)
 	out2.Mul(gmt, inv)
 
 	vals := make([]float64, m.Width*m.Height)

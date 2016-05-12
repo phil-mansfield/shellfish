@@ -42,16 +42,20 @@ func (config *StatsConfig) ExampleConfig() string {
 # written after that, and the specified columns will continue from there.
 #
 # The supported columns are:
-# id       - The ID of the halo, as initially supplied.
-# snap     - The snapshot index of the halo, as initially supplied.
-# r_sp     - The volume-weighted splashback radius of the halo.
-# m_sp     - The total mass contained within the splashback shell of the halo.
-# r_sp-max - The maximum radius of the splashback shell.
-# r_sp-min - The minimum radius of the splashback shell.
+# id    - The ID of the halo, as initially supplied.
+# snap  - The snapshot index of the halo, as initially supplied.
+# r_sp  - The volume-weighted splashback radius of the halo.
+# m_sp  - The total mass contained within the splashback shell of the halo.
+# V_sp  - Volume of splashback shell.
+# SA_sp - Surface area of splashback shell.
+# a_sp  - Largest axis of ellipsoidal fit to splashback shell.
+# b_sp  - Largest axis of ellipsoidal fit to splashback shell.
+# c_sp  - Largest axis of ellipsoidal fit to splashback shell.
+#
 # r_hist   - Histogram of LoS radii.
 #
 # WARNING: THIS IS NOT FULLY IMPLEMENTED
-Values = snap, id, m_sp, r_sp, r_sp-min, r_sp-max
+Values = snap, id, m_sp, r_sp, SA_sp, V_sp, a_sp, b_sp, c_sp
 
 #####################
 ## Optional Fields ##
@@ -104,7 +108,8 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 func (config *StatsConfig) validate() error {
 	for i, val := range config.values {
 		switch val {
-		case "snap", "id", "m_sp", "r_sp", "r_sp-min", "r_sp-max", "r_hist":
+		case "snap", "id", "m_sp", "r_sp", "a_sp", "b_sp", "c_sp",
+			"SA_sp/V_sp", "r_hist":
 		default:
 			return fmt.Errorf("Item %d of variable 'Values' is set to '%s', "+
 				"which I don't recognize.", i, val)
@@ -157,6 +162,12 @@ func (config *StatsConfig) Run(
 	rads := make([]float64, len(ids))
 	rmins := make([]float64, len(ids))
 	rmaxes := make([]float64, len(ids))
+	vols := make([]float64, len(ids))
+	sas := make([]float64, len(ids))
+	as := make([]float64, len(ids))
+	bs := make([]float64, len(ids))
+	cs := make([]float64, len(ids))
+
 
 	// TODO: This is a strictly incorrect hack.
 	makeHist := false
@@ -203,8 +214,20 @@ func (config *StatsConfig) Run(
 			snapCoords[3][i] = coords[3][idx]
 		}
 
+		samples := int(config.monteCarloSamples)
 		for j := range idxs {
-			rads[idxs[j]] = rSp(snapCoeffs[j], config)
+			order := findOrder(coeffs[idxs[j]])
+			shell := analyze.PennaFunc(coeffs[idxs[j]], order, order, 2)
+
+			vol := shell.Volume(samples)
+			r := math.Pow(vol/(math.Pi*4/3), 0.33333)
+
+			vols[idxs[j]] = vol
+			rads[idxs[j]] = r
+			sas[idxs[j]] = shell.SurfaceArea(samples)
+			as[idxs[j]], bs[idxs[j]], cs[idxs[j]] = shell.Axes(samples)
+
+
 			rmins[idxs[j]], rmaxes[idxs[j]] = rangeSp(snapCoeffs[j], config)
 			if makeHist {
 				histRs[idxs[j]], histNs[idxs[j]] = rHist(
@@ -279,15 +302,19 @@ func (config *StatsConfig) Run(
 	} else {
 		lines = catalog.FormatCols(
 			[][]int{ids, snaps},
-			[][]float64{masses, rads, rmins, rmaxes},
-			[]int{0, 1, 2, 3, 4, 5},
+			[][]float64{masses, rads, vols, sas, as, bs, cs},
+			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8},
 		)
 		cString = catalog.CommentString(
 			[]string{"ID", "Snapshot"},
 			[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
-				"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]"},
-			[]int{0, 1, 2, 3, 4, 5},
-			[]int{1, 1, 1, 1, 1, 1},
+				"Volume [Mpc^3/h^3]", "Surface Area [Mpc^2/h^2]",
+				"Ellipsoid Axis a [Mpc/h]",
+				"Ellipsoid Axis b [Mpc/h]",
+				"Ellipsoid Axis c [Mpc/h]",
+			},
+			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8},
+			[]int{1, 1, 1, 1, 1, 1, 1, 1, 1},
 		)
 	}
 		
@@ -380,14 +407,6 @@ func wrap(x, tw2 float32) float32 {
 		return x + tw2
 	}
 	return x
-}
-
-func rSp(coeffs []float64, c *StatsConfig) float64 {
-	order := findOrder(coeffs)
-	shell := analyze.PennaFunc(coeffs, order, order, 2)
-	vol := shell.Volume(int(c.monteCarloSamples))
-	r := math.Pow(vol/(math.Pi*4/3), 0.33333)
-	return r
 }
 
 func rangeSp(coeffs []float64, c *StatsConfig) (rmin, rmax float64) {

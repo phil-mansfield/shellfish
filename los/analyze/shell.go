@@ -5,6 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/phil-mansfield/shellfish/math/sort"
+	"github.com/gonum/matrix/mat64"
 )
 
 type Shell func(phi, theta float64) float64
@@ -70,18 +71,57 @@ func (s Shell) MedianRadius(samples int) float64 {
 	return sort.Median(rs, rs)
 }
 
-func (s Shell) Moments(samples int) (Ix, Iy, Iz float64) {
-	xSum, ySum, zSum, rSum := 0.0, 0.0, 0.0, 0.0
+func trisort(x, y, z float64) (a, b, c float64) {
+	var p, q float64
+	switch {
+	case x > y && x > z: a, p, q = x, y, z
+	case y > x && y > z: a, p, q = y, z, x
+	default: a, p, q = z, x, y
+	}
+
+	if p > q {
+		return a, p, q
+	} else {
+		return a, q, p
+	}
+}
+
+func (s Shell) Axes(samples int) (a, b, c float64) {
+	nxx, nyy, nzz := 0.0, 0.0, 0.0
+	nxy, nyz, nzx := 0.0, 0.0, 0.0
+	norm := 0.0
+
 	for i := 0; i < samples; i++ {
 		phi, theta := randomAngle()
 		r := s(phi, theta)
+		area := r*r
 		x, y, z := cartesian(phi, theta, r)
-		xSum += (y*y + z*z) * r * r
-		ySum += (x*x + z*z) * r * r
-		zSum += (x*x + y*y) * r * r
-		rSum += r * r
+
+		nxx, nyy, nzz = nxx + area*x*x, nyy + area*y*y, nzz + area*z*z
+		nxy, nyz, nzx = nxy + area*x*y, nyz + area*y*z, nzx + area*z*x
+		norm += area
 	}
-	return xSum / rSum, ySum / rSum, zSum / rSum
+
+	nxx, nyy, nzz = nxx/norm, nyy/norm, nzz/norm
+	nxy, nyz, nzx = nxy/norm, nyz/norm, nzx/norm
+
+	mat := mat64.NewDense(3, 3, []float64{
+		nxx, nxy, nzx,
+		nxy, nyy, nyz,
+		nzx, nyz, nzz,
+	})
+	
+	eigen := &mat64.Eigen{}
+	ok := eigen.Factorize(mat, false)
+	if !ok { panic("Could not factorize inertia tensor.") }
+
+	vals := eigen.Values(nil)
+
+	ax := math.Sqrt(real(vals[0]) * 3)
+	ay := math.Sqrt(real(vals[1]) * 3)
+	az := math.Sqrt(real(vals[2]) * 3)
+	
+	return trisort(ax, ay, az)
 }
 
 func (s Shell) SurfaceArea(samples int) float64 {
@@ -89,7 +129,7 @@ func (s Shell) SurfaceArea(samples int) float64 {
 	for i := 0; i < samples; i++ {
 		phi, theta := randomAngle()
 		r := s(phi, theta)
-		sum += r * r
+		sum += r*r
 	}
 	return sum / float64(samples) * 4 * math.Pi
 }

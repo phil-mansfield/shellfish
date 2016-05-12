@@ -110,10 +110,13 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 		nxy, nyy, nyz,
 		nzx, nyz, nzz,
 	})
-	out := &mat64.EigenSym{}
-	mat.EigenvectorsSym(out)
-	vals := out.Values(nil)
-	Ixx, Iyy, Izz := vals[0], vals[1], vals[2]
+
+	eigen := &mat64.Eigen{}
+	ok := eigen.Factorize(mat, false)
+	if !ok { panic("Could not factorize inertia tensor.") }
+
+	vals := eigen.Values(nil)
+	Ixx, Iyy, Izz := real(vals[0]), real(vals[1]), real(vals[2])
 
 	ax := math.Sqrt((Izz + Iyy - Ixx) * 2.5)
 	az := math.Sqrt((Iyy - ax*ax) * 5)

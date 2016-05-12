@@ -110,17 +110,17 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 		nxy, nyy, nyz,
 		nzx, nyz, nzz,
 	})
-
+	
 	eigen := &mat64.Eigen{}
 	ok := eigen.Factorize(mat, false)
 	if !ok { panic("Could not factorize inertia tensor.") }
 
 	vals := eigen.Values(nil)
-	Ixx, Iyy, Izz := real(vals[0]), real(vals[1]), real(vals[2])
 
-	ax := math.Sqrt((Izz + Iyy - Ixx) * 2.5)
-	az := math.Sqrt((Iyy - ax*ax) * 5)
-	ay := math.Sqrt((Izz - ax*ax) * 5)
+	ax := math.Sqrt(real(vals[0]) * 3)
+	ay := math.Sqrt(real(vals[1]) * 3)
+	az := math.Sqrt(real(vals[2]) * 3)
+	
 	return trisort(ax, ay, az)
 }
 

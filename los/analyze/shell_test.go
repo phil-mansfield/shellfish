@@ -1,7 +1,7 @@
 package analyze
 
 import (
-	//	"math"
+	"math"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -14,12 +14,22 @@ func sphere(r float64) Shell {
 	}
 }
 
+func ellipsoid(a, b, c float64) Shell {
+	return func(phi, theta float64) float64 {
+		sp, cp := math.Sincos(phi)
+		st, ct := math.Sincos(theta)
+
+		return 1 / math.Sqrt((cp*cp*st*st/(a*a) +
+			sp*sp*st*st/(b*b) + ct*ct/(c*c)))
+	}
+}
+
 func TestEverything(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	s := sphere(1.0)
-	samples := 10 * 1000
+	s := ellipsoid(3, 2, 1)
+	samples := 100 * 1000
 	fmt.Printf("Volume:  %8.3g\n", s.Volume(samples))
-	Ix, Iy, Iz := s.Moments(samples)
+	Ix, Iy, Iz := s.Axes(samples)
 	fmt.Printf("Moments: %8.3g %8.3g %8.3g\n", Ix, Iy, Iz)
 	fmt.Printf("Area:    %8.3g\n", s.SurfaceArea(samples))
 }

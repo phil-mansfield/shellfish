@@ -94,7 +94,7 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 	for i := 0; i < samples; i++ {
 		phi, theta := randomAngle()
 		r := s(phi, theta)
-		area := r*r
+		area := r*r / cosNorm(s, phi, theta)
 		x, y, z := cartesian(phi, theta, r)
 
 		nxx, nyy, nzz = nxx + area*x*x, nyy + area*y*y, nzz + area*z*z
@@ -124,12 +124,36 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 	return trisort(ax, ay, az)
 }
 
+func cosNorm(s Shell, phi, theta float64) float64 	{
+	dp, dt := 1e-3, 1e-3
+	r00 := s(phi - dp, theta - dt)
+	x00, y00, z00 := cartesian(phi - dp, theta - dt, r00)
+	r01 := s(phi - dp, theta + dt)
+	x01, y01, z01 := cartesian(phi - dp, theta + dt, r01)
+	r10 := s(phi + dp, theta - dt)
+	x10, y10, z10 := cartesian(phi + dp, theta - dt, r10)
+	r11 := s(phi + dp, theta + dt)
+	x11, y11, z11 := cartesian(phi + dp, theta + dt, r11)
+
+	dxa, dya, dza := x00 - x11, y00 - y11, z00 - z11
+	dxb, dyb, dzb := x01 - x10, y01 - y10, z01 - z10
+	// normal vector
+	xn := dya*dzb - dza*dyb
+	yn := dza*dxb - dxa*dzb
+	zn := dxa*dyb - dya*dxb
+	norm := math.Sqrt(xn*xn + yn*yn + zn*zn)
+
+	xn, yn, zn = xn/norm, yn/norm, zn/norm
+	xl, yl, zl := cartesian(phi, theta, 1)
+	return xl*xn + yl*yn + zl*zn
+}
+
 func (s Shell) SurfaceArea(samples int) float64 {
 	sum := 0.0
 	for i := 0; i < samples; i++ {
 		phi, theta := randomAngle()
 		r := s(phi, theta)
-		sum += r*r
+		sum += r*r / cosNorm(s, phi, theta)
 	}
 	return sum / float64(samples) * 4 * math.Pi
 }

@@ -89,6 +89,7 @@ func trisort(x, y, z float64) (a, b, c float64) {
 func (s Shell) Axes(samples int) (a, b, c float64) {
 	nxx, nyy, nzz := 0.0, 0.0, 0.0
 	nxy, nyz, nzx := 0.0, 0.0, 0.0
+	nx, ny, nz := 0.0, 0.0, 0.0
 	norm := 0.0
 
 	for i := 0; i < samples; i++ {
@@ -97,18 +98,27 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 		area := r*r / cosNorm(s, phi, theta)
 		x, y, z := cartesian(phi, theta, r)
 
-		nxx, nyy, nzz = nxx + area*x*x, nyy + area*y*y, nzz + area*z*z
-		nxy, nyz, nzx = nxy + area*x*y, nyz + area*y*z, nzx + area*z*x
+		nxx += area*x*x
+		nyy += area*y*y
+		nzz += area*z*z
+		nxy += area*x*y
+		nyz += area*y*z
+		nzx += area*z*x
+		nx += area*x
+		ny += area*y
+		nz += area*z
+
 		norm += area
 	}
 
 	nxx, nyy, nzz = nxx/norm, nyy/norm, nzz/norm
 	nxy, nyz, nzx = nxy/norm, nyz/norm, nzx/norm
+	nx, ny, nz = nx/norm, ny/norm, nz/norm
 
 	mat := mat64.NewDense(3, 3, []float64{
-		nxx, nxy, nzx,
-		nxy, nyy, nyz,
-		nzx, nyz, nzz,
+		nyy + nzz - ny*ny - nz*nz, -nxy + nx*ny, -nzx + nz*nx,
+		-nxy + nx*ny, nxx + nzz - nx*nx - ny*ny, -nyz + ny*nz,
+		-nzx + nz*nx, -nyz + ny*nz, nxx + nyy - nx*nx - ny*ny,
 	})
 	
 	eigen := &mat64.Eigen{}
@@ -117,11 +127,12 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 
 	vals := eigen.Values(nil)
 
-	ax := math.Sqrt(real(vals[0]) * 3)
-	ay := math.Sqrt(real(vals[1]) * 3)
-	az := math.Sqrt(real(vals[2]) * 3)
-	
-	return trisort(ax, ay, az)
+	Ix, Iy, Iz := real(vals[0]), real(vals[1]), real(vals[2])
+	ax2 := 3 * (Iy + Iz - Ix) / 2
+	ay2 := 3*Iy - ax2
+	az2 := 3*Iz - ax2
+
+	return trisort(math.Sqrt(ax2), math.Sqrt(ay2), math.Sqrt(az2))
 }
 
 func cosNorm(s Shell, phi, theta float64) float64 	{
@@ -137,6 +148,7 @@ func cosNorm(s Shell, phi, theta float64) float64 	{
 
 	dxa, dya, dza := x00 - x11, y00 - y11, z00 - z11
 	dxb, dyb, dzb := x01 - x10, y01 - y10, z01 - z10
+
 	// normal vector
 	xn := dya*dzb - dza*dyb
 	yn := dza*dxb - dxa*dzb

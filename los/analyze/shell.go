@@ -117,10 +117,10 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 
 	mat := mat64.NewDense(3, 3, []float64{
 		nyy + nzz - ny*ny - nz*nz, -nxy + nx*ny, -nzx + nz*nx,
-		-nxy + nx*ny, nxx + nzz - nx*nx - ny*ny, -nyz + ny*nz,
+		-nxy + nx*ny, nxx + nzz - nx*nx - nz*nz, -nyz + ny*nz,
 		-nzx + nz*nx, -nyz + ny*nz, nxx + nyy - nx*nx - ny*ny,
 	})
-	
+
 	eigen := &mat64.Eigen{}
 	ok := eigen.Factorize(mat, false)
 	if !ok { panic("Could not factorize inertia tensor.") }

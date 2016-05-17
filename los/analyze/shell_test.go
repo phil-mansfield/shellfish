@@ -40,7 +40,7 @@ func ellipsoid(a, b, c float64) Shell {
 
 func TestEverything(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	s := ellipsoid(2, 1, 1)
+	s := ellipsoid(2, 1, 3)
 	//s := brokenSphere(2, 1)
 	samples := 1000 * 1000
 	fmt.Printf("Volume: %8.4g\n", s.Volume(samples))

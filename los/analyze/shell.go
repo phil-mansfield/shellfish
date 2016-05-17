@@ -6,6 +6,8 @@ import (
 
 	"github.com/phil-mansfield/shellfish/math/sort"
 	"github.com/gonum/matrix/mat64"
+	intr "github.com/phil-mansfield/shellfish/math/interpolate"
+	grid "github.com/phil-mansfield/shellfish/los/analyze/ellipse_grid"
 )
 
 type Shell func(phi, theta float64) float64
@@ -132,7 +134,17 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 	ay2 := 3*Iy - ax2
 	az2 := 3*Iz - ax2
 
-	return trisort(math.Sqrt(ax2), math.Sqrt(ay2), math.Sqrt(az2))
+	c, b, a = trisort(math.Sqrt(ax2), math.Sqrt(ay2), math.Sqrt(az2))
+	ac, bc := a/c, b/c
+	acRatio := axisInterpolators.acRatio.Eval(ac, bc)
+	bcRatio := axisInterpolators.bcRatio.Eval(ac, bc)
+	cRatio  := axisInterpolators.cRatio.Eval(ac, bc)
+
+	c = cRatio * c
+	return c, bcRatio * bc * c, acRatio * ac * c
+	//c = acRatio * ac * c
+	//_, _, _ = acRatio, bcRatio, cRatio
+	//return c, b, a
 }
 
 func cosNorm(s Shell, phi, theta float64) float64 	{
@@ -245,4 +257,23 @@ func (s Shell) Contains(x, y, z float64) bool {
 	phi := math.Atan2(y, x)
 	theta := math.Acos(z / r)
 	return s(phi, theta) > r
+}
+
+var axisInterpolators = struct {
+	acRatio, bcRatio, cRatio intr.BiInterpolator
+} { }
+
+func init() {
+	axisInterpolators.acRatio = intr.NewBiCubic(
+		grid.ACRatios, grid.BCRatios,
+		grid.ACCorrectionGrid,
+	)
+	axisInterpolators.bcRatio = intr.NewBiCubic(
+		grid.ACRatios, grid.BCRatios,
+		grid.BCCorrectionGrid,
+	)
+	axisInterpolators.cRatio = intr.NewBiCubic(
+		grid.ACRatios, grid.BCRatios,
+		grid.CCorrectionGrid,
+	)
 }

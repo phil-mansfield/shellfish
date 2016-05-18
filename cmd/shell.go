@@ -53,7 +53,7 @@ RadialBins = 256
 Spokes = 256
 
 # Rings is the number of rings per halo.
-Rings = 24
+Rings = 100
 
 # RMaxMult is the maximum radius of a line of sight as a multiplier of R200m.
 RMaxMult = 3.0
@@ -99,7 +99,7 @@ func (config *ShellConfig) ReadConfig(fname string) error {
 	vars.Int(&config.subsampleFactor, "SubsampleFactor", 1)
 	vars.Int(&config.radialBins, "RadialBins", 256)
 	vars.Int(&config.spokes, "Spokes", 256)
-	vars.Int(&config.rings, "Rings", 24)
+	vars.Int(&config.rings, "Rings", 100)
 	vars.Float(&config.rMaxMult, "RMaxMult", 3)
 	vars.Float(&config.rMinMult, "RMinMult", 0.5)
 	vars.Float(&config.rKernelMult, "RKernelMult", 0.2)

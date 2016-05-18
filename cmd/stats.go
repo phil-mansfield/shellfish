@@ -66,7 +66,7 @@ HistogramBins = 50
 
 # MonteCarloSamplings The number of Monte Carlo samplings done when calculating
 # properties of shells.
-MonteCarloSamples = 10000
+MonteCarloSamples = 50000
 
 # ExclustionStrategy is the strategy for removing halos contained within a
 # larger halo's splashback shell.
@@ -92,7 +92,7 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 
 	vars.Strings(&config.values, "Values", []string{})
 	vars.Int(&config.histogramBins, "HistogramBins", 50)
-	vars.Int(&config.monteCarloSamples, "MonteCarloSamples", 10*1000)
+	vars.Int(&config.monteCarloSamples, "MonteCarloSamples", 50*1000)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "none")
 	vars.Int(&config.order, "Order", 3)
 

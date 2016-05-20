@@ -83,6 +83,7 @@ func (config *CoordConfig) Run(
 
 	if logging.Mode == logging.Performance {
 		log.Printf("Time: %s", time.Since(t).String())
+		log.Printf("Memory:\n%s", logging.MemString())
 	}
 
 	return append([]string{cString}, lines...), nil

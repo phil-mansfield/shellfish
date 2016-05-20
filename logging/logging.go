@@ -1,5 +1,10 @@
 package logging
 
+import (
+	"fmt"
+	"runtime"
+)
+
 type Flag int
 const (
 	Nil Flag = iota
@@ -12,3 +17,13 @@ const (
 var (
 	Mode Flag = Nil
 )
+
+func MemString() string {
+	ms := runtime.MemStats{}
+	runtime.ReadMemStats(&ms)
+	return fmt.Sprintf(
+`Program Allocation: %d MB
+System Allocation: %d MB
+Integrated Allocation: %d MB`, ms.Alloc, ms.Sys, ms.TotalAlloc,
+	)
+}

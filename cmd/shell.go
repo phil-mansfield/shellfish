@@ -6,6 +6,7 @@ import (
 	"math"
 	"runtime"
 	"sort"
+	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
@@ -14,10 +15,9 @@ import (
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 	"github.com/phil-mansfield/shellfish/parse"
-
 	"github.com/phil-mansfield/shellfish/io"
-
 	"github.com/phil-mansfield/shellfish/math/rand"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 type ShellConfig struct {
@@ -170,6 +170,16 @@ func (config *ShellConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 
+	if logging.Mode != logging.Nil {
+		log.Println(`
+#####################
+## shellfish shell ##
+#####################`,
+		)
+	}
+	var t time.Time
+	if logging.Mode == logging.Performance { t = time.Now() }
+
 	// Parse.
 	intCols, coords, err := catalog.ParseCols(
 		stdin, []int{0, 1}, []int{2, 3, 4, 5},
@@ -217,6 +227,12 @@ func (config *ShellConfig) Run(
 		intNames, floatNames, []int{0, 1, 2, 3, 4, 5, 6},
 		[]int{1, 1, 1, 1, 1, 1, 2*int(config.order*config.order)},
 	)
+
+	if logging.Mode == logging.Performance {
+		log.Printf("Time: %s", time.Since(t).String())
+		log.Printf("Memory:\n%s", logging.MemString())
+	}
+
 	return append([]string{cString}, lines...), nil
 }
 
@@ -437,7 +453,9 @@ func haloAnalysis(
 	for i := range halos {
 		runtime.GC()
 
-		log.Printf("Halo %3d", i)
+		if logging.Mode == logging.Debug {
+			log.Printf("Halo %3d", i)
+		}
 		
 		var ok bool
 		out[idxs[i]], ok = calcCoeffs(halos[i], ringBuf, c)

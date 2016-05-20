@@ -2,12 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/halo"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/io"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 type CoordConfig struct {
@@ -24,6 +27,17 @@ func (config *CoordConfig) validate() error { return nil }
 func (config *CoordConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
+
+	if logging.Mode != logging.Nil {
+		log.Println(`
+#####################
+## shellfish coord ##
+#####################`,
+		)
+	}
+	var t time.Time
+	if logging.Mode == logging.Performance { t = time.Now() }
+
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil {
 		return nil, err
@@ -66,6 +80,11 @@ func (config *CoordConfig) Run(
 		[]int{0, 1, 2, 3, 4, 5},
 		[]int{1, 1, 1, 1, 1, 1},
 	)
+
+	if logging.Mode == logging.Performance {
+		log.Printf("Time: %s", time.Since(t).String())
+		log.Printf("Memory:\n%s", logging.MemString())
+	}
 
 	return append([]string{cString}, lines...), nil
 }

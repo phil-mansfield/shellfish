@@ -6,6 +6,7 @@ import (
 	"math"
 	"runtime"
 	"sort"
+	"time"
 
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/los/analyze"
@@ -145,6 +146,8 @@ func (config *StatsConfig) Run(
 #####################`,
 		)
 	}
+	var t time.Time
+	if logging.Mode == logging.Performance { t = time.Now() }
 
 	intColIdxs := []int{0, 1}
 	floatColIdxs := make([]int, 4+2*config.order*config.order)
@@ -325,7 +328,11 @@ func (config *StatsConfig) Run(
 			[]int{1, 1, 1, 1, 1, 1, 1, 1, 1},
 		)
 	}
-		
+
+	if logging.Mode == logging.Performance {
+		log.Printf("Time: %s", time.Since(t).String())
+	}
+	
 	return append([]string{cString}, lines...), nil
 }
 

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
@@ -170,6 +171,8 @@ func (config *IDConfig) Run(
 ##################`,
 		)
 	}
+	var t time.Time
+	if logging.Mode == logging.Performance { t = time.Now() }
 
 	if config.snap == -1 {
 		return nil, fmt.Errorf("Either no id.config file was provided or "+
@@ -277,6 +280,10 @@ func (config *IDConfig) Run(
 		[]string{"ID", "Snapshot"}, []string{}, []int{0, 1}, []int{1, 1},
 	)
 	mLines = append([]string{cString}, mLines...)
+
+	if logging.Mode == logging.Performance {
+		log.Printf("Time: %s", time.Since(t).String())
+	}
 
 	return mLines, nil
 }

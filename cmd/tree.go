@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path"
+	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
@@ -32,6 +33,8 @@ func (config *TreeConfig) Run(
 ####################`,
 		)
 	}
+	var t time.Time
+	if logging.Mode == logging.Performance { t = time.Now() }
 
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil {
@@ -77,6 +80,10 @@ func (config *TreeConfig) Run(
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"}, []string{}, []int{0, 1}, []int{1, 1},
 	)
+
+	if logging.Mode == logging.Performance {
+		log.Printf("Time: %s", time.Since(t).String())
+	}
 
 	return append([]string{cString}, fLines...), nil
 }

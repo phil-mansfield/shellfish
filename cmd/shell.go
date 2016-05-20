@@ -6,6 +6,7 @@ import (
 	"math"
 	"runtime"
 	"sort"
+	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
@@ -176,6 +177,8 @@ func (config *ShellConfig) Run(
 #####################`,
 		)
 	}
+	var t time.Time
+	if logging.Mode == logging.Performance { t = time.Now() }
 
 	// Parse.
 	intCols, coords, err := catalog.ParseCols(
@@ -224,6 +227,11 @@ func (config *ShellConfig) Run(
 		intNames, floatNames, []int{0, 1, 2, 3, 4, 5, 6},
 		[]int{1, 1, 1, 1, 1, 1, 2*int(config.order*config.order)},
 	)
+
+	if logging.Mode == logging.Performance {
+		log.Printf("Time: %s", time.Since(t).String())
+	}
+
 	return append([]string{cString}, lines...), nil
 }
 

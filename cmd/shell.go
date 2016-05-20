@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"runtime"
 	"sort"
@@ -436,6 +437,8 @@ func haloAnalysis(
 	for i := range halos {
 		runtime.GC()
 
+		log.Printf("Halo %3d", i)
+		
 		var ok bool
 		out[idxs[i]], ok = calcCoeffs(halos[i], ringBuf, c)
 		if !ok {

@@ -14,10 +14,9 @@ import (
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 	"github.com/phil-mansfield/shellfish/parse"
-
 	"github.com/phil-mansfield/shellfish/io"
-
 	"github.com/phil-mansfield/shellfish/math/rand"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 type ShellConfig struct {
@@ -169,6 +168,14 @@ func (config *ShellConfig) validate() error {
 func (config *ShellConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
+
+	if logging.Mode != logging.Nil {
+		log.Println(`
+#####################
+## shellfish shell ##
+#####################`,
+		)
+	}
 
 	// Parse.
 	intCols, coords, err := catalog.ParseCols(
@@ -437,7 +444,9 @@ func haloAnalysis(
 	for i := range halos {
 		runtime.GC()
 
-		log.Printf("Halo %3d", i)
+		if logging.Mode == logging.Debug {
+			log.Printf("Halo %3d", i)
+		}
 		
 		var ok bool
 		out[idxs[i]], ok = calcCoeffs(halos[i], ringBuf, c)

@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"io/ioutil"
+	"log"
 	"path"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/los/tree"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 type TreeConfig struct {
@@ -23,6 +25,14 @@ func (config *TreeConfig) validate() error { return nil }
 func (config *TreeConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
+	if logging.Mode != logging.Nil {
+		log.Println(`
+####################
+## shellfish tree ##
+####################`,
+		)
+	}
+
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil {
 		return nil, err

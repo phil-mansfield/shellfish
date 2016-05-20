@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"runtime"
 	"sort"
@@ -14,6 +15,7 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/parse"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 type StatsConfig struct {
@@ -28,9 +30,6 @@ var _ Mode = &StatsConfig{}
 
 func (config *StatsConfig) ExampleConfig() string {
 	return `[stats.config]
-
-
-# WARNING: Changing the settings in this file currently does nothing.
 
 #####################
 ## Required Fields ##
@@ -138,6 +137,15 @@ func (config *StatsConfig) validate() error {
 func (config *StatsConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
+
+	if logging.Mode != logging.Nil {
+		log.Println(`
+#####################
+## shellfish stats ##
+#####################`,
+		)
+	}
+
 	intColIdxs := []int{0, 1}
 	floatColIdxs := make([]int, 4+2*config.order*config.order)
 	for i := range floatColIdxs {

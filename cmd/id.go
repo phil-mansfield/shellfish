@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
@@ -9,6 +10,7 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/parse"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 const finderCells = 150
@@ -161,6 +163,13 @@ func (config *IDConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 
+	if logging.Mode != logging.Nil {
+		log.Println(`
+##################
+## shellfish id ##
+##################`,
+		)
+	}
 
 	if config.snap == -1 {
 		return nil, fmt.Errorf("Either no id.config file was provided or "+

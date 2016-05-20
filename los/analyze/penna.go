@@ -1,8 +1,9 @@
 package analyze
 
 import (
+	//"fmt"
 	"math"
-
+	
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/math/mat"
 
@@ -125,7 +126,7 @@ func PennaVolumeFit(
 }
 
 func FilterPoints(
-	rs []RingBuffer, levels int, hFactor float64,
+	rs []RingBuffer, levels int, h float64,
 ) (pxs, pys [][]float64, ok bool) {
 	pxs, pys = [][]float64{}, [][]float64{}
 
@@ -133,7 +134,7 @@ func FilterPoints(
 		r := &rs[ri]
 		validXs := make([]float64, 0, r.N)
 		validYs := make([]float64, 0, r.N)
-
+		
 		for i := 0; i < r.N; i++ {
 			if r.Oks[i] {
 				validXs = append(validXs, r.PlaneXs[i])
@@ -148,18 +149,20 @@ func FilterPoints(
 				validPhis = append(validPhis, r.Phis[i])
 			}
 		}
-
-		kt, ok := NewKDETree(validRs, validPhis, levels, hFactor)
+		
+		kt, ok := NewKDETree(validRs, validPhis, levels, h)
 		if !ok {
 			return nil, nil, false
 		}
 		fRs, fThs, _ := kt.FilterNearby(validRs, validPhis, levels, kt.H()/2)
+
 		fXs, fYs := make([]float64, len(fRs)), make([]float64, len(fRs))
 		for i := range fRs {
 			sin, cos := math.Sincos(fThs[i])
 			fXs[i], fYs[i] = fRs[i]*cos, fRs[i]*sin
 		}
 
+		//fmt.Println("size:", len(fXs))
 		pxs, pys = append(pxs, fXs), append(pys, fYs)
 	}
 	return pxs, pys, true

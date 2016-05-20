@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"runtime"
 	"sort"
@@ -436,8 +435,6 @@ func haloAnalysis(
 	// Calculate Penna coefficients.
 	for i := range halos {
 		runtime.GC()
-
-		log.Printf("Halo %3d", i)
 		
 		var ok bool
 		out[idxs[i]], ok = calcCoeffs(halos[i], ringBuf, c)
@@ -488,7 +485,8 @@ func createHalos(
 
 func normVecs(n int) [][3]float32 {
 	var vecs [][3]float32
-	gen := rand.NewTimeSeed(rand.Xorshift)
+	//gen := rand.NewTimeSeed(rand.Xorshift)
+	gen := rand.New(rand.Xorshift, 0)
 	switch n {
 	case 3:
 		vecs = [][3]float32{{0, 0, 1}, {0, 1, 0}, {1, 0, 0}}
@@ -540,7 +538,8 @@ func calcCoeffs(
 		buf[i].Clear()
 		buf[i].Splashback(halo, i, int(c.smoothingWindow), c.losSlopeCutoff)
 	}
-	pxs, pys, ok := analyze.FilterPoints(buf, int(c.levels), c.eta)
+	pxs, pys, ok := analyze.FilterPoints(buf, int(c.levels), halo.RMax() / c.eta)
+	
 	if !ok {
 		return nil, false
 	}

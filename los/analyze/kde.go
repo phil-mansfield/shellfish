@@ -44,7 +44,7 @@ type KDETree struct {
 }
 
 func NewKDETree(
-	rs, phis []float64, splits int, hFactor float64,
+	rs, phis []float64, splits int, h float64,
 ) (*KDETree, bool) {
 	kt := new(KDETree)
 	rn := 100
@@ -54,7 +54,7 @@ func NewKDETree(
 			"sometimes happen if incorrect halo positions are given (e.g. " +
 			"using a halo catalog from the wrong simulation suite, mistyping " +
 			"a coordinate, etc). " +
-			"If you are sure that your input locations correspond to " +
+			"If you are _sure_ that your input locations correspond to " +
 			"actual halo centers, this might also be an internal Shellfish " +
 			"error and you should submit a bug report.")
 	}
@@ -73,7 +73,8 @@ func NewKDETree(
 	}
 	kt.spRs[rn-1] = kt.high
 
-	kt.h = (kt.high - kt.low) / hFactor
+	kt.h = h
+
 	kt.spTree = [][]*intr.Spline{{GaussianKDE(rs, kt.h, kt.low, kt.high, 100)}}
 	kt.thTree = [][]float64{{math.Pi}}
 

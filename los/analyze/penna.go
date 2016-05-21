@@ -1,7 +1,6 @@
 package analyze
 
 import (
-	//"fmt"
 	"math"
 	
 	"github.com/phil-mansfield/shellfish/los"
@@ -129,7 +128,6 @@ func FilterPoints(
 	rs []RingBuffer, levels int, h float64,
 ) (pxs, pys [][]float64, ok bool) {
 	pxs, pys = [][]float64{}, [][]float64{}
-
 	for ri := range rs {
 		r := &rs[ri]
 		validXs := make([]float64, 0, r.N)
@@ -149,20 +147,23 @@ func FilterPoints(
 				validPhis = append(validPhis, r.Phis[i])
 			}
 		}
-		
-		kt, ok := NewKDETree(validRs, validPhis, levels, h)
-		if !ok {
-			return nil, nil, false
-		}
-		fRs, fThs, _ := kt.FilterNearby(validRs, validPhis, levels, kt.H()/2)
 
+		factor := 1.0
+		fRs, fThs := []float64{}, []float64{}
+		for i := 0; i < 10 && len(fRs) == 0; i++ {
+			kt, ok := NewKDETree(validRs, validPhis, levels, h*factor)
+			if !ok {
+				return nil, nil, false
+			}
+			fRs, fThs, _ = kt.FilterNearby(validRs, validPhis, levels, kt.H()/2)
+			factor *= 1.1
+		}
+			
 		fXs, fYs := make([]float64, len(fRs)), make([]float64, len(fRs))
 		for i := range fRs {
 			sin, cos := math.Sincos(fThs[i])
 			fXs[i], fYs[i] = fRs[i]*cos, fRs[i]*sin
 		}
-
-		//fmt.Println("size:", len(fXs))
 		pxs, pys = append(pxs, fXs), append(pys, fYs)
 	}
 	return pxs, pys, true

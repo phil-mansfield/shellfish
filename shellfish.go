@@ -58,10 +58,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if args[1] == "setup" {
-		// TODO: Implement the setup command.
-		panic("NYI")
-	} else if args[1] == "help" {
+	if args[1] == "help" {
 		switch len(args) - 2 {
 		case 0:
 			fmt.Println(modeDescriptions)
@@ -88,6 +85,7 @@ func main() {
 			os.Stderr, "You passed me the mode '%s', which I don't "+
 				"recognize.\nFor help, type './shellfish help'\n", args[1],
 		)
+		fmt.Println("Shellfish terminating.")
 		os.Exit(1)
 	}
 
@@ -98,6 +96,15 @@ func main() {
 		lines, err = stdinLines()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, err.Error())
+			fmt.Println("Shellfish terminating.")
+			os.Exit(1)
+		}
+
+		if len(lines) == 0 {
+			return
+		} else if len(lines) == 1 && len(lines[0]) >= 9 &&
+			lines[0][:9] == "Shellfish"  {
+			fmt.Println(lines[0])
 			os.Exit(1)
 		}
 	}
@@ -106,44 +113,50 @@ func main() {
 	config, ok := getConfig(args)
 	gConfigName, gConfig, err := getGlobalConfig(args)
 	if err != nil {
-		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
+		fmt.Println("Shellfish terminating.")
+		os.Exit(1)
 	}
 
 	if ok {
 		if err = mode.ReadConfig(config); err != nil {
-			log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+			log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
+			fmt.Println("Shellfish terminating.")
+			os.Exit(1)
 		}
 	} else {
 		if err = mode.ReadConfig(""); err != nil {
-			log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+			log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
+			fmt.Println("Shellfish terminating.")
+			os.Exit(1)
 		}
 	}
 
 	if err = checkMemoDir(gConfig.MemoDir, gConfigName); err != nil {
-		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
+		fmt.Println("Shellfish terminating.")
+		os.Exit(1)
 	}
 
 	e := &env.Environment{MemoDir: gConfig.MemoDir}
 	err = initCatalogs(gConfig, e)
 	if err != nil {
-		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
+		fmt.Println("Shellfish terminating.")
+		os.Exit(1)
 	}
 	err = initHalos(args[1], gConfig, e)
 	if err != nil {
-		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
-	}
-
-	if err != nil {
-		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
-	}
-
-	if err != nil {
-		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
+		fmt.Println("Shellfish terminating.")
+		os.Exit(1)
 	}
 
 	out, err := mode.Run(flags, gConfig, e, lines)
 	if err != nil {
-		log.Fatalf("Error running mode %s:\n%s\n", args[1], err.Error())
+		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
+		fmt.Println("Shellfish terminating.")
+		os.Exit(1)
 	}
 
 	for i := range out {

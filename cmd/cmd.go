@@ -12,6 +12,7 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/version"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 var ModeNames map[string]Mode = map[string]Mode{
@@ -62,6 +63,8 @@ type GlobalConfig struct {
 	Endianness      string
 	ValidateFormats bool
 	Threads         int64
+
+	Logging string
 }
 
 var _ Mode = &GlobalConfig{}
@@ -98,12 +101,20 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Bool(&config.ValidateFormats, "ValidateFormats", false)
 
 	vars.Int(&config.Threads, "Threads", -1)
+	vars.String(&config.Logging, "Logging", "nil")
 
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
 	config.HSnapMax = config.SnapMax
 	config.HSnapMin = config.SnapMin
+
+	switch config.Logging {
+	case "nil": logging.Mode = logging.Nil
+	case "performance": logging.Mode = logging.Performance
+	case "debug": logging.Mode = logging.Debug
+	}
+
 	return config.validate()
 }
 
@@ -297,6 +308,13 @@ func validateFormat(config *GlobalConfig) error {
 		}
 	}
 
+	switch config.Logging {
+	case "nil", "performance", "debug":
+	default:
+		return fmt.Errorf("I don't recognize the Logging mode '%s'.",
+			config.Logging)
+	}
+
 	return nil
 }
 
@@ -392,7 +410,13 @@ ValidateFormats = false
 # will be balanced across available cores. Setting this to a value larger than
 # the number of cores on the node will result in slightly suboptimal
 # performance.
-Threads = -1`, version.SourceVersion)
+Threads = -1
+
+# The loggign mode to be used. There are three different logging modes:
+# nil - no logging is performed.
+# performance - runtime and memory consumption logging are written to stderr.
+# debugging - debugging loggig is written to stderr
+Logging = nil`, version.SourceVersion)
 }
 
 // Run is a dummy method which allows GlobalConfig to conform to the Mode

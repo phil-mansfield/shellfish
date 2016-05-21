@@ -81,7 +81,7 @@ func NewKDETree(
 	kt.growTrees(rs, phis, splits)
 	kt.findMaxes()
 	kt.connectMaxes()
-
+	
 	return kt, true
 }
 

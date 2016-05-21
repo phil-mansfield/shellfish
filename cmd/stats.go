@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"runtime"
 	"sort"
+	"time"
 
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/los/analyze"
@@ -14,6 +16,7 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/parse"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 type StatsConfig struct {
@@ -28,9 +31,6 @@ var _ Mode = &StatsConfig{}
 
 func (config *StatsConfig) ExampleConfig() string {
 	return `[stats.config]
-
-
-# WARNING: Changing the settings in this file currently does nothing.
 
 #####################
 ## Required Fields ##
@@ -138,6 +138,17 @@ func (config *StatsConfig) validate() error {
 func (config *StatsConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
+
+	if logging.Mode != logging.Nil {
+		log.Println(`
+#####################
+## shellfish stats ##
+#####################`,
+		)
+	}
+	var t time.Time
+	if logging.Mode == logging.Performance { t = time.Now() }
+
 	intColIdxs := []int{0, 1}
 	floatColIdxs := make([]int, 4+2*config.order*config.order)
 	for i := range floatColIdxs {
@@ -317,7 +328,12 @@ func (config *StatsConfig) Run(
 			[]int{1, 1, 1, 1, 1, 1, 1, 1, 1},
 		)
 	}
-		
+
+	if logging.Mode == logging.Performance {
+		log.Printf("Time: %s", time.Since(t).String())
+		log.Printf("Memory:\n%s", logging.MemString())
+	}
+
 	return append([]string{cString}, lines...), nil
 }
 

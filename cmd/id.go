@@ -200,7 +200,7 @@ func (config *IDConfig) Run(
 		ids, snaps []int
 		buf        io.VectorBuffer
 	)
-
+	
 	switch config.idType {
 	case "halo-id":
 		snaps = make([]int, len(rawIds))
@@ -222,7 +222,7 @@ func (config *IDConfig) Run(
 		for i := range snaps {
 			snaps[i] = int(config.snap)
 		}
-
+		
 		var err error
 		buf, err = getVectorBuffer(
 			e.ParticleCatalog(snaps[0], 0),
@@ -236,10 +236,11 @@ func (config *IDConfig) Run(
 		if err != nil {
 			return nil, err
 		}
+
 	default:
 		panic("Impossible")
 	}
-
+	
 	// Tag subhalos, if neccessary.
 	exclude := make([]bool, len(ids))
 	switch config.exclusionStrategy {
@@ -253,7 +254,7 @@ func (config *IDConfig) Run(
 			return nil, err
 		}
 	}
-
+	
 	// Generate lines
 	intCols := [][]int{ids, snaps}
 	floatCols := [][]float64{}
@@ -320,7 +321,7 @@ func convertSortedIDs(
 	if err != nil {
 		return nil, err
 	}
-
+	
 	ids := make([]int, len(rawIDs))
 	for i := range ids {
 		ids[i] = rids[rawIDs[i]]

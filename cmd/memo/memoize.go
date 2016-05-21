@@ -42,6 +42,7 @@ func ReadSortedRockstarIDs(
 		ms []float64
 		err error
 	)
+	
 	if maxID >= rockstarShortMemoNum || maxID == -1 {
 		file := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
 		ids, _, _, _, ms, _, err = readRockstar(
@@ -61,7 +62,7 @@ func ReadSortedRockstarIDs(
 			"ID %d too large for snapshot %d", maxID, snap,
 		)
 	}
-
+	
 	sortRockstar(ids, ms)
 	if maxID == -1 { return ids, nil }
 	return ids[:maxID+1], nil
@@ -136,7 +137,7 @@ func readRockstar(
 			if err != nil { return nil, nil, nil, nil, nil, nil, err }
 		}
 	}
-	
+
 	rids, xs, ys, zs, ms, rs, err := halo.ReadBinaryRockstar(binFile)
 	if err != nil { return nil, nil, nil, nil, nil, nil, err }
 	rvals := [][]float64{ xs, ys, zs, ms, rs }

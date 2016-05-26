@@ -1,10 +1,12 @@
 package analyze
 
 import (
+	//"fmt"
 	"math"
 
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/los/geom"
+	//plt "github.com/phil-mansfield/pyplot"
 )
 
 type RingBuffer struct {
@@ -47,16 +49,44 @@ func (r *RingBuffer) Splashback(
 	ls := new(geom.LineSegment)
 	for i := 0; i < r.N; i++ {
 		h.GetRhos(ring, i, r.profRhos)
+		//if i == 30 {
+		//	plt.Reset()
+		//	plt.Figure(plt.FigSize(8, 8))
+		//	plt.Plot(r.profRs, r.profRhos, plt.LW(3), plt.C("k"),
+		//		plt.Label(`${\rm Raw\ Profile}$`))
+		//}
 		_, _, r.Oks[i] = Smooth(
 			r.profRs, r.profRhos, window,
 			Vals(r.smoothRhos), Derivs(r.smoothDerivs),
 		)
+		//if i == 30 {
+		//	plt.Plot(r.profRs, r.smoothRhos, plt.LW(3), plt.C("r"),
+		//		plt.Label(`${\rm Smoothed\ Profile}$`))
+		//}
+		
 		if !r.Oks[i] {
 			continue
 		}
 		r.Rs[i], r.Oks[i] = SplashbackRadius(
 			r.profRs, r.smoothRhos, r.smoothDerivs, DLim(dLim),
 		)
+
+		/*
+		if i == 30 {
+			plt.XScale("log")
+			plt.YScale("log")
+			plt.XLim(r.profRs[0], r.profRs[len(r.profRs) - 1])
+			plt.Plot([]float64{r.Rs[i], r.Rs[i]}, []float64{0.01, 1000},
+				plt.C("r"), plt.LW(3), plt.LS("--"),
+				plt.Label(`${\rm Point\ of\ Steepest\ Slope}$`))
+			plt.Legend(plt.Loc("lower left"), plt.FrameOn(false),
+				plt.FontSize(16))
+			plt.XLabel(`$R\ [{\rm Mpc}/h]$`, plt.FontSize(18))
+			plt.YLabel(`$\rho\ [\rho_{\rm m}]$`, plt.FontSize(18))
+			plt.SaveFig(fmt.Sprintf("%d.png", ring))
+		}
+		*/
+		
 		if !r.Oks[i] {
 			continue
 		}
@@ -73,6 +103,7 @@ func (r *RingBuffer) Splashback(
 		r.Ys[i] = r.Rs[i] * float64(ls.Dir[1])
 		r.Zs[i] = r.Rs[i] * float64(ls.Dir[2])
 	}
+	//plt.Execute()
 }
 
 func (r *RingBuffer) OkPlaneCoords(xs, ys []float64) (okXs, okYs []float64) {

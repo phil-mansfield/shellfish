@@ -85,7 +85,7 @@ func NewKDETree(
 	return kt, true
 }
 
-func (kt *KDETree) PlotLevel(level int, opts ...interface{}) {
+func (kt *KDETree) PlotLevel(level, spIdx int, opts ...interface{}) {
 	sps := kt.spTree[level]
 	rs := make([]float64, 100)
 	vals := make([]float64, 100)
@@ -94,12 +94,22 @@ func (kt *KDETree) PlotLevel(level int, opts ...interface{}) {
 		rs[i] = dr*(float64(i)+0.5) + kt.low
 	}
 
-	for _, sp := range sps {
+	if spIdx < -1 {
+		for _, sp := range sps {
+			for j := range vals {
+				vals[j] = sp.Eval(rs[j])
+			}
+			args := append([]interface{}{rs, vals}, opts...)
+			plt.Plot(args...)
+		}
+	} else {
+		sp := sps[spIdx]
 		for j := range vals {
 			vals[j] = sp.Eval(rs[j])
 		}
 		args := append([]interface{}{rs, vals}, opts...)
 		plt.Plot(args...)
+
 	}
 }
 
@@ -308,5 +318,6 @@ func (kt *KDETree) FilterNearby(
 			idxs = append(idxs, i)
 		}
 	}
+	
 	return fRs, fThs, idxs
 }

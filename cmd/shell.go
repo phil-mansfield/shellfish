@@ -60,7 +60,7 @@ Rings = 100
 RMaxMult = 3.0
 
 # RMinMult is the minimum radius of a line of sight as a multiplier of R200m.
-RMinMult = 0.5
+RMinMult = 0.3
 
 # KernelRadiusMult is the radius of the spherical kernels around every
 # particle as a multiplier of R200m.
@@ -102,7 +102,7 @@ func (config *ShellConfig) ReadConfig(fname string) error {
 	vars.Int(&config.spokes, "Spokes", 256)
 	vars.Int(&config.rings, "Rings", 100)
 	vars.Float(&config.rMaxMult, "RMaxMult", 3)
-	vars.Float(&config.rMinMult, "RMinMult", 0.5)
+	vars.Float(&config.rMinMult, "RMinMult", 0.3)
 	vars.Float(&config.rKernelMult, "RKernelMult", 0.2)
 	vars.Float(&config.eta, "Eta", 10)
 	vars.Int(&config.order, "Order", 3)
@@ -506,8 +506,7 @@ func createHalos(
 
 func normVecs(n int) [][3]float32 {
 	var vecs [][3]float32
-	//gen := rand.NewTimeSeed(rand.Xorshift)
-	gen := rand.New(rand.Xorshift, 0)
+	gen := rand.NewTimeSeed(rand.Xorshift)
 	switch n {
 	case 3:
 		vecs = [][3]float32{{0, 0, 1}, {0, 1, 0}, {1, 0, 0}}

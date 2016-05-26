@@ -73,22 +73,22 @@ func (s Shell) MedianRadius(samples int) float64 {
 	return sort.Median(rs, rs)
 }
 
-func trisort(x, y, z float64) (a, b, c float64) {
+func trisort(x, y, z float64) (a, b, c float64, aIdx int) {
 	var p, q float64
 	switch {
-	case x > y && x > z: a, p, q = x, y, z
-	case y > x && y > z: a, p, q = y, z, x
-	default: a, p, q = z, x, y
+	case x > y && x > z: a, p, q, aIdx = x, y, z, 0
+	case y > x && y > z: a, p, q, aIdx = y, z, x, 1
+	default: a, p, q, aIdx = z, x, y, 2
 	}
 
 	if p > q {
-		return a, p, q
+		return a, p, q, aIdx
 	} else {
-		return a, q, p
+		return a, q, p, aIdx
 	}
 }
 
-func (s Shell) Axes(samples int) (a, b, c float64) {
+func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
 	nxx, nyy, nzz := 0.0, 0.0, 0.0
 	nxy, nyz, nzx := 0.0, 0.0, 0.0
 	nx, ny, nz := 0.0, 0.0, 0.0
@@ -128,23 +128,32 @@ func (s Shell) Axes(samples int) (a, b, c float64) {
 	if !ok { panic("Could not factorize inertia tensor.") }
 
 	vals := eigen.Values(nil)
+	vecs := eigen.Vectors()
 
 	Ix, Iy, Iz := real(vals[0]), real(vals[1]), real(vals[2])
 	ax2 := 3 * (Iy + Iz - Ix) / 2
 	ay2 := 3*Iy - ax2
 	az2 := 3*Iz - ax2
 
-	c, b, a = trisort(math.Sqrt(ax2), math.Sqrt(ay2), math.Sqrt(az2))
+	// TODO: Fix naming conventions.
+
+	
+	c, b, a, aIdx := trisort(math.Sqrt(ax2), math.Sqrt(ay2), math.Sqrt(az2))
 	ac, bc := a/c, b/c
 	acRatio := axisInterpolators.acRatio.Eval(ac, bc)
 	bcRatio := axisInterpolators.bcRatio.Eval(ac, bc)
 	cRatio  := axisInterpolators.cRatio.Eval(ac, bc)
 
+	aVec = [3]float64{
+		vecs.At(0, aIdx), vecs.At(1, aIdx), vecs.At(2, aIdx),
+	}
+	norm = math.Sqrt(aVec[0]*aVec[0] + aVec[1]*aVec[1] + aVec[2]*aVec[2])
+	aVec[0] = aVec[0] / norm
+	aVec[1] = aVec[1] / norm
+	aVec[2] = aVec[2] / norm
+	
 	c = cRatio * c
-	return c, bcRatio * bc * c, acRatio * ac * c
-	//c = acRatio * ac * c
-	//_, _, _ = acRatio, bcRatio, cRatio
-	//return c, b, a
+	return c, bcRatio * bc * c, acRatio * ac * c, aVec
 }
 
 func cosNorm(s Shell, phi, theta float64) float64 	{

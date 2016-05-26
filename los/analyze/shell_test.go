@@ -40,11 +40,12 @@ func ellipsoid(a, b, c float64) Shell {
 
 func TestEverything(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	s := ellipsoid(2, 1, 3)
+	s := ellipsoid(2, 4, 3)
 	//s := brokenSphere(2, 1)
 	samples := 1000 * 1000
 	fmt.Printf("Volume: %8.4g\n", s.Volume(samples))
-	a, b, c := s.Axes(samples)
+	a, b, c, aVec := s.Axes(samples)
 	fmt.Printf("Axes: %8.4g %8.4g %8.4g\n", a, b, c)
+	fmt.Printf("Printiple Axis: %8.4g\n", aVec)
 	fmt.Printf("Area: %8.4g\n", s.SurfaceArea(samples))
 }

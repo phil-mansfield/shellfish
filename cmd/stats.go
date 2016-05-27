@@ -178,6 +178,7 @@ func (config *StatsConfig) Run(
 	as := make([]float64, len(ids))
 	bs := make([]float64, len(ids))
 	cs := make([]float64, len(ids))
+	aVecs := make([][3]float64, len(ids))
 
 
 	// TODO: This is a strictly incorrect hack.
@@ -236,7 +237,8 @@ func (config *StatsConfig) Run(
 			vols[idxs[j]] = vol
 			rads[idxs[j]] = r
 			sas[idxs[j]] = shell.SurfaceArea(samples)
-			as[idxs[j]], bs[idxs[j]], cs[idxs[j]] = shell.Axes(samples)
+			as[idxs[j]], bs[idxs[j]], cs[idxs[j]], aVecs[idxs[j]] =
+				shell.Axes(samples)
 
 
 			rmins[idxs[j]], rmaxes[idxs[j]] = rangeSp(snapCoeffs[j], config)
@@ -311,10 +313,18 @@ func (config *StatsConfig) Run(
 				int(config.histogramBins)},
 		)
 	} else {
+		axs := make([]float64, len(ids))
+		ays := make([]float64, len(ids))
+		azs := make([]float64, len(ids))
+		for i := range axs {
+			axs[i], ays[i], azs[i] = aVecs[i][0], aVecs[i][1], aVecs[i][2]
+		}
+		
 		lines = catalog.FormatCols(
 			[][]int{ids, snaps},
-			[][]float64{masses, rads, vols, sas, as, bs, cs},
-			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8},
+			[][]float64{masses, rads, vols, sas,
+				as, bs, cs, axs, ays, azs},
+			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
 		)
 		cString = catalog.CommentString(
 			[]string{"ID", "Snapshot"},
@@ -323,9 +333,10 @@ func (config *StatsConfig) Run(
 				"Major Axis [Mpc/h]",
 				"Intermediate Axis [Mpc/h]",
 				"Minor Axis [Mpc/h]",
+				"Ax", "Ay", "Az",
 			},
-			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8},
-			[]int{1, 1, 1, 1, 1, 1, 1, 1, 1},
+			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+			[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 		)
 	}
 

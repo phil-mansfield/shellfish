@@ -312,7 +312,7 @@ func (kt *KDETree) FilterNearby(
 	rFunc := kt.GetRFunc(level, Radial)
 	fRs, fThs, idxs = []float64{}, []float64{}, []int{}
 	for i := range rs {
-		if math.Abs(rFunc(ths[i])-rs[i]) < dr {
+		if math.Abs(rFunc(ths[i])-rs[i]) < dr / 2 {
 			fRs = append(fRs, rs[i])
 			fThs = append(fThs, ths[i])
 			idxs = append(idxs, i)

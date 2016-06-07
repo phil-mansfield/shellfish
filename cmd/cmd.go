@@ -210,7 +210,7 @@ func (config *GlobalConfig) validate() error {
 	if config.HaloIDColumn == -1 {
 		return fmt.Errorf("The 'HaloIDColumn' variable isn't set.")
 	} else if config.HaloM200mColumn == -1 {
-		return fmt.Errorf("The 'HaloR200mColumn' variable isn't set.")
+		return fmt.Errorf("The 'HaloM200mColumn' variable isn't set.")
 	} else if len(config.HaloPositionColumns) != 3 {
 		return fmt.Errorf("The 'HaloPositionColumns' variable must have " +
 			"three elements.")
@@ -348,7 +348,7 @@ TreeType = consistent-trees
 # These variables specify which columns of your halo catalogs correspond to
 # the variables that Shellfish needs to read.
 HaloIDColumn = -1
-HaloR200mColumn = -1
+HaloM200mColumn = -1
 # HaloPositionColumns should correspond to the X, Y, and Z columns,
 # respectively.
 HaloPositionColumns = -1, -1, -1

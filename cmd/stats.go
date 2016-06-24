@@ -21,10 +21,10 @@ import (
 
 type StatsConfig struct {
 	values            []string
-	histogramBins     int64
 	monteCarloSamples int64
 	exclusionStrategy string
 	order             int64
+	outskirtRatioMultiplier float64
 }
 
 var _ Mode = &StatsConfig{}
@@ -36,10 +36,7 @@ func (config *StatsConfig) ExampleConfig() string {
 ## Required Fields ##
 #####################
 
-# Values determines what columns will be written to stdout. If one of the
-# elements of the list corresponds to a histogram, then HistogramBins x values
-# will be written starting at that column, HistogramBins y values will be
-# written after that, and the specified columns will continue from there.
+# Values determines what columns will be written to stdout.
 #
 # The supported columns are:
 # id    - The ID of the halo, as initially supplied.
@@ -51,18 +48,15 @@ func (config *StatsConfig) ExampleConfig() string {
 # a_sp  - Largest axis of ellipsoidal fit to splashback shell.
 # b_sp  - Largest axis of ellipsoidal fit to splashback shell.
 # c_sp  - Largest axis of ellipsoidal fit to splashback shell.
-#
-# r_hist   - Histogram of LoS radii.
+# outskirt_ratio - M(< X * R200m) / M(< R200m), where X is equal to the
+#                  config variable OutskirtRatioMiltiplier.
 #
 # WARNING: THIS IS NOT FULLY IMPLEMENTED
-Values = snap, id, m_sp, r_sp, SA_sp, V_sp, a_sp, b_sp, c_sp
+Values = snap, id, m_sp, r_sp, SA_sp, V_sp, a_sp, b_sp, c_sp, outskirt_ratio
 
 #####################
 ## Optional Fields ##
 #####################
-
-# HistogramBins is the number of bins to use for histogramed quantities.
-HistogramBins = 50
 
 # MonteCarloSamplings The number of Monte Carlo samplings done when calculating
 # properties of shells.
@@ -84,6 +78,10 @@ ExclusionStrategy = none
 # Order is the order of the Penna shell constructed around the halos. It must be
 # the same value used by the shell.config file. By default both are set to 3.
 Order = 3
+
+# OutskirtRatioMultiplier is the outer radius used when calculating the outskirt
+# mass ratio.
+OutskirtRatioMultiplier = 2.5
 `
 }
 
@@ -91,10 +89,11 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 	vars := parse.NewConfigVars("stats.config")
 
 	vars.Strings(&config.values, "Values", []string{})
-	vars.Int(&config.histogramBins, "HistogramBins", 50)
 	vars.Int(&config.monteCarloSamples, "MonteCarloSamples", 50*1000)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "none")
 	vars.Int(&config.order, "Order", 3)
+	vars.Float(&config.outskirtRatioMultiplier,
+		"OutskirtRadiusMultiplier", 2.5)
 
 	if fname == "" {
 		return nil
@@ -109,7 +108,7 @@ func (config *StatsConfig) validate() error {
 	for i, val := range config.values {
 		switch val {
 		case "snap", "id", "m_sp", "r_sp", "a_sp", "b_sp", "c_sp",
-			"SA_sp/V_sp", "r_hist":
+			"SA_sp/V_sp":
 		default:
 			return fmt.Errorf("Item %d of variable 'Values' is set to '%s', "+
 				"which I don't recognize.", i, val)
@@ -124,9 +123,6 @@ func (config *StatsConfig) validate() error {
 	}
 
 	switch {
-	case config.histogramBins <= 0:
-		return fmt.Errorf("The variable '%s' was set to %g",
-			"HistogramBins", config.histogramBins)
 	case config.monteCarloSamples <= 0:
 		return fmt.Errorf("The variable '%s' was set to %g",
 			"MonteCarloSamples", config.monteCarloSamples)
@@ -180,20 +176,6 @@ func (config *StatsConfig) Run(
 	cs := make([]float64, len(ids))
 	aVecs := make([][3]float64, len(ids))
 
-
-	// TODO: This is a strictly incorrect hack.
-	makeHist := false
-	histRs := [][]float64{}
-	histNs := [][]float64{}
-	for _, val := range config.values {
-		if val == "r_hist" {
-			makeHist = true
-			histRs = make([][]float64, len(ids))
-			histNs = make([][]float64, len(ids))
-			break
-		}
-	}
-
 	sortedSnaps := []int{}
 	for snap := range snapBins {
 		sortedSnaps = append(sortedSnaps, snap)
@@ -242,11 +224,6 @@ func (config *StatsConfig) Run(
 
 
 			rmins[idxs[j]], rmaxes[idxs[j]] = rangeSp(snapCoeffs[j], config)
-			if makeHist {
-				histRs[idxs[j]], histNs[idxs[j]] = rHist(
-					snapCoeffs[j], config, rmins[idxs[j]], rmaxes[idxs[j]],
-				)
-			}
 		}
 
 		hds, files, err := memo.ReadHeaders(snap, buf, e)
@@ -288,57 +265,31 @@ func (config *StatsConfig) Run(
 		}
 	}
 
-	var(
-		cString string
-		lines []string
-	)
-	if makeHist {
-		order := make([]int, 6 + 2*int(config.histogramBins) )
-		for i := range order { order[i] = i }
-		
-		lines = catalog.FormatCols(
-			[][]int{ids, snaps},
-			append(append([][]float64{masses, rads, rmins, rmaxes},
-				float64Transpose(histRs)...), float64Transpose(histNs)...),
-			order,
-		)
-		
-		cString = catalog.CommentString(
-			[]string{"ID", "Snapshot"},
-			[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
-				"R_sp,min [Mpc/h]", "R_sp,max [Mpc/h]",
-				"R_hist,i [Mpc/h]", "n_hist,i [1/(Mph/h)]"},
-			[]int{0, 1, 2, 3, 4, 5, 6, 7},
-			[]int{1, 1, 1, 1, 1, 1, int(config.histogramBins),
-				int(config.histogramBins)},
-		)
-	} else {
-		axs := make([]float64, len(ids))
-		ays := make([]float64, len(ids))
-		azs := make([]float64, len(ids))
-		for i := range axs {
-			axs[i], ays[i], azs[i] = aVecs[i][0], aVecs[i][1], aVecs[i][2]
-		}
-		
-		lines = catalog.FormatCols(
-			[][]int{ids, snaps},
-			[][]float64{masses, rads, vols, sas,
-				as, bs, cs, axs, ays, azs},
-			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-		)
-		cString = catalog.CommentString(
-			[]string{"ID", "Snapshot"},
-			[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
-				"Volume [Mpc^3/h^3]", "Surface Area [Mpc^2/h^2]",
-				"Major Axis [Mpc/h]",
-				"Intermediate Axis [Mpc/h]",
-				"Minor Axis [Mpc/h]",
-				"Ax", "Ay", "Az",
-			},
-			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-			[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		)
+	axs := make([]float64, len(ids))
+	ays := make([]float64, len(ids))
+	azs := make([]float64, len(ids))
+	for i := range axs {
+		axs[i], ays[i], azs[i] = aVecs[i][0], aVecs[i][1], aVecs[i][2]
 	}
+
+	lines := catalog.FormatCols(
+		[][]int{ids, snaps},
+		[][]float64{masses, rads, vols, sas,
+			as, bs, cs, axs, ays, azs},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+	)
+	cString := catalog.CommentString(
+		[]string{"ID", "Snapshot"},
+		[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
+			"Volume [Mpc^3/h^3]", "Surface Area [Mpc^2/h^2]",
+			"Major Axis [Mpc/h]",
+			"Intermediate Axis [Mpc/h]",
+			"Minor Axis [Mpc/h]",
+			"Ax", "Ay", "Az",
+		},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+		[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+	)
 
 	if logging.Mode == logging.Performance {
 		log.Printf("Time: %s", time.Since(t).String())
@@ -346,19 +297,6 @@ func (config *StatsConfig) Run(
 	}
 
 	return append([]string{cString}, lines...), nil
-}
-
-func float64Transpose(rows [][]float64) [][]float64 {
-	nx, ny := len(rows[0]), len(rows)
-	cols := make([][]float64, nx)
-	for x := range cols { cols[x] = make([]float64, ny) }
-	
-	for y := 0; y < ny; y++ {
-		for x := 0; x < nx; x++ {
-			cols[x][y] = rows[y][x]
-		}
-	}
-	return cols
 }
 
 func wrapDist(x1, x2, width float32) float32 {
@@ -442,16 +380,6 @@ func rangeSp(coeffs []float64, c *StatsConfig) (rmin, rmax float64) {
 	return shell.RadialRange(int(c.monteCarloSamples))
 }
 
-func rHist(
-	coeffs []float64, c *StatsConfig, rMin, rMax float64,
-) (rs, ns []float64) {
-	order := findOrder(coeffs)
-	shell := analyze.PennaFunc(coeffs, order, order, 2)
-	return shell.RadiusHistogram(
-		int(c.monteCarloSamples) * 10,
-		int(c.histogramBins), rMin*0.9, rMax*1.1,
-	)
-}
 
 func massContained(
 	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,

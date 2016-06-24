@@ -8,7 +8,6 @@ import (
 	"github.com/phil-mansfield/shellfish/math/mat"
 
 	"github.com/gonum/matrix/mat64"
-	// plt "github.com/phil-mansfield/pyplot"
 )
 
 func pinv(m, t *mat.Matrix) *mat.Matrix {
@@ -164,85 +163,15 @@ func FilterPoints(
 			fRs, fThs, _ = kt.FilterNearby(validRs, validPhis, levels, kt.H())
 			factor *= 1.1
 		}
-		/*
-		plt.Figure(plt.FigSize(8, 8))
-		kt.PlotLevel(0, 0, plt.C("r"), plt.LW(4),
-			plt.Label(`$\Delta \theta = 2\pi$`))
-		kt.PlotLevel(1, 0, plt.C("b"), plt.LW(3),
-			plt.Label(`$\Delta \theta = \pi$`))
-		kt.PlotLevel(2, 0, plt.C("g"), plt.LW(2),
-			plt.Label(`$\Delta \theta = \pi/2$`))
-		kt.PlotLevel(3, 1, plt.C("k"), plt.LW(1),
-			plt.Label(`$\Delta \theta = \pi/4$`))
 
-		plt.XLim(0, 2)
-		plt.YLim(0, 180)
-		plt.XLabel(`$R\ [{\rm Mpc}/h]$`)
-		plt.YLabel(`${\rm KDE}_{h=0.3 {\rm Mpc}/h}(\Delta\theta)$`)
-		plt.Legend(plt.Loc("upper right"), plt.FrameOn(false))
-		
-		plt.SaveFig(fmt.Sprintf("%d.png", ri))
-		*/
-		
 		fXs, fYs := make([]float64, len(fRs)), make([]float64, len(fRs))
 		for i := range fRs {
 			sin, cos := math.Sincos(fThs[i])
 			fXs[i], fYs[i] = fRs[i]*cos, fRs[i]*sin
 		}
 
-		/*
-		xs, ys := validXs, validYs
-			
-		max := xs[0]
-		if max < 0 { max *= -1 }
-		for i := range xs {
-			x, y := xs[i], ys[i]
-			if x < 0 { x *= -1 }
-			if y < 0 { y *= -1 }
-			if x > max { max = x }
-			if y > max { max = y }
-		}
-		*/
-
-		/*
-		plt.Figure(plt.FigSize(8, 8))
-		plt.XLim(-1.2*max, +1.2*max)
-		plt.YLim(-1.2*max, +1.2*max)
-		plt.Plot(xs, ys, "ko")
-		plt.Plot(fXs, fYs, "ro")
-
-		for i := range xs { fmt.Printf("%.4g ", xs[i]) }
-		fmt.Println()
-		for i := range ys { fmt.Printf("%.4g ", ys[i]) }
-		fmt.Println()
-
-		for i := range fXs { fmt.Printf("%.4g ", fXs[i]) }
-		fmt.Println()
-		for i := range fYs { fmt.Printf("%.4g ", fYs[i]) }
-		fmt.Println()
-		
-		sXs := make([]float64, 100)
-		sYs := make([]float64, 100)
-		for i := range sXs {
-			sp := 2 * math.Pi * (float64(i) / 99)
-			sr := kt.GetRFunc(3, Radial)(sp)
-			sin, cos := math.Sincos(sp)
-			sXs[i], sYs[i] = sr*cos, sr*sin
-		}
-
-		for i := range sXs { fmt.Printf("%.4g ", sXs[i]) }
-		fmt.Println()
-		for i := range sYs { fmt.Printf("%.4g ", sYs[i]) }
-		fmt.Println()
-		
-		plt.Plot(sXs, sYs, plt.LW(3), plt.C("r"))
-		
-		plt.SaveFig(fmt.Sprintf("%d.png", ri))
-		*/
 		pxs, pys = append(pxs, fXs), append(pys, fYs)
 	}
-	
-	// plt.Execute()
 	
 	return pxs, pys, true
 }

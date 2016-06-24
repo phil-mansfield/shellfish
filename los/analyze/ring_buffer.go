@@ -1,12 +1,10 @@
 package analyze
 
 import (
-	//"fmt"
 	"math"
 
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/los/geom"
-	//plt "github.com/phil-mansfield/pyplot"
 )
 
 type RingBuffer struct {

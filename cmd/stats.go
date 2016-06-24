@@ -162,10 +162,12 @@ func (config *StatsConfig) Run(
 	}
 	ids, snaps := intCols[0], intCols[1]
 	coords, coeffs := floatCols[:4], transpose(floatCols[4:])
-
 	snapBins, coeffBins, idxBins := binCoeffsBySnap(snaps, ids, coeffs)
 
 	masses := make([]float64, len(ids))
+	m200s := make([]float64, len(ids))
+	mOuts := make([]float64, len(ids))
+
 	rads := make([]float64, len(ids))
 	rmins := make([]float64, len(ids))
 	rmaxes := make([]float64, len(ids))
@@ -249,6 +251,7 @@ func (config *StatsConfig) Run(
 			}
 
 			xs, ms, err := buf.Read(files[i])
+
 			if err != nil {
 				return nil, err
 			}
@@ -258,6 +261,15 @@ func (config *StatsConfig) Run(
 					&hds[i], xs, ms, snapCoeffs[j],
 					hBounds[j], rLows[j], rHighs[j],
 					gConfig.Threads,
+				)
+
+				m200s[idxs[j]] += sphericalMass(
+					&hds[i], xs, ms, hBounds[j],
+					1, gConfig.Threads,
+				)
+				mOuts[idxs[j]] += sphericalMass(
+					&hds[i], xs, ms, hBounds[j],
+					config.outskirtRatioMultiplier, gConfig.Threads,
 				)
 			}
 
@@ -272,11 +284,16 @@ func (config *StatsConfig) Run(
 		axs[i], ays[i], azs[i] = aVecs[i][0], aVecs[i][1], aVecs[i][2]
 	}
 
+	ratios := make([]float64, len(ids))
+	for i := range ratios {
+		ratios[i] = mOuts[i] / m200s[i]
+	}
+
 	lines := catalog.FormatCols(
 		[][]int{ids, snaps},
 		[][]float64{masses, rads, vols, sas,
 			as, bs, cs, axs, ays, azs},
-		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 	)
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"},
@@ -286,9 +303,11 @@ func (config *StatsConfig) Run(
 			"Intermediate Axis [Mpc/h]",
 			"Minor Axis [Mpc/h]",
 			"Ax", "Ay", "Az",
+			fmt.Sprintf("R(< %g * R200m) / R(< R200m)",
+				config.outskirtRatioMultiplier),
 		},
-		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-		[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+		[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	)
 
 	if logging.Mode == logging.Performance {
@@ -380,7 +399,6 @@ func rangeSp(coeffs []float64, c *StatsConfig) (rmin, rmax float64) {
 	return shell.RadialRange(int(c.monteCarloSamples))
 }
 
-
 func massContained(
 	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64, threads int64,
@@ -434,6 +452,62 @@ func massContainedChan(
 
 		if r2 < low2 || (r2 < high2 &&
 			shell.Contains(float64(x), float64(y), float64(z))) {
+			sum += float64(ms[i])
+		}
+	}
+	out <- sum
+}
+
+func sphericalMass(
+	hd *io.Header, xs [][3]float32, ms []float32,
+	sphere geom.Sphere, mult float64, threads int64,
+) float64 {
+
+	cpu := runtime.NumCPU()
+	if threads > 0 {
+		cpu = int(threads)
+	}
+	workers := int64(runtime.GOMAXPROCS(cpu))
+	outChan := make(chan float64, workers)
+	for i := int64(0); i < workers-1; i++ {
+		go sphericalMassChan(
+			hd, xs, ms, sphere, mult, i, workers, outChan,
+		)
+	}
+
+	sphericalMassChan(
+		hd, xs, ms, sphere, mult,
+		workers-1, workers, outChan,
+	)
+
+	sum := 0.0
+	for i := int64(0); i < workers; i++ {
+		sum += <-outChan
+	}
+
+	return sum
+}
+
+func sphericalMassChan(
+	hd *io.Header, xs [][3]float32, ms []float32,
+	sphere geom.Sphere, mult float64,
+	offset, workers int64, out chan float64,
+) {
+	tw2 := float32(hd.TotalWidth) / 2
+
+	lim2 := sphere.R*sphere.R * float32(mult*mult)
+
+	sum := 0.0
+	for i := offset; i < hd.N; i += workers {
+		x, y, z := xs[i][0], xs[i][1], xs[i][2]
+		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
+		x = wrap(x, tw2)
+		y = wrap(y, tw2)
+		z = wrap(z, tw2)
+
+		r2 := x*x + y*y + z*z
+
+		if r2 < lim2 {
 			sum += float64(ms[i])
 		}
 	}

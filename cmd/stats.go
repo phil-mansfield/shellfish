@@ -469,62 +469,6 @@ func massContainedChan(
 	out <- sum
 }
 
-func sphericalMass(
-	hd *io.Header, xs [][3]float32, ms []float32,
-	sphere geom.Sphere, mult float64, threads int64,
-) float64 {
-
-	cpu := runtime.NumCPU()
-	if threads > 0 {
-		cpu = int(threads)
-	}
-	workers := int64(runtime.GOMAXPROCS(cpu))
-	outChan := make(chan float64, workers)
-	for i := int64(0); i < workers-1; i++ {
-		go sphericalMassChan(
-			hd, xs, ms, sphere, mult, i, workers, outChan,
-		)
-	}
-
-	sphericalMassChan(
-		hd, xs, ms, sphere, mult,
-		workers-1, workers, outChan,
-	)
-
-	sum := 0.0
-	for i := int64(0); i < workers; i++ {
-		sum += <-outChan
-	}
-
-	return sum
-}
-
-func sphericalMassChan(
-	hd *io.Header, xs [][3]float32, ms []float32,
-	sphere geom.Sphere, mult float64,
-	offset, workers int64, out chan float64,
-) {
-	tw2 := float32(hd.TotalWidth) / 2
-
-	lim2 := sphere.R*sphere.R * float32(mult*mult)
-
-	sum := 0.0
-	for i := offset; i < hd.N; i += workers {
-		x, y, z := xs[i][0], xs[i][1], xs[i][2]
-		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
-		x = wrap(x, tw2)
-		y = wrap(y, tw2)
-		z = wrap(z, tw2)
-
-		r2 := x*x + y*y + z*z
-
-		if r2 < lim2 {
-			sum += float64(ms[i])
-		}
-	}
-	out <- sum
-}
-
 func binSphereIntersections(
 	hds []io.Header, spheres []geom.Sphere,
 ) [][]geom.Sphere {

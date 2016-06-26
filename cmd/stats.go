@@ -24,7 +24,6 @@ type StatsConfig struct {
 	monteCarloSamples int64
 	exclusionStrategy string
 	order             int64
-	outskirtRatioMultiplier float64
 }
 
 var _ Mode = &StatsConfig{}
@@ -48,11 +47,9 @@ func (config *StatsConfig) ExampleConfig() string {
 # a_sp  - Largest axis of ellipsoidal fit to splashback shell.
 # b_sp  - Largest axis of ellipsoidal fit to splashback shell.
 # c_sp  - Largest axis of ellipsoidal fit to splashback shell.
-# outskirt_ratio - M(< X * R200m) / M(< R200m), where X is equal to the
-#                  config variable OutskirtRatioMiltiplier.
 #
 # WARNING: THIS IS NOT FULLY IMPLEMENTED
-Values = snap, id, m_sp, r_sp, SA_sp, V_sp, a_sp, b_sp, c_sp, outskirt_ratio
+Values = snap, id, m_sp, r_sp, SA_sp, V_sp, a_sp, b_sp, c_sp
 
 #####################
 ## Optional Fields ##
@@ -77,12 +74,7 @@ ExclusionStrategy = none
 
 # Order is the order of the Penna shell constructed around the halos. It must be
 # the same value used by the shell.config file. By default both are set to 3.
-Order = 3
-
-# OutskirtRatioMultiplier is the outer radius used when calculating the outskirt
-# mass ratio.
-OutskirtRatioMultiplier = 2.5
-`
+Order = 3`
 }
 
 func (config *StatsConfig) ReadConfig(fname string) error {
@@ -92,8 +84,6 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 	vars.Int(&config.monteCarloSamples, "MonteCarloSamples", 50*1000)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "none")
 	vars.Int(&config.order, "Order", 3)
-	vars.Float(&config.outskirtRatioMultiplier,
-		"OutskirtRadiusMultiplier", 2.5)
 
 	if fname == "" {
 		return nil
@@ -165,8 +155,6 @@ func (config *StatsConfig) Run(
 	snapBins, coeffBins, idxBins := binCoeffsBySnap(snaps, ids, coeffs)
 
 	masses := make([]float64, len(ids))
-	m200s := make([]float64, len(ids))
-	mOuts := make([]float64, len(ids))
 
 	rads := make([]float64, len(ids))
 	rmins := make([]float64, len(ids))
@@ -262,15 +250,6 @@ func (config *StatsConfig) Run(
 					hBounds[j], rLows[j], rHighs[j],
 					gConfig.Threads,
 				)
-
-				m200s[idxs[j]] += sphericalMass(
-					&hds[i], xs, ms, hBounds[j],
-					1, gConfig.Threads,
-				)
-				mOuts[idxs[j]] += sphericalMass(
-					&hds[i], xs, ms, hBounds[j],
-					config.outskirtRatioMultiplier, gConfig.Threads,
-				)
 			}
 
 			buf.Close()
@@ -284,15 +263,10 @@ func (config *StatsConfig) Run(
 		axs[i], ays[i], azs[i] = aVecs[i][0], aVecs[i][1], aVecs[i][2]
 	}
 
-	ratios := make([]float64, len(ids))
-	for i := range ratios {
-		ratios[i] = mOuts[i] / m200s[i]
-	}
-
 	lines := catalog.FormatCols(
 		[][]int{ids, snaps},
 		[][]float64{masses, rads, vols, sas,
-			as, bs, cs, axs, ays, azs, ratios},
+			as, bs, cs, axs, ays, azs},
 		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 	)
 	cString := catalog.CommentString(
@@ -303,11 +277,9 @@ func (config *StatsConfig) Run(
 			"Intermediate Axis [Mpc/h]",
 			"Minor Axis [Mpc/h]",
 			"Ax", "Ay", "Az",
-			fmt.Sprintf("R(< %g * R200m) / R(< R200m)",
-				config.outskirtRatioMultiplier),
 		},
-		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
-		[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+		[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	)
 
 	if logging.Mode == logging.Performance {

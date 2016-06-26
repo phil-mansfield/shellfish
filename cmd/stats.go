@@ -24,6 +24,10 @@ type StatsConfig struct {
 	monteCarloSamples int64
 	exclusionStrategy string
 	order             int64
+
+	shellFilter bool
+	shellParticleFile string
+	shellWidth float64
 }
 
 var _ Mode = &StatsConfig{}
@@ -74,7 +78,36 @@ ExclusionStrategy = none
 
 # Order is the order of the Penna shell constructed around the halos. It must be
 # the same value used by the shell.config file. By default both are set to 3.
-Order = 3`
+Order = 3
+
+# ShellParticleFile and ShellWidth allow Shellfish to output a file containing
+# the IDs of particles which are close to the edge of the halo.
+# ShellParticlesFile is a file that the IDs will be written out to, and
+# ShellWidth is how far away from the shell a particle can be (as a multiplier
+# of R200m) while still being output to the file.
+#
+# The format of the file is the following:
+#
+# |- 1 -| |- 2_0 -| ... |- 2_i -| |- ... 3_0 ... -| ... |- ... 3_i ... -|
+#
+# 1) HaloCount: int64
+#        The number of halos in the file.
+# 2_i) HaloInfo: struct { ID, Snap, StartByte, Particles int64 }
+#        Summarizing information for the ith halo in the file. In order, the
+#        fields represent the halo ID, the snapshot number of the halo, the
+#        index of the first byte of the particle array corresponding to this
+#        halo (i.e. the 'pos' parameter for seek() when using the flag
+#        SEEK_SET), and the number of particles that are in that halo's array.
+# 3_i) ParticleIDs: []int64
+#        The IDs of the particles near the shell of the ith halo.
+#
+# The file will be written with the byte ordering specified by the Endianness
+# variable in the global config file.
+#
+# If ShellParticleFile = "" or if ShellWidth = 0, no such file will be
+# created.
+# ShellParticleFile = shell-particles.dat
+# ShellWidth = 0.05`
 }
 
 func (config *StatsConfig) ReadConfig(fname string) error {
@@ -84,6 +117,8 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 	vars.Int(&config.monteCarloSamples, "MonteCarloSamples", 50*1000)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "none")
 	vars.Int(&config.order, "Order", 3)
+	vars.String(&config.shellParticleFile, "ShellParticleFile", "")
+	vars.Float(&config.shellWidth, "ShellWidth", 0)
 
 	if fname == "" {
 		return nil
@@ -91,6 +126,10 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
+
+	config.shellFilter = config.shellWidth > 0 &&
+		config.shellParticleFile != ""
+
 	return config.validate()
 }
 

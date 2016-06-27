@@ -204,6 +204,7 @@ func (config *StatsConfig) Run(
 	bs := make([]float64, len(ids))
 	cs := make([]float64, len(ids))
 	aVecs := make([][3]float64, len(ids))
+	shellParticles := make([][]int64, len(ids))
 
 	sortedSnaps := []int{}
 	for snap := range snapBins {
@@ -277,7 +278,7 @@ func (config *StatsConfig) Run(
 				continue
 			}
 
-			xs, ms, err := buf.Read(files[i])
+			xs, ms, pIDs, err := buf.Read(files[i])
 
 			if err != nil {
 				return nil, err
@@ -289,11 +290,32 @@ func (config *StatsConfig) Run(
 					hBounds[j], rLows[j], rHighs[j],
 					gConfig.Threads,
 				)
+
+				if config.shellFilter {
+					// This isn't the correct way to handle this for
+					// performance, but massContained is already gross enough as
+					// it is.
+					shellParticles[idxs[j]] = appendShellParticles(
+						&hds[i], xs, pIDs, snapCoeffs[j],
+						hBounds[j], rLows[j], rHighs[j],
+						config.shellWidth,
+						gConfig.Threads,
+						shellParticles[idxs[j]],
+					)
+				}
+
 			}
 
 			buf.Close()
 		}
 	}
+
+	// TODO: Remove debugging code.
+	for i := range shellParticles {
+		log.Printf("Halo %d: %d shell particles.",
+			i, len(shellParticles[i]))
+	}
+
 
 	axs := make([]float64, len(ids))
 	ays := make([]float64, len(ids))
@@ -440,6 +462,39 @@ func massContained(
 	return sum
 }
 
+// TODO: Humans cannot remember this many parameters.
+
+func appendShellParticles(
+	hd *io.Header, xs [][3]float32, pIDs []int64, coeffs []float64,
+	sphere geom.Sphere, rLow, rHigh float64, shellWidth float64,
+	threads int64, out []int64,
+) []int64 {
+	cpu := runtime.NumCPU()
+	if threads > 0 {
+		cpu = int(threads)
+	}
+	workers := int64(runtime.GOMAXPROCS(cpu))
+	outChan := make(chan []int64, workers)
+
+	for i := int64(0); i < workers-1; i++ {
+		go appendShellParticlesChan(
+			hd, xs, pIDs, coeffs, sphere, rLow, rHigh,
+			shellWidth, i, workers, outChan,
+		)
+	}
+
+	appendShellParticlesChan(
+		hd, xs, pIDs, coeffs, sphere, rLow, rHigh,
+		shellWidth, workers-1, workers, outChan,
+	)
+
+	for i := int64(0); i < workers; i++ {
+		out = append(out, <-outChan...)
+	}
+
+	return out
+}
+
 func massContainedChan(
 	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
@@ -467,6 +522,44 @@ func massContainedChan(
 		}
 	}
 	out <- sum
+}
+
+func appendShellParticlesChan(
+	hd *io.Header, xs [][3]float32, pIDs []int64, coeffs []float64,
+	sphere geom.Sphere, rLow, rHigh float64, shellWidth float64,
+	offset, workers int64, outChan chan []int64,
+) {
+	buf := []int64{}
+
+	tw2 := float32(hd.TotalWidth) / 2
+
+	order := findOrder(coeffs)
+	shell := analyze.PennaFunc(coeffs, order, order, 2)
+	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
+	delta := float64(sphere.R) * shellWidth
+
+	for i := offset; i < hd.N; i += workers {
+		x, y, z := xs[i][0], xs[i][1], xs[i][2]
+		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
+		x = wrap(x, tw2)
+		y = wrap(y, tw2)
+		z = wrap(z, tw2)
+
+		r2 := x*x + y*y + z*z
+
+		if r2 < low2 || r2 < high2 {
+			r := math.Sqrt(float64(r2))
+			phi := math.Atan2(float64(y), float64(x))
+			theta := math.Acos(float64(z) / r)
+
+			rs := shell(phi, theta)
+
+			if rs + delta > r && rs - delta < r {
+				buf = append(buf, pIDs[i])
+			}
+		}
+	}
+	outChan <- buf
 }
 
 func binSphereIntersections(

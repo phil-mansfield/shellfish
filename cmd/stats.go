@@ -328,7 +328,7 @@ func (config *StatsConfig) Run(
 		[][]int{ids, snaps},
 		[][]float64{masses, rads, vols, sas,
 			as, bs, cs, axs, ays, azs},
-		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
 	)
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"},

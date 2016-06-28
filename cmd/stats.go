@@ -537,7 +537,7 @@ func appendShellParticlesChan(
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
 	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
 	delta := float64(sphere.R) * shellWidth
-
+	
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]

@@ -80,7 +80,8 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	_ = readInt32(f, order)
 	count := int(gh.NPart[1] + gh.NPart[0]<<32)
 	xsBuf = expandVectors(xsBuf[:0], count)
-
+	idsBuf = expandInts(idsBuf[:0], count)
+	
 	_ = readInt32(f, order)
 	readVecAsByte(f, order, xsBuf)
 
@@ -137,6 +138,17 @@ func expandScalars(scalars []float32, n int) []float32 {
 			make([]float32, n-cap(scalars))...)
 	default:
 		return make([]float32, n)
+	}
+}
+
+func expandInts(ints []int64, n int) []int64 {
+	switch {
+	case cap(ints) >= n:
+		return ints[:n]
+	case int(float64(cap(ints))*1.5) > n:
+		return append(ints[:cap(ints)], make([]int64, n-cap(ints))...)
+	default:
+		return make([]int64, n)
 	}
 }
 

@@ -313,12 +313,7 @@ func (config *StatsConfig) Run(
 		}
 	}
 
-	// TODO: Remove debugging code.
-	for i := range shellParticles {
-		log.Printf("Halo %d: %d shell particles.",
-			i, len(shellParticles[i]))
-	}
-
+	writeShellParticles(snaps, ids, shellParticles, gConfig, config)
 
 	axs := make([]float64, len(ids))
 	ays := make([]float64, len(ids))
@@ -566,12 +561,17 @@ func appendShellParticlesChan(
 }
 
 func writeShellParticles(
-	snaps []int64, ids []int64, particles [][]int64,
-	gConfig GlobalConfig, config StatsConfig,
+	snaps []int, ids []int, particles [][]int64,
+	gConfig *GlobalConfig, config *StatsConfig,
 ) error {
+	snaps64 := make([]int64, len(snaps))
+	for i := range snaps { snaps64[i] = int64(snaps[i]) }
+	ids64 := make([]int64, len(ids))
+	for i := range ids { ids64[i] = int64(ids[i]) }
+	
 	data := io.FilterData{
-		Snaps: snaps,
-		IDs: ids,
+		Snaps: snaps64,
+		IDs: ids64,
 		Particles: particles,
 	}
 

@@ -15,7 +15,7 @@ type FilterData struct {
 }
 
 type haloInfo struct {
-	id, snap, startByte, len int64
+	ID, Snap, StartByte, Len int64
 }
 
 func flagToOrder(orderFlag string) binary.ByteOrder {
@@ -48,10 +48,10 @@ func WriteFilter(wr io.Writer, orderFlag string, data FilterData) error {
 
 	totLen := 0
 	for i := range info {
-		info[i].snap = data.Snaps[i]
-		info[i].id = data.IDs[i]
-		info[i].startByte = int64(totLen * 8) + baseOffset
-		info[i].len = int64(len(data.Particles[i]))
+		info[i].Snap = data.Snaps[i]
+		info[i].ID = data.IDs[i]
+		info[i].StartByte = int64(totLen * 8) + baseOffset
+		info[i].Len = int64(len(data.Particles[i]))
 	}
 	binary.Write(wr, order, info)
 
@@ -89,9 +89,9 @@ func ReadFilter(rd io.Reader) (FilterData, error) {
 	data.Particles = make([][]int64, haloNum)
 
 	for i := range info {
-		data.Snaps[i] = info[i].snap
-		data.IDs[i] = info[i].id
-		data.Particles[i] = make([]int64, info[i].len)
+		data.Snaps[i] = info[i].Snap
+		data.IDs[i] = info[i].ID
+		data.Particles[i] = make([]int64, info[i].Len)
 		binary.Read(rd, order, data.Particles[i])
 	}
 

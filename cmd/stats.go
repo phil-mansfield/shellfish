@@ -313,7 +313,9 @@ func (config *StatsConfig) Run(
 		}
 	}
 
-	writeShellParticles(snaps, ids, shellParticles, gConfig, config)
+	if config.shellFilter {
+		writeShellParticles(snaps, ids, shellParticles, gConfig, config)
+	}
 
 	axs := make([]float64, len(ids))
 	ays := make([]float64, len(ids))
@@ -533,8 +535,11 @@ func appendShellParticlesChan(
 
 	order := findOrder(coeffs)
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
-	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
 	delta := float64(sphere.R) * shellWidth
+	rLow -= delta
+	rHigh += delta
+	log.Println("delta", delta, "rLow", rLow, "rHigh", rHigh)
+	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
 	
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
@@ -545,7 +550,7 @@ func appendShellParticlesChan(
 
 		r2 := x*x + y*y + z*z
 
-		if r2 < low2 || r2 < high2 {
+		if r2 > low2 && r2 < high2 {
 			r := math.Sqrt(float64(r2))
 			phi := math.Atan2(float64(y), float64(x))
 			theta := math.Acos(float64(z) / r)

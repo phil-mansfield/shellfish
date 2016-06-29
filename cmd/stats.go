@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sort"
 	"time"
+	"os"
 
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/los/analyze"
@@ -88,9 +89,11 @@ Order = 3
 #
 # The format of the file is the following:
 #
-# |- 1 -| |- 2_0 -| ... |- 2_i -| |- ... 3_0 ... -| ... |- ... 3_i ... -|
+# |- 0- ||- 1 -||- 2_0 -| ... |- 2_i -||- ... 3_0 ... -| ... |- ... 3_i ... -|
 #
-# 1) HaloCount: int64
+# 0) Endianness: int32
+#        The endianness of the file. 0 -> little endian, -1 -> big endian.
+# 1) HaloCount: int32
 #        The number of halos in the file.
 # 2_i) HaloInfo: struct { ID, Snap, StartByte, Particles int64 }
 #        Summarizing information for the ith halo in the file. In order, the
@@ -560,6 +563,65 @@ func appendShellParticlesChan(
 		}
 	}
 	outChan <- buf
+}
+
+func writeShellParticles(
+	snaps []int64, ids []int64, particles [][]int64,
+	gConfig GlobalConfig, config StatsConfig,
+) error {
+	data := io.FilterData{
+		Snaps: snaps,
+		IDs: ids,
+		Particles: particles,
+	}
+
+	f, err := os.Create(config.shellParticleFile)
+	if err != nil { return err }
+	defer f.Close()
+
+	err = io.WriteFilter(f, gConfig.Endianness, data)
+	if err != nil { return err }
+
+	ff, err := os.Open(config.shellParticleFile)
+	if err != nil { return err }
+	defer ff.Close()
+
+	check, err := io.ReadFilter(ff)
+	if err != nil { return err }
+
+	switch {
+	case !int64sEq(check.Snaps, data.Snaps):
+		panic(
+			fmt.Sprintf("Snaps: %v != %v", check.Snaps, data.Snaps),
+		)
+	case !int64sEq(check.IDs, data.IDs):
+		panic(
+			fmt.Sprintf("IDs: %v != %v", check.IDs, data.IDs),
+		)
+	case len(check.Particles) != len(data.Particles):
+		panic(
+			fmt.Sprintf("len(Particles): %d != %d",
+				len(check.Particles), len(data.Particles)),
+		)
+	}
+	for i := range data.Particles {
+		if !int64sEq(check.Particles[i], data.Particles[i]) {
+			panic(
+				fmt.Sprintf("Particles[%d]: %v... != %v...",
+					i, check.Particles[:5], data.Particles[:5]),
+			)
+		}
+	}
+
+	return nil
+}
+
+func int64sEq(xs, ys []int64) bool {
+	if len(xs) != len(ys) { return false }
+	for i := range xs {
+		if xs[i] != ys[i] { return false }
+	}
+	return true
 }
 
 func binSphereIntersections(

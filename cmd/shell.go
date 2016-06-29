@@ -344,7 +344,7 @@ func sphereLoop(
 			continue
 		}
 
-		sphBuf.xs, sphBuf.ms, err = buf.Read(files[i])
+		sphBuf.xs, sphBuf.ms, _, err = buf.Read(files[i])
 		if err != nil {
 			return err
 		}

@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sort"
 	"time"
+	"os"
 
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/los/analyze"
@@ -24,6 +25,10 @@ type StatsConfig struct {
 	monteCarloSamples int64
 	exclusionStrategy string
 	order             int64
+
+	shellFilter bool
+	shellParticleFile string
+	shellWidth float64
 }
 
 var _ Mode = &StatsConfig{}
@@ -74,7 +79,38 @@ ExclusionStrategy = none
 
 # Order is the order of the Penna shell constructed around the halos. It must be
 # the same value used by the shell.config file. By default both are set to 3.
-Order = 3`
+Order = 3
+
+# ShellParticleFile and ShellWidth allow Shellfish to output a file containing
+# the IDs of particles which are close to the edge of the halo.
+# ShellParticlesFile is a file that the IDs will be written out to, and
+# ShellWidth is how far away from the shell a particle can be (as a multiplier
+# of R200m) while still being output to the file.
+#
+# The format of the file is the following:
+#
+# |- 0- ||- 1 -||- 2_0 -| ... |- 2_i -||- ... 3_0 ... -| ... |- ... 3_i ... -|
+#
+# 0) Endianness: int32
+#        The endianness of the file. 0 -> little endian, -1 -> big endian.
+# 1) HaloCount: int32
+#        The number of halos in the file.
+# 2_i) HaloInfo: struct { ID, Snap, StartByte, Particles int64 }
+#        Summarizing information for the ith halo in the file. In order, the
+#        fields represent the halo ID, the snapshot number of the halo, the
+#        index of the first byte of the particle array corresponding to this
+#        halo (i.e. the 'pos' parameter for seek() when using the flag
+#        SEEK_SET), and the number of particles that are in that halo's array.
+# 3_i) ParticleIDs: []int64
+#        The IDs of the particles near the shell of the ith halo.
+#
+# The file will be written with the byte ordering specified by the Endianness
+# variable in the global config file.
+#
+# If ShellParticleFile = "" or if ShellWidth = 0, no such file will be
+# created.
+# ShellParticleFile = shell-particles.dat
+# ShellWidth = 0.05`
 }
 
 func (config *StatsConfig) ReadConfig(fname string) error {
@@ -84,6 +120,8 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 	vars.Int(&config.monteCarloSamples, "MonteCarloSamples", 50*1000)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "none")
 	vars.Int(&config.order, "Order", 3)
+	vars.String(&config.shellParticleFile, "ShellParticleFile", "")
+	vars.Float(&config.shellWidth, "ShellWidth", 0)
 
 	if fname == "" {
 		return nil
@@ -91,6 +129,10 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
+
+	config.shellFilter = config.shellWidth > 0 &&
+		config.shellParticleFile != ""
+
 	return config.validate()
 }
 
@@ -165,6 +207,7 @@ func (config *StatsConfig) Run(
 	bs := make([]float64, len(ids))
 	cs := make([]float64, len(ids))
 	aVecs := make([][3]float64, len(ids))
+	shellParticles := make([][]int64, len(ids))
 
 	sortedSnaps := []int{}
 	for snap := range snapBins {
@@ -238,7 +281,7 @@ func (config *StatsConfig) Run(
 				continue
 			}
 
-			xs, ms, err := buf.Read(files[i])
+			xs, ms, pIDs, err := buf.Read(files[i])
 
 			if err != nil {
 				return nil, err
@@ -250,11 +293,27 @@ func (config *StatsConfig) Run(
 					hBounds[j], rLows[j], rHighs[j],
 					gConfig.Threads,
 				)
+
+				if config.shellFilter {
+					// This isn't the correct way to handle this for
+					// performance, but massContained is already gross enough as
+					// it is.
+					shellParticles[idxs[j]] = appendShellParticles(
+						&hds[i], xs, pIDs, snapCoeffs[j],
+						hBounds[j], rLows[j], rHighs[j],
+						config.shellWidth,
+						gConfig.Threads,
+						shellParticles[idxs[j]],
+					)
+				}
+
 			}
 
 			buf.Close()
 		}
 	}
+
+	writeShellParticles(snaps, ids, shellParticles, gConfig, config)
 
 	axs := make([]float64, len(ids))
 	ays := make([]float64, len(ids))
@@ -267,7 +326,7 @@ func (config *StatsConfig) Run(
 		[][]int{ids, snaps},
 		[][]float64{masses, rads, vols, sas,
 			as, bs, cs, axs, ays, azs},
-		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
 	)
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"},
@@ -401,6 +460,39 @@ func massContained(
 	return sum
 }
 
+// TODO: Humans cannot remember this many parameters.
+
+func appendShellParticles(
+	hd *io.Header, xs [][3]float32, pIDs []int64, coeffs []float64,
+	sphere geom.Sphere, rLow, rHigh float64, shellWidth float64,
+	threads int64, out []int64,
+) []int64 {
+	cpu := runtime.NumCPU()
+	if threads > 0 {
+		cpu = int(threads)
+	}
+	workers := int64(runtime.GOMAXPROCS(cpu))
+	outChan := make(chan []int64, workers)
+
+	for i := int64(0); i < workers-1; i++ {
+		go appendShellParticlesChan(
+			hd, xs, pIDs, coeffs, sphere, rLow, rHigh,
+			shellWidth, i, workers, outChan,
+		)
+	}
+
+	appendShellParticlesChan(
+		hd, xs, pIDs, coeffs, sphere, rLow, rHigh,
+		shellWidth, workers-1, workers, outChan,
+	)
+
+	for i := int64(0); i < workers; i++ {
+		out = append(out, <-outChan...)
+	}
+
+	return out
+}
+
 func massContainedChan(
 	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64,
@@ -430,46 +522,20 @@ func massContainedChan(
 	out <- sum
 }
 
-func sphericalMass(
-	hd *io.Header, xs [][3]float32, ms []float32,
-	sphere geom.Sphere, mult float64, threads int64,
-) float64 {
-
-	cpu := runtime.NumCPU()
-	if threads > 0 {
-		cpu = int(threads)
-	}
-	workers := int64(runtime.GOMAXPROCS(cpu))
-	outChan := make(chan float64, workers)
-	for i := int64(0); i < workers-1; i++ {
-		go sphericalMassChan(
-			hd, xs, ms, sphere, mult, i, workers, outChan,
-		)
-	}
-
-	sphericalMassChan(
-		hd, xs, ms, sphere, mult,
-		workers-1, workers, outChan,
-	)
-
-	sum := 0.0
-	for i := int64(0); i < workers; i++ {
-		sum += <-outChan
-	}
-
-	return sum
-}
-
-func sphericalMassChan(
-	hd *io.Header, xs [][3]float32, ms []float32,
-	sphere geom.Sphere, mult float64,
-	offset, workers int64, out chan float64,
+func appendShellParticlesChan(
+	hd *io.Header, xs [][3]float32, pIDs []int64, coeffs []float64,
+	sphere geom.Sphere, rLow, rHigh float64, shellWidth float64,
+	offset, workers int64, outChan chan []int64,
 ) {
+	buf := []int64{}
+
 	tw2 := float32(hd.TotalWidth) / 2
 
-	lim2 := sphere.R*sphere.R * float32(mult*mult)
-
-	sum := 0.0
+	order := findOrder(coeffs)
+	shell := analyze.PennaFunc(coeffs, order, order, 2)
+	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
+	delta := float64(sphere.R) * shellWidth
+	
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
@@ -479,11 +545,83 @@ func sphericalMassChan(
 
 		r2 := x*x + y*y + z*z
 
-		if r2 < lim2 {
-			sum += float64(ms[i])
+		if r2 < low2 || r2 < high2 {
+			r := math.Sqrt(float64(r2))
+			phi := math.Atan2(float64(y), float64(x))
+			theta := math.Acos(float64(z) / r)
+
+			rs := shell(phi, theta)
+
+			if rs + delta > r && rs - delta < r {
+				buf = append(buf, pIDs[i])
+			}
 		}
 	}
-	out <- sum
+	outChan <- buf
+}
+
+func writeShellParticles(
+	snaps []int, ids []int, particles [][]int64,
+	gConfig *GlobalConfig, config *StatsConfig,
+) error {
+	snaps64 := make([]int64, len(snaps))
+	for i := range snaps { snaps64[i] = int64(snaps[i]) }
+	ids64 := make([]int64, len(ids))
+	for i := range ids { ids64[i] = int64(ids[i]) }
+	
+	data := io.FilterData{
+		Snaps: snaps64,
+		IDs: ids64,
+		Particles: particles,
+	}
+
+	f, err := os.Create(config.shellParticleFile)
+	if err != nil { return err }
+	defer f.Close()
+
+	err = io.WriteFilter(f, gConfig.Endianness, data)
+	if err != nil { return err }
+
+	ff, err := os.Open(config.shellParticleFile)
+	if err != nil { return err }
+	defer ff.Close()
+
+	check, err := io.ReadFilter(ff)
+	if err != nil { return err }
+
+	switch {
+	case !int64sEq(check.Snaps, data.Snaps):
+		panic(
+			fmt.Sprintf("Snaps: %v != %v", check.Snaps, data.Snaps),
+		)
+	case !int64sEq(check.IDs, data.IDs):
+		panic(
+			fmt.Sprintf("IDs: %v != %v", check.IDs, data.IDs),
+		)
+	case len(check.Particles) != len(data.Particles):
+		panic(
+			fmt.Sprintf("len(Particles): %d != %d",
+				len(check.Particles), len(data.Particles)),
+		)
+	}
+	for i := range data.Particles {
+		if !int64sEq(check.Particles[i], data.Particles[i]) {
+			panic(
+				fmt.Sprintf("Particles[%d]: %v... != %v...",
+					i, check.Particles[:5], data.Particles[:5]),
+			)
+		}
+	}
+
+	return nil
+}
+
+func int64sEq(xs, ys []int64) bool {
+	if len(xs) != len(ys) { return false }
+	for i := range xs {
+		if xs[i] != ys[i] { return false }
+	}
+	return true
 }
 
 func binSphereIntersections(

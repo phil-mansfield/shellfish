@@ -15,6 +15,7 @@ type GotetraBuffer struct {
 	sheet  [][3]float32
 	xs     [][3]float32
 	ms     []float32
+	ids    []int64
 	sw, gw int
 	mass   float32
 	hd     gotetraHeader
@@ -55,7 +56,9 @@ func (buf *GotetraBuffer) MinMass() float32 { return buf.mass }
 
 func (buf *GotetraBuffer) IsOpen() bool { return buf.open }
 
-func (buf *GotetraBuffer) Read(fname string) ([][3]float32, []float32, error) {
+func (buf *GotetraBuffer) Read(fname string) (
+	[][3]float32, []float32, []int64, error,
+) {
 	if buf.open {
 		panic("Buffer already open.")
 	}
@@ -63,8 +66,9 @@ func (buf *GotetraBuffer) Read(fname string) ([][3]float32, []float32, error) {
 
 	err := readSheetPositionsAt(fname, buf.sheet)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
+
 
 	si := 0
 	for z := 0; z < buf.sw; z++ {
@@ -80,7 +84,7 @@ func (buf *GotetraBuffer) Read(fname string) ([][3]float32, []float32, error) {
 		}
 	}
 
-	return buf.xs, buf.ms, nil
+	return buf.xs, buf.ms, buf.ids, nil
 }
 
 func (buf *GotetraBuffer) Close() {
@@ -123,6 +127,13 @@ func (raw *rawGotetraHeader) postprocess(hd *Header) {
 	hd.Origin, hd.Width = raw.Origin, raw.Width
 }
 
+func (raw *rawGotetraHeader) fileCoords() (x, y, z int) {
+	xx := raw.Idx % raw.Cells
+	yy := (raw.Idx / raw.Cells) % raw.Cells
+	zz := raw.Idx / (raw.Cells * raw.Cells)
+	return int(xx), int(yy), int(zz)
+}
+
 type gotetraHeader struct {
 	rawGotetraHeader
 	N     int64
@@ -139,6 +150,28 @@ func endianness(flag int32) binary.ByteOrder {
 	} else {
 		panic("Unrecognized endianness flag.")
 	}
+}
+
+func readRawGotetraHeader(file string, out *rawGotetraHeader) error {
+	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// order doesn't matter for this read, since flags are symmetric.
+	order := endianness(readInt32(f, binary.LittleEndian))
+
+	headerSize := readInt32(f, order)
+	if headerSize != int32(unsafe.Sizeof(rawGotetraHeader{})) {
+		return fmt.Errorf("Expected catalog.SheetHeader size of %d, found %d.",
+			unsafe.Sizeof(rawGotetraHeader{}), headerSize,
+		)
+	}
+
+	f.Seek(4+4, 0)
+	err = binary.Read(f, order, out)
+	return err
 }
 
 func loadSheetHeader(
@@ -170,7 +203,7 @@ func loadSheetHeader(
 		return nil, binary.LittleEndian, err
 	}
 
-	// Deals with a bug in the current Shellfish version.
+	// Deals with a bug in the current gotetra version.
 	cw := hdBuf.CountWidth
 	hdBuf.Count = cw * cw * cw
 

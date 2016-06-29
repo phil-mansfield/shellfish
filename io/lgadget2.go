@@ -65,10 +65,11 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	order binary.ByteOrder,
 	xsBuf [][3]float32,
 	msBuf []float32,
-) (xs [][3]float32, ms []float32, err error) {
+	idsBuf []int64,
+) (xs [][3]float32, ms []float32, ids []int64, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer f.Close()
 
@@ -79,10 +80,13 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	_ = readInt32(f, order)
 	count := int(gh.NPart[1] + gh.NPart[0]<<32)
 	xsBuf = expandVectors(xsBuf[:0], count)
-
+	idsBuf = expandInts(idsBuf[:0], count)
+	
 	_ = readInt32(f, order)
 	readVecAsByte(f, order, xsBuf)
-	//_ = readInt32(f, order)
+
+	f.Seek(4*2 + 12*int64(len(xsBuf)) + 4*2, 1)
+	readInt64AsByte(f, order, idsBuf)
 
 	tw := float32(gh.BoxSize)
 	for i := range xsBuf {
@@ -97,7 +101,7 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 				math.IsInf(float64(xsBuf[i][j]), 0) ||
 				xsBuf[i][j] < -tw || xsBuf[i][j] > 2*tw {
 
-				return nil, nil, fmt.Errorf(
+				return nil, nil, nil, fmt.Errorf(
 					"Corruption detected in the file %s. I can't analyze it.",
 					path,
 				)
@@ -110,7 +114,7 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 		msBuf[i] = buf.mass
 	}
 
-	return xsBuf, msBuf, nil
+	return xsBuf, msBuf, idsBuf, nil
 }
 
 func expandVectors(vecs [][3]float32, n int) [][3]float32 {
@@ -137,6 +141,17 @@ func expandScalars(scalars []float32, n int) []float32 {
 	}
 }
 
+func expandInts(ints []int64, n int) []int64 {
+	switch {
+	case cap(ints) >= n:
+		return ints[:n]
+	case int(float64(cap(ints))*1.5) > n:
+		return append(ints[:cap(ints)], make([]int64, n-cap(ints))...)
+	default:
+		return make([]int64, n)
+	}
+}
+
 type LGadget2Buffer struct {
 	open  bool
 	order binary.ByteOrder
@@ -144,6 +159,7 @@ type LGadget2Buffer struct {
 	mass  float32
 	xs    [][3]float32
 	ms    []float32
+	ids   []int64
 }
 
 func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
@@ -174,18 +190,20 @@ func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
 	return buf, nil
 }
 
-func (buf *LGadget2Buffer) Read(fname string) ([][3]float32, []float32, error) {
+func (buf *LGadget2Buffer) Read(fname string) (
+	[][3]float32, []float32, []int64, error,
+) {
 	if buf.open {
 		panic("Buffer already open.")
 	}
 	buf.open = true
 
 	var err error
-	buf.xs, buf.ms, err = buf.readLGadget2Particles(
-		fname, buf.order, buf.xs, buf.ms,
+	buf.xs, buf.ms, buf.ids, err = buf.readLGadget2Particles(
+		fname, buf.order, buf.xs, buf.ms, buf.ids,
 	)
 
-	return buf.xs, buf.ms, err
+	return buf.xs, buf.ms, buf.ids, err
 }
 
 func (buf *LGadget2Buffer) Close() {
@@ -205,7 +223,7 @@ func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
 	if err != nil {
 		return err
 	}
-	xs, _, err := buf.Read(fname)
+	xs, _, _, err := buf.Read(fname)
 	if err != nil {
 		return err
 	}

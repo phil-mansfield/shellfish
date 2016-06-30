@@ -538,7 +538,6 @@ func appendShellParticlesChan(
 	delta := float64(sphere.R) * shellWidth
 	rLow -= delta
 	rHigh += delta
-	log.Println("delta", delta, "rLow", rLow, "rHigh", rHigh)
 	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
 	
 	for i := offset; i < hd.N; i += workers {

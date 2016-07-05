@@ -243,8 +243,15 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 		h100 = h.GetDouble(h.Key("hubble"))[0]
 	}
 
-	out.TotalWidth = h.GetDouble(h.Key("box_size"))[0] *
-		(h100 / (cosmo.MpcMks * 100))
+	lengthUnit := h100 / (cosmo.MpcMks * 100) *
+		h.GetDouble(h.Key("length_unit"))[0]
+	out.TotalWidth = h.GetDouble(h.Key("box_size"))[0] * lengthUnit
+
+	if out.TotalWidth < 0.001 || out.TotalWidth > 1e6 {
+		return fmt.Errorf("ARTIO box_size calculated to be %g Mpc/h. This " +
+			"is an internal bug: please submit an issue.", out.TotalWidth)
+	}
+
 	out.Origin, out.Width = boundingBox(xs, out.TotalWidth)
 	out.N = int64(len(xs))
 	

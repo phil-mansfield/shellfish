@@ -96,6 +96,7 @@ func (sp *Spline) Eval(x float64) float64 {
 	return a*dx*dx*dx + b*dx*dx + c*dx + d
 }
 
+// EvalAll computes the value of the spline as a seqeunce of points.
 func (sp *Spline) EvalAll(xs []float64, out ...[]float64) []float64 {
 	if len(out) == 0 {
 		out = [][]float64{make([]float64, len(xs))}

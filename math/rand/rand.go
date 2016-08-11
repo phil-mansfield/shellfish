@@ -40,7 +40,7 @@ type generatorBackend interface {
 
 // Generator is a random number generator.
 type Generator struct {
-	backend        generatorBackend
+	backend generatorBackend
 }
 
 // Generator type is a flag used to indicate the desired algorithm

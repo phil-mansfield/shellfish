@@ -4,6 +4,10 @@ import (
 	"testing"
 )
 
+const (
+	DefaultBufSize = 1 << 10
+)
+
 func benchmarkUniform(gt GeneratorType, b *testing.B) {
 	gen := NewTimeSeed(gt)
 	b.ResetTimer()

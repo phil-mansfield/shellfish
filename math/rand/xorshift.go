@@ -8,8 +8,8 @@ var (
 	xorshiftMaxUint = float64(math.MaxUint32)
 )
 
-// I know that I directly compied this implementation from someone
-// else, but I don't remember who.
+// xorshiftGenerator implements the backendGenerator interface using an
+// xorshift generator.
 type xorshiftGenerator struct {
 	w, x, y, z uint32
 }

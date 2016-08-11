@@ -3,11 +3,17 @@ package rand
 const (
 	tauswortheDigitsRandomized = 15
 
+	// Magic numbers. Don't change these.
 	tauswortheSeqLen       = 9689
 	tauswortheFirstOffset  = 2444
 	tauswortheSecondOffset = 4187
 )
 
+// tauswortheGenerator implements the backendGenerator interface using a
+// Tausworthe RNG. I've never actually been able to find a legitimate source
+// for this, the implementation come from some old Fortran code that Robert
+// Swendsen was the author of. He seemed to be under the impression that this
+// was an algorithm from NR, but it isn't.
 type tauswortheGenerator struct {
 	seq                                   []float64
 	leader, firstFollower, secondFollower int

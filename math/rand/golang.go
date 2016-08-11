@@ -4,6 +4,8 @@ import (
 	"math/rand"
 )
 
+// golangGenerator implements the backendGenerator interface using Go's
+// default random number generator.
 type golangGenerator struct {
 	r *rand.Rand
 }

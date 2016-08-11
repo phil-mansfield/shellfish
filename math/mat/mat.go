@@ -80,7 +80,7 @@ func (m1 *Matrix) MultAt(m2, out *Matrix) *Matrix {
 	return out
 }
 
-// TODO: test.
+// MultVec multiplies a matrix and a vector, m * v.
 func MultVec(m *Matrix, v, out []float64) {
 	if m.Height != len(out) || m.Width != len(v) {
 		panic("Shape error.")
@@ -98,7 +98,7 @@ func MultVec(m *Matrix, v, out []float64) {
 	}
 }
 
-// TODO: test.
+// VecMult multiplies a vector and a matrix, v * m.
 func VecMult(v []float64, m *Matrix, out []float64) {
 	if m.Height != len(v) || m.Width != len(out) {
 		panic("Shape error.")
@@ -115,6 +115,7 @@ func VecMult(v []float64, m *Matrix, out []float64) {
 	}
 }
 
+// Transpose transposes a matrix.
 func (m *Matrix) Transpose() *Matrix {
 	vals := make([]float64, m.Height*m.Width)
 	out := NewMatrix(vals, m.Height, m.Width)
@@ -122,13 +123,19 @@ func (m *Matrix) Transpose() *Matrix {
 	return out
 }
 
+// Transpose transposes a matrix at the specified location.
 func (m *Matrix) TransposeAt(out *Matrix) {
+	// This function is just a wrapper around the less user-friendly
+	// recTranspose.
 	recTranspose(m.Vals, out.Vals, m.Width, m.Height,
 		0, 0, m.Width, m.Height, 0, 0)
 }
 
 const transposeRecWidth = 16000000
 
+// recTranspose performs a recursive cache-blind transposition on a
+// segment of a grid. This will significantly out-perform a naive
+// transposition.
 func recTranspose(
 	m, out []float64, width, height int,
 	mXLow, mYLow, mXWidth, mYWidth int,
@@ -158,6 +165,7 @@ func recTranspose(
 	}
 }
 
+// baseTranspose performs a standard transposition on a segment of a grid.
 func baseTranspose(
 	m, out []float64, width, height int,
 	mXLow, mYLow, mXWidth, mYWidth int,
@@ -230,9 +238,12 @@ func (m *Matrix) LUFactorsAt(luf *LUFactors) {
 		panic("luf has different dimenstions than m.")
 	}
 	copy(luf.lu.Vals, m.Vals)
+
+	// This function is mainly a wrapper around factorizeInPlace.
 	luf.factorizeInPlace()
 }
 
+// factorizeInPlace performs an LU decomposition of a matrix in place.
 func (lu *LUFactors) factorizeInPlace() {
 	m, n := &lu.lu, lu.lu.Width
 	vv := make([]float64, n)

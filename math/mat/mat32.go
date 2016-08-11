@@ -129,9 +129,12 @@ func (m *Matrix32) LUFactorsAt(luf *LUFactors32) {
 		panic("luf has different dimenstions than m.")
 	}
 	copy(luf.lu.Vals, m.Vals)
+
+	// This function is mainly a wrapper around factorizeInPlace.
 	luf.factorizeInPlace()
 }
 
+// factorizeInPlace performs an LU decomposition of a matrix in place.
 func (lu *LUFactors32) factorizeInPlace() {
 	m, n := &lu.lu, lu.lu.Width
 	vv := make([]float32, n)

@@ -1,5 +1,9 @@
 package sort
 
+// Percentile calculates the element corresponding to the percentile, p,
+// of a non-empty slice. p must be in the range [0, 1]. An optional buffer
+// slice of the same size may be supplied to prevent unneeded heap allocations.
+// Runs in O(len(xs))
 func Percentile(xs []float64, p float64, buf ...[]float64) float64 {
 	if len(xs) == 0 {
 		panic("xs empty in call to Precentile(xs, ps)")
@@ -15,6 +19,9 @@ func Percentile(xs []float64, p float64, buf ...[]float64) float64 {
 	return NthLargest(xs, n, buf...)
 }
 
+// Median calculates the median of a non-empty slice. An optional buffer
+// slice of the same size may be supplied to prevent unneeded heap allocations.
+// Runs in O(len(xs)).
 func Median(xs []float64, buf ...[]float64) float64 {
 	if len(xs) == 0 {
 		panic("xs empty in call to Median(xs)")
@@ -24,6 +31,12 @@ func Median(xs []float64, buf ...[]float64) float64 {
 }
 
 // Remember that this function is 1-indexed.
+// NthLargest the nth largest element of a non-empty slice, xs. An optional
+// buffer slice of the same size may be supplied  to prevent unneeded heap
+// allocations. Runs in O(len(xs)).
+//
+// n is 1-indexed, meaning that n=2 (not n=1) corresponds to the second largest
+// element.
 func NthLargest(xs []float64, n int, buf ...[]float64) float64 {
 	if len(xs) == 0 {
 		panic("xs empty in call to NthHighest(xs, ns)")
@@ -40,9 +53,15 @@ func NthLargest(xs []float64, n int, buf ...[]float64) float64 {
 	}
 	copy(medSlice, xs)
 
+	// This function is just a wrapper around the less user-friendly
+	// nthLargest.
 	return nthLargest(medSlice, n)
 }
 
+// nthLargest is a helper function which recursively calculates the nth
+// largest element of the slice xs. It is essentially the same as quicksort
+// except that at each level of recursion, one of the two partition halves
+// is discarded.
 func nthLargest(xs []float64, n int) float64 {
 	switch len(xs) {
 	case 1:

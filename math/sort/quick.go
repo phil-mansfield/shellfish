@@ -1,13 +1,10 @@
 package sort
 
-import (
-	"math/rand"
-)
-
 const (
 	manualLen = 25
 )
 
+// sort3 sorts three values from largest to smallest.
 func sort3(x, y, z float64) (max, mid, min float64) {
 	if x > y {
 		if x > z {
@@ -34,6 +31,8 @@ func sort3(x, y, z float64) (max, mid, min float64) {
 
 // Quick sorts an array in place via quicksort (and returns the result for
 // convenience.)
+//
+// Quick is significantly faster than the standard library's quicksort.
 func Quick(xs []float64) []float64 {
 	if len(xs) < manualLen {
 		return Shell(xs)
@@ -45,14 +44,13 @@ func Quick(xs []float64) []float64 {
 	}
 }
 
-func pivIdx(xs []float64) int {
-	return rand.Intn(len(xs))
-}
-
+// partition rearranges the elements of a slice, xs, into two contiguous
+// groups, such that every element of the first group is smaller than every
+// element of the second. partition then returns the length of the first group.
 func partition(xs []float64) int {
 	n, n2 := len(xs), len(xs)/2
 	// Take three values. The median will be the pivot, the other two will
-	// be sentinel values so that we cna avoid bounds checks.
+	// be sentinel values so that we can avoid bounds checks.
 	max, mid, min := sort3(xs[0], xs[n2], xs[n-1])
 	xs[0], xs[n2], xs[n-1] = min, mid, max
 	xs[1], xs[n2] = xs[n2], xs[1]

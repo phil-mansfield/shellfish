@@ -12,6 +12,7 @@ func Shell(xs []float64) []float64 {
 	for inc <= n {
 		inc = inc*3 + 1
 	}
+
 	for inc > 1 {
 		inc /= 3
 		for i := inc; i < n; i++ {

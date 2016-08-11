@@ -19,6 +19,8 @@ var (
 	Mode Flag = Nil
 )
 
+// MemString returns a string containing various statistics on the current
+// memory usage of Shellfish.
 func MemString() string {
 	ms := runtime.MemStats{}
 	runtime.ReadMemStats(&ms)

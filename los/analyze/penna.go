@@ -3,7 +3,7 @@ package analyze
 import (
 	// "fmt"
 	"math"
-	
+
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/math/mat"
 
@@ -133,7 +133,7 @@ func FilterPoints(
 		r := &rs[ri]
 		validXs := make([]float64, 0, r.N)
 		validYs := make([]float64, 0, r.N)
-		
+
 		for i := 0; i < r.N; i++ {
 			if r.Oks[i] {
 				validXs = append(validXs, r.PlaneXs[i])
@@ -172,6 +172,6 @@ func FilterPoints(
 
 		pxs, pys = append(pxs, fXs), append(pys, fYs)
 	}
-	
+
 	return pxs, pys, true
 }

@@ -8,8 +8,8 @@ import (
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
-	"github.com/phil-mansfield/shellfish/los/tree"
 	"github.com/phil-mansfield/shellfish/logging"
+	"github.com/phil-mansfield/shellfish/los/tree"
 )
 
 type TreeConfig struct {
@@ -34,7 +34,9 @@ func (config *TreeConfig) Run(
 		)
 	}
 	var t time.Time
-	if logging.Mode == logging.Performance { t = time.Now() }
+	if logging.Mode == logging.Performance {
+		t = time.Now()
+	}
 
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil {

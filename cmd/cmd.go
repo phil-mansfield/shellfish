@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/phil-mansfield/shellfish/cmd/env"
+	"github.com/phil-mansfield/shellfish/logging"
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/version"
-	"github.com/phil-mansfield/shellfish/logging"
 )
 
 var ModeNames map[string]Mode = map[string]Mode{
@@ -110,9 +110,12 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	config.HSnapMin = config.SnapMin
 
 	switch config.Logging {
-	case "nil": logging.Mode = logging.Nil
-	case "performance": logging.Mode = logging.Performance
-	case "debug": logging.Mode = logging.Debug
+	case "nil":
+		logging.Mode = logging.Nil
+	case "performance":
+		logging.Mode = logging.Performance
+	case "debug":
+		logging.Mode = logging.Debug
 	}
 
 	return config.validate()

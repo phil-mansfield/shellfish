@@ -20,14 +20,14 @@ const (
 )
 
 type ARTIOBuffer struct {
-	open    bool
-	xsBuf   [][3]float32
-	msBuf   []float32
-	xsBufs  [][][3]float32
-	msBufs  [][]float32
-	idsBuf  []int64
-	sMasses []float32
-	sFlags  []bool // True if the species is "N-BODY" type.
+	open                bool
+	xsBuf               [][3]float32
+	msBuf               []float32
+	xsBufs              [][][3]float32
+	msBufs              [][]float32
+	idsBuf              []int64
+	sMasses             []float32
+	sFlags              []bool // True if the species is "N-BODY" type.
 	fileset, exFilename string
 }
 
@@ -70,11 +70,11 @@ func NewARTIOBuffer(filename string) (VectorBuffer, error) {
 	}
 
 	return &ARTIOBuffer{
-		xsBufs:  make([][][3]float32, numSpecies),
-		msBufs: make([][]float32, numSpecies),
-		sMasses: sMasses,
-		sFlags:  sFlags,
-		fileset: fileset,
+		xsBufs:     make([][][3]float32, numSpecies),
+		msBufs:     make([][]float32, numSpecies),
+		sMasses:    sMasses,
+		sFlags:     sFlags,
+		fileset:    fileset,
 		exFilename: filename,
 	}, nil
 }
@@ -221,7 +221,7 @@ func (buf *ARTIOBuffer) IsOpen() bool {
 func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 	xs, _, _, err := buf.Read(fileNumStr)
 	defer buf.Close()
-	
+
 	h, err := artio.FilesetOpen(
 		buf.fileset, artio.OpenHeader, artio.NullContext,
 	)
@@ -248,21 +248,25 @@ func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
 	out.TotalWidth = h.GetDouble(h.Key("box_size"))[0] * lengthUnit
 
 	if out.TotalWidth < 0.001 || out.TotalWidth > 1e6 {
-		return fmt.Errorf("ARTIO box_size calculated to be %g Mpc/h. This " +
+		return fmt.Errorf("ARTIO box_size calculated to be %g Mpc/h. This "+
 			"is an internal bug: please submit an issue.", out.TotalWidth)
 	}
 
 	out.Origin, out.Width = boundingBox(xs, out.TotalWidth)
 	out.N = int64(len(xs))
-	
+
 	min, max := xs[0], xs[0]
 	for i := range xs {
 		for j := 0; j < 3; j++ {
-			if xs[i][j] < min[j] { min[j] = xs[i][j] }
-			if xs[i][j] > max[j] { max[j] = xs[i][j] }
+			if xs[i][j] < min[j] {
+				min[j] = xs[i][j]
+			}
+			if xs[i][j] > max[j] {
+				max[j] = xs[i][j]
+			}
 		}
 	}
-	
+
 	switch {
 	case !h.HasKey("auni"):
 		return fmt.Errorf("ARTIO header does not contain 'auni' field.")

@@ -1,16 +1,16 @@
 package io
 
 import (
-	"io"
 	"encoding/binary"
 	"fmt"
+	"io"
 
 	"unsafe"
 )
 
 type FilterData struct {
-	Snaps []int64
-	IDs []int64
+	Snaps     []int64
+	IDs       []int64
 	Particles [][]int64
 }
 
@@ -44,13 +44,13 @@ func WriteFilter(wr io.Writer, orderFlag string, data FilterData) error {
 	binary.Write(wr, order, int32(len(data.Snaps)))
 
 	info := make([]haloInfo, len(data.Snaps))
-	baseOffset := int64(4 + 4 + len(info) * int(unsafe.Sizeof(haloInfo{})))
+	baseOffset := int64(4 + 4 + len(info)*int(unsafe.Sizeof(haloInfo{})))
 
 	totLen := 0
 	for i := range info {
 		info[i].Snap = data.Snaps[i]
 		info[i].ID = data.IDs[i]
-		info[i].StartByte = int64(totLen * 8) + baseOffset
+		info[i].StartByte = int64(totLen*8) + baseOffset
 		info[i].Len = int64(len(data.Particles[i]))
 	}
 	binary.Write(wr, order, info)

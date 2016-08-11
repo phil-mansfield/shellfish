@@ -107,12 +107,12 @@ func RockstarConvertTopN(
 	inFile, outFile string, n int, vars *VarColumns, cosmo *io.CosmologyHeader,
 ) error {
 	valIdxs := []int{vars.ID, vars.X, vars.Y, vars.Z, vars.M200m}
-	
+
 	cols, err := readTable(inFile, valIdxs)
 	if err != nil {
 		return err
 	}
-	
+
 	cols = genRadiiMasses(cols, vars, cosmo)
 
 	if n > len(cols[0]) {
@@ -211,13 +211,19 @@ func readTable(file string, colIdxs []int) ([][]float64, error) {
 	// TODO: Heavily optimize this.
 
 	f, err := os.Open(file)
-	if err != nil { return nil, err } 
+	if err != nil {
+		return nil, err
+	}
 	info, err := f.Stat()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	bs := make([]byte, info.Size())
 	_, err = go_io.ReadFull(f, bs)
-	if err != nil { return nil, err }
-	
+	if err != nil {
+		return nil, err
+	}
+
 	lines := strings.Split(string(bs), "\n")
 
 	_, floats, err := catalog.ParseCols(lines, nil, colIdxs)

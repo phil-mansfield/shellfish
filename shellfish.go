@@ -103,7 +103,7 @@ func main() {
 		if len(lines) == 0 {
 			return
 		} else if len(lines) == 1 && len(lines[0]) >= 9 &&
-			lines[0][:9] == "Shellfish"  {
+			lines[0][:9] == "Shellfish" {
 			fmt.Println(lines[0])
 			os.Exit(1)
 		}

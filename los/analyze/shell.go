@@ -4,10 +4,10 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/phil-mansfield/shellfish/math/sort"
 	"github.com/gonum/matrix/mat64"
-	intr "github.com/phil-mansfield/shellfish/math/interpolate"
 	grid "github.com/phil-mansfield/shellfish/los/analyze/ellipse_grid"
+	intr "github.com/phil-mansfield/shellfish/math/interpolate"
+	"github.com/phil-mansfield/shellfish/math/sort"
 )
 
 type Shell func(phi, theta float64) float64
@@ -76,9 +76,12 @@ func (s Shell) MedianRadius(samples int) float64 {
 func trisort(x, y, z float64) (a, b, c float64, aIdx int) {
 	var p, q float64
 	switch {
-	case x > y && x > z: a, p, q, aIdx = x, y, z, 0
-	case y > x && y > z: a, p, q, aIdx = y, z, x, 1
-	default: a, p, q, aIdx = z, x, y, 2
+	case x > y && x > z:
+		a, p, q, aIdx = x, y, z, 0
+	case y > x && y > z:
+		a, p, q, aIdx = y, z, x, 1
+	default:
+		a, p, q, aIdx = z, x, y, 2
 	}
 
 	if p > q {
@@ -97,18 +100,18 @@ func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
 	for i := 0; i < samples; i++ {
 		phi, theta := randomAngle()
 		r := s(phi, theta)
-		area := r*r / cosNorm(s, phi, theta)
+		area := r * r / cosNorm(s, phi, theta)
 		x, y, z := cartesian(phi, theta, r)
 
-		nxx += area*x*x
-		nyy += area*y*y
-		nzz += area*z*z
-		nxy += area*x*y
-		nyz += area*y*z
-		nzx += area*z*x
-		nx += area*x
-		ny += area*y
-		nz += area*z
+		nxx += area * x * x
+		nyy += area * y * y
+		nzz += area * z * z
+		nxy += area * x * y
+		nyz += area * y * z
+		nzx += area * z * x
+		nx += area * x
+		ny += area * y
+		nz += area * z
 
 		norm += area
 	}
@@ -125,7 +128,9 @@ func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
 
 	eigen := &mat64.Eigen{}
 	ok := eigen.Factorize(mat, false)
-	if !ok { panic("Could not factorize inertia tensor.") }
+	if !ok {
+		panic("Could not factorize inertia tensor.")
+	}
 
 	vals := eigen.Values(nil)
 	vecs := eigen.Vectors()
@@ -137,12 +142,11 @@ func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
 
 	// TODO: Fix naming conventions.
 
-	
 	c, b, a, aIdx := trisort(math.Sqrt(ax2), math.Sqrt(ay2), math.Sqrt(az2))
 	ac, bc := a/c, b/c
 	acRatio := axisInterpolators.acRatio.Eval(ac, bc)
 	bcRatio := axisInterpolators.bcRatio.Eval(ac, bc)
-	cRatio  := axisInterpolators.cRatio.Eval(ac, bc)
+	cRatio := axisInterpolators.cRatio.Eval(ac, bc)
 
 	aVec = [3]float64{
 		vecs.At(0, aIdx), vecs.At(1, aIdx), vecs.At(2, aIdx),
@@ -151,24 +155,24 @@ func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
 	aVec[0] = aVec[0] / norm
 	aVec[1] = aVec[1] / norm
 	aVec[2] = aVec[2] / norm
-	
+
 	c = cRatio * c
 	return c, bcRatio * bc * c, acRatio * ac * c, aVec
 }
 
-func cosNorm(s Shell, phi, theta float64) float64 	{
+func cosNorm(s Shell, phi, theta float64) float64 {
 	dp, dt := 1e-3, 1e-3
-	r00 := s(phi - dp, theta - dt)
-	x00, y00, z00 := cartesian(phi - dp, theta - dt, r00)
-	r01 := s(phi - dp, theta + dt)
-	x01, y01, z01 := cartesian(phi - dp, theta + dt, r01)
-	r10 := s(phi + dp, theta - dt)
-	x10, y10, z10 := cartesian(phi + dp, theta - dt, r10)
-	r11 := s(phi + dp, theta + dt)
-	x11, y11, z11 := cartesian(phi + dp, theta + dt, r11)
+	r00 := s(phi-dp, theta-dt)
+	x00, y00, z00 := cartesian(phi-dp, theta-dt, r00)
+	r01 := s(phi-dp, theta+dt)
+	x01, y01, z01 := cartesian(phi-dp, theta+dt, r01)
+	r10 := s(phi+dp, theta-dt)
+	x10, y10, z10 := cartesian(phi+dp, theta-dt, r10)
+	r11 := s(phi+dp, theta+dt)
+	x11, y11, z11 := cartesian(phi+dp, theta+dt, r11)
 
-	dxa, dya, dza := x00 - x11, y00 - y11, z00 - z11
-	dxb, dyb, dzb := x01 - x10, y01 - y10, z01 - z10
+	dxa, dya, dza := x00-x11, y00-y11, z00-z11
+	dxb, dyb, dzb := x01-x10, y01-y10, z01-z10
 
 	// normal vector
 	xn := dya*dzb - dza*dyb
@@ -186,7 +190,7 @@ func (s Shell) SurfaceArea(samples int) float64 {
 	for i := 0; i < samples; i++ {
 		phi, theta := randomAngle()
 		r := s(phi, theta)
-		sum += r*r / cosNorm(s, phi, theta)
+		sum += r * r / cosNorm(s, phi, theta)
 	}
 	return sum / float64(samples) * 4 * math.Pi
 }
@@ -233,13 +237,13 @@ func (s Shell) RadialRange(samples int) (low, high float64) {
 	return low, high
 }
 
-func  (s Shell) RadiusHistogram(
+func (s Shell) RadiusHistogram(
 	samples, bins int, rMin, rMax float64,
 ) (rs, ns []float64) {
 	rs, ns = make([]float64, bins), make([]float64, bins)
 	dr := (rMax - rMin) / float64(bins)
 	for i := range rs {
-		rs[i] = rMin + dr*(float64(i) + 0.5)
+		rs[i] = rMin + dr*(float64(i)+0.5)
 	}
 
 	count := 0
@@ -247,9 +251,13 @@ func  (s Shell) RadiusHistogram(
 		phi, theta := randomAngle()
 		r := s(phi, theta)
 		ri := (r - rMin) / dr
-		if ri < 0 { continue }
+		if ri < 0 {
+			continue
+		}
 		idx := int(ri)
-		if idx >= bins { continue }
+		if idx >= bins {
+			continue
+		}
 		ns[idx]++
 		count++
 	}
@@ -270,7 +278,7 @@ func (s Shell) Contains(x, y, z float64) bool {
 
 var axisInterpolators = struct {
 	acRatio, bcRatio, cRatio intr.BiInterpolator
-} { }
+}{}
 
 func init() {
 	axisInterpolators.acRatio = intr.NewBiCubic(

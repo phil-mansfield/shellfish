@@ -52,14 +52,14 @@ func (r *RingBuffer) Splashback(
 			r.profRs, r.profRhos, window,
 			Vals(r.smoothRhos), Derivs(r.smoothDerivs),
 		)
-		
+
 		if !r.Oks[i] {
 			continue
 		}
 		r.Rs[i], r.Oks[i] = SplashbackRadius(
 			r.profRs, r.smoothRhos, r.smoothDerivs, DLim(dLim),
 		)
-		
+
 		if !r.Oks[i] {
 			continue
 		}

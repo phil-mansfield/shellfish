@@ -10,19 +10,30 @@ import (
 	"github.com/phil-mansfield/shellfish/math/sort"
 )
 
+// Shell is a function that returns the radius of a shell at a given set of
+// angles.
+//
+// Unless otherwise specified, all quantities are calculated through Monte
+// Carlo solid angle sampling.
 type Shell func(phi, theta float64) float64
 
+// randomAngle returns and angle chosen uniformly at random.
 func randomAngle() (phi, theta float64) {
 	u, v := rand.Float64(), rand.Float64()
 	return 2 * math.Pi * u, math.Acos(2*v - 1)
 }
 
+// cartesian converts a tuple of radial coordinates to cartesian coordinates.
 func cartesian(phi, theta, r float64) (x, y, z float64) {
 	sinP, cosP := math.Sincos(phi)
 	sinT, cosT := math.Sincos(theta)
 	return r * sinT * cosP, r * sinT * sinP, r * cosT
 }
 
+// CartesianSampledVolume returns the volume of a Shell. The volume is
+// calculated by Monte Carlo sampling of a sphere of radius rMax.
+//
+// This is slower than Volume for most shell shapes.
 func (s Shell) CartesianSampledVolume(samples int, rMax float64) float64 {
 	inside := 0
 	for i := 0; i < samples; i++ {
@@ -43,6 +54,7 @@ func (s Shell) CartesianSampledVolume(samples int, rMax float64) float64 {
 	return float64(inside) / float64(samples) * (rMax * rMax * rMax * 8)
 }
 
+// Volume returns the volume of Shell.
 func (s Shell) Volume(samples int) float64 {
 	sum := 0.0
 	for i := 0; i < samples; i++ {
@@ -54,6 +66,7 @@ func (s Shell) Volume(samples int) float64 {
 	return r3 * 4 * (math.Pi / 3)
 }
 
+// MeanRadius returns the angle-weighted mean radius of a Shell.
 func (s Shell) MeanRadius(samples int) float64 {
 	sum := 0.0
 	for i := 0; i < samples; i++ {
@@ -64,6 +77,7 @@ func (s Shell) MeanRadius(samples int) float64 {
 	return sum / float64(samples)
 }
 
+// MedianRadius returns the angle-weighted median radius of a Shell.
 func (s Shell) MedianRadius(samples int) float64 {
 	rs := make([]float64, samples)
 	for i := range rs {
@@ -73,6 +87,8 @@ func (s Shell) MedianRadius(samples int) float64 {
 	return sort.Median(rs, rs)
 }
 
+// triSort returns x, y, and z in sorted order and returns the argument
+// index of the largest value.
 func trisort(x, y, z float64) (a, b, c float64, aIdx int) {
 	var p, q float64
 	switch {
@@ -91,7 +107,13 @@ func trisort(x, y, z float64) (a, b, c float64, aIdx int) {
 	}
 }
 
+// Axes calculates the moment of inertia-equivalent axes of a Shell as well
+// as the direction of the major axis.
 func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
+
+	// Temporarily approximate a constant-density ellipsoidal shell as
+	// a homoeoid.
+
 	nxx, nyy, nzz := 0.0, 0.0, 0.0
 	nxy, nyz, nzx := 0.0, 0.0, 0.0
 	nx, ny, nz := 0.0, 0.0, 0.0
@@ -140,10 +162,15 @@ func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
 	ay2 := 3*Iy - ax2
 	az2 := 3*Iz - ax2
 
+	// Correct the axis ratios via empirically derived tables.
+
 	// TODO: Fix naming conventions.
 
 	c, b, a, aIdx := trisort(math.Sqrt(ax2), math.Sqrt(ay2), math.Sqrt(az2))
 	ac, bc := a/c, b/c
+
+	// TODO: This function is just barely not thread safe.
+
 	acRatio := axisInterpolators.acRatio.Eval(ac, bc)
 	bcRatio := axisInterpolators.bcRatio.Eval(ac, bc)
 	cRatio := axisInterpolators.cRatio.Eval(ac, bc)
@@ -160,6 +187,8 @@ func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
 	return c, bcRatio * bc * c, acRatio * ac * c, aVec
 }
 
+// cosNorm reutrns the cosine of the angle between \hat{r} and the normal
+// vector of the Shell surface at a particular angle.
 func cosNorm(s Shell, phi, theta float64) float64 {
 	dp, dt := 1e-3, 1e-3
 	r00 := s(phi-dp, theta-dt)
@@ -185,6 +214,7 @@ func cosNorm(s Shell, phi, theta float64) float64 {
 	return xl*xn + yl*yn + zl*zn
 }
 
+// SurfaceArea returns the surface area of a shell.
 func (s Shell) SurfaceArea(samples int) float64 {
 	sum := 0.0
 	for i := 0; i < samples; i++ {
@@ -195,6 +225,7 @@ func (s Shell) SurfaceArea(samples int) float64 {
 	return sum / float64(samples) * 4 * math.Pi
 }
 
+// DiffVolume returns the volume of the space between two Shells, s1 and s2.
 func (s1 Shell) DiffVolume(s2 Shell, samples int) float64 {
 	sum := 0.0
 	for i := 0; i < samples; i++ {
@@ -207,6 +238,8 @@ func (s1 Shell) DiffVolume(s2 Shell, samples int) float64 {
 	return sum / float64(samples) * (4 * math.Pi) / 3
 }
 
+// MaxDiff returns the maximum radial distance between two Shells along
+// any line of sight.
 func (s1 Shell) MaxDiff(s2 Shell, samples int) float64 {
 	max := 0.0
 	for i := 0; i < samples; i++ {
@@ -220,6 +253,7 @@ func (s1 Shell) MaxDiff(s2 Shell, samples int) float64 {
 	return max
 }
 
+// RadialRange returns the maximum and minimum radius of a Shell.
 func (s Shell) RadialRange(samples int) (low, high float64) {
 	phi, theta := randomAngle()
 	low = s(phi, theta)
@@ -237,6 +271,8 @@ func (s Shell) RadialRange(samples int) (low, high float64) {
 	return low, high
 }
 
+// RadiusHistogram returns a normalized angle-weighted histogram of the radii
+// of a Shell.
 func (s Shell) RadiusHistogram(
 	samples, bins int, rMin, rMax float64,
 ) (rs, ns []float64) {
@@ -269,6 +305,8 @@ func (s Shell) RadiusHistogram(
 	return rs, ns
 }
 
+// Contains returns true if a Shell contains a point and false otherwise. The
+// point must be in a coordinate system in which the Shell is at (0, 0, 0).
 func (s Shell) Contains(x, y, z float64) bool {
 	r := math.Sqrt(x*x + y*y + z*z)
 	phi := math.Atan2(y, x)
@@ -276,6 +314,7 @@ func (s Shell) Contains(x, y, z float64) bool {
 	return s(phi, theta) > r
 }
 
+// axisInterpolators contains state needed for Shell.Axes().
 var axisInterpolators = struct {
 	acRatio, bcRatio, cRatio intr.BiInterpolator
 }{}

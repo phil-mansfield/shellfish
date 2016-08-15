@@ -7,6 +7,8 @@ import (
 	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
+// RingBuffer contains the locations of candidate splashback radii for a single
+// ring of a LOS profiles.
 type RingBuffer struct {
 	PlaneXs, PlaneYs, Xs, Ys, Zs, Rs, Phis     []float64
 	Oks                                        []bool
@@ -26,6 +28,7 @@ func (r *RingBuffer) Init(n, bins int) {
 	r.profRs, r.profRhos = make([]float64, bins), make([]float64, bins)
 }
 
+// Clear clears all the values contained within a RingBuffer.
 func (r *RingBuffer) Clear() {
 	for i := 0; i < r.N; i++ {
 		r.PlaneXs[i], r.PlaneYs[i] = 0, 0
@@ -40,6 +43,8 @@ func (r *RingBuffer) Clear() {
 	}
 }
 
+// Splashback calculates the candidate splashback radius for a given line of
+// sight and stores the relevant information in the RingBuffer.
 func (r *RingBuffer) Splashback(
 	h *los.Halo, ring int, window int, dLim float64,
 ) {
@@ -78,6 +83,8 @@ func (r *RingBuffer) Splashback(
 	}
 }
 
+// OkPlaneCoords returns the within-plane x and y coordinates where r.Oks
+// is true.
 func (r *RingBuffer) OkPlaneCoords(xs, ys []float64) (okXs, okYs []float64) {
 	xs, ys = xs[:0], ys[:0]
 	for i, ok := range r.Oks {
@@ -89,6 +96,8 @@ func (r *RingBuffer) OkPlaneCoords(xs, ys []float64) (okXs, okYs []float64) {
 	return xs, ys
 }
 
+// OkPlaneCoords returns the within-plane r and phi coordinates where r.Oks
+// is true.
 func (r *RingBuffer) OkPolarCoords(rs, phis []float64) (okRs, okPhis []float64) {
 	rs, phis = rs[:0], phis[:0]
 	for i, ok := range r.Oks {

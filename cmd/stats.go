@@ -560,7 +560,7 @@ func appendShellParticlesChan(
 				rs := shell(phi, theta)
 
 				if rs > r {
-					buf = append(buf, pIDs)
+					buf = append(buf, pIDs[i])
 				}
 
 			}

@@ -132,7 +132,7 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 		return err
 	}
 
-	config.shellFilter = config.shellWidth > 0 &&
+	config.shellFilter = config.shellWidth != 0 &&
 		config.shellParticleFile != ""
 
 	return config.validate()

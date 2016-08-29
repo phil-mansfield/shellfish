@@ -10,16 +10,42 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/logging"
 	"github.com/phil-mansfield/shellfish/los/tree"
+	"github.com/phil-mansfield/shellfish/parse"
 )
 
 type TreeConfig struct {
+	selectSnaps []int64
 }
 
 var _ Mode = &TreeConfig{}
 
-func (config *TreeConfig) ExampleConfig() string { return "" }
+func (config *TreeConfig) ExampleConfig() string {
+	return `[tree.config]
 
-func (config *TreeConfig) ReadConfig(fname string) error { return nil }
+#####################
+## Optional Fields ##
+#####################
+
+# SelectSnaps is a list of all the snapshots which halo IDs should be
+# output at. If not set, IDs will be output at all snapshots.
+#
+# SelectSnaps = 36, 47, 64, 77, 87, 100`
+}
+
+func (config *TreeConfig) ReadConfig(fname string) error {
+	if fname == "" {
+		return nil
+	}
+
+	vars := parse.NewConfigVars("stats.config")
+	vars.Ints(&config.selectSnaps, "SelectSnaps", []int64{})
+
+	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (config *TreeConfig) validate() error { return nil }
 
@@ -75,7 +101,15 @@ func (config *TreeConfig) Run(
 		if snaps[i] <= int(gConfig.SnapMin) &&
 			snaps[i] >= int(gConfig.SnapMax) {
 
-			fLines = append(fLines, lines[i])
+			if len(config.selectSnaps) > 0 {
+				for _, snap := range config.selectSnaps {
+					if int(snap) == snaps[i] {
+						fLines = append(fLines, lines[i])
+					}
+				}
+			} else {
+				fLines = append(fLines, lines[i])
+			}
 		}
 	}
 

@@ -85,7 +85,9 @@ Order = 3
 # the IDs of particles which are close to the edge of the halo.
 # ShellParticlesFile is a file that the IDs will be written out to, and
 # ShellWidth is how far away from the shell a particle can be (as a multiplier
-# of R200m) while still being output to the file.
+# of R200m) while still being output to the file. If ShellWidth is set to
+# a negative number, all particles within the shell will be written to the
+# file.
 #
 # The format of the file is the following:
 #
@@ -539,7 +541,6 @@ func appendShellParticlesChan(
 	delta := float64(sphere.R) * shellWidth
 	rLow -= delta
 	rHigh += delta
-	log.Println("delta", delta, "rLow", rLow, "rHigh", rHigh)
 	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
 
 	for i := offset; i < hd.N; i += workers {
@@ -551,7 +552,19 @@ func appendShellParticlesChan(
 
 		r2 := x*x + y*y + z*z
 
-		if r2 > low2 && r2 < high2 {
+		if shellWidth < 0 {
+			if r2 < high2 {
+				r := math.Sqrt(float64(r2))
+				phi := math.Atan2(float64(y), float64(x))
+				theta := math.Acos(float64(z) / r)
+				rs := shell(phi, theta)
+
+				if rs > r {
+					buf = append(buf, pIDs)
+				}
+
+			}
+		} else if r2 > low2 && r2 < high2 {
 			r := math.Sqrt(float64(r2))
 			phi := math.Atan2(float64(y), float64(x))
 			theta := math.Acos(float64(z) / r)

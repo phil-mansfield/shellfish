@@ -37,13 +37,15 @@ func EulerMatrixAt(phi, theta, psi float32, out *mat.Matrix32) {
 	m3.MultAt(m2.Mult(m1), out)
 }
 
-// EulerMatrixBetween creates a 3D rotation matrix which such that M * v1 = v2.
+// EulerMatrixBetween creates a 3D rotation matrix such that M * v1 = v2.
 func EulerMatrixBetween(v1, v2 *[3]float32) *mat.Matrix32 {
 	rot := mat.NewMatrix32(make([]float32, 9), 3, 3)
 	EulerMatrixBetweenAt(v1, v2, rot)
 	return rot
 }
 
+// EulerMatrixBetweenAt creates a 3D rotation matrix such that M * v1 = v2
+// and stores the results at the matrix out.
 func EulerMatrixBetweenAt(v1, v2 *[3]float32, out *mat.Matrix32) *mat.Matrix32 {
 	x1, y1, z1 := v1[0], v1[1], v1[2]
 	phi1, theta1 := SphericalAngles(x1, y1, z1)

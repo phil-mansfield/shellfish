@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"runtime"
 	"sort"
 	"time"
-	"os"
 
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/los/analyze"
@@ -16,8 +16,8 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
-	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/logging"
+	"github.com/phil-mansfield/shellfish/parse"
 )
 
 type StatsConfig struct {
@@ -26,9 +26,9 @@ type StatsConfig struct {
 	exclusionStrategy string
 	order             int64
 
-	shellFilter bool
+	shellFilter       bool
 	shellParticleFile string
-	shellWidth float64
+	shellWidth        float64
 }
 
 var _ Mode = &StatsConfig{}
@@ -85,7 +85,9 @@ Order = 3
 # the IDs of particles which are close to the edge of the halo.
 # ShellParticlesFile is a file that the IDs will be written out to, and
 # ShellWidth is how far away from the shell a particle can be (as a multiplier
-# of R200m) while still being output to the file.
+# of R200m) while still being output to the file. If ShellWidth is set to
+# a negative number, all particles within the shell will be written to the
+# file.
 #
 # The format of the file is the following:
 #
@@ -130,7 +132,7 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 		return err
 	}
 
-	config.shellFilter = config.shellWidth > 0 &&
+	config.shellFilter = config.shellWidth != 0 &&
 		config.shellParticleFile != ""
 
 	return config.validate()
@@ -175,7 +177,9 @@ func (config *StatsConfig) Run(
 		)
 	}
 	var t time.Time
-	if logging.Mode == logging.Performance { t = time.Now() }
+	if logging.Mode == logging.Performance {
+		t = time.Now()
+	}
 
 	intColIdxs := []int{0, 1}
 	floatColIdxs := make([]int, 4+2*config.order*config.order)
@@ -254,7 +258,6 @@ func (config *StatsConfig) Run(
 			sas[idxs[j]] = shell.SurfaceArea(samples)
 			as[idxs[j]], bs[idxs[j]], cs[idxs[j]], aVecs[idxs[j]] =
 				shell.Axes(samples)
-
 
 			rmins[idxs[j]], rmaxes[idxs[j]] = rangeSp(snapCoeffs[j], config)
 		}
@@ -539,7 +542,7 @@ func appendShellParticlesChan(
 	rLow -= delta
 	rHigh += delta
 	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
-	
+
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
@@ -549,14 +552,26 @@ func appendShellParticlesChan(
 
 		r2 := x*x + y*y + z*z
 
-		if r2 > low2 && r2 < high2 {
+		if shellWidth < 0 {
+			if r2 < high2 {
+				r := math.Sqrt(float64(r2))
+				phi := math.Atan2(float64(y), float64(x))
+				theta := math.Acos(float64(z) / r)
+				rs := shell(phi, theta)
+
+				if rs > r {
+					buf = append(buf, pIDs[i])
+				}
+
+			}
+		} else if r2 > low2 && r2 < high2 {
 			r := math.Sqrt(float64(r2))
 			phi := math.Atan2(float64(y), float64(x))
 			theta := math.Acos(float64(z) / r)
 
 			rs := shell(phi, theta)
 
-			if rs + delta > r && rs - delta < r {
+			if rs+delta > r && rs-delta < r {
 				buf = append(buf, pIDs[i])
 			}
 		}
@@ -569,29 +584,41 @@ func writeShellParticles(
 	gConfig *GlobalConfig, config *StatsConfig,
 ) error {
 	snaps64 := make([]int64, len(snaps))
-	for i := range snaps { snaps64[i] = int64(snaps[i]) }
+	for i := range snaps {
+		snaps64[i] = int64(snaps[i])
+	}
 	ids64 := make([]int64, len(ids))
-	for i := range ids { ids64[i] = int64(ids[i]) }
-	
+	for i := range ids {
+		ids64[i] = int64(ids[i])
+	}
+
 	data := io.FilterData{
-		Snaps: snaps64,
-		IDs: ids64,
+		Snaps:     snaps64,
+		IDs:       ids64,
 		Particles: particles,
 	}
 
 	f, err := os.Create(config.shellParticleFile)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer f.Close()
 
 	err = io.WriteFilter(f, gConfig.Endianness, data)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	ff, err := os.Open(config.shellParticleFile)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer ff.Close()
 
 	check, err := io.ReadFilter(ff)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	switch {
 	case !int64sEq(check.Snaps, data.Snaps):
@@ -621,9 +648,13 @@ func writeShellParticles(
 }
 
 func int64sEq(xs, ys []int64) bool {
-	if len(xs) != len(ys) { return false }
+	if len(xs) != len(ys) {
+		return false
+	}
 	for i := range xs {
-		if xs[i] != ys[i] { return false }
+		if xs[i] != ys[i] {
+			return false
+		}
 	}
 	return true
 }

@@ -16,10 +16,10 @@ import (
 // TODO: rewrite the six return values as a alice of slices.
 
 const (
-	rockstarMemoDir = "rockstar"
-	rockstarMemoFile = "halo_%d.dat"
+	rockstarMemoDir       = "rockstar"
+	rockstarMemoFile      = "halo_%d.dat"
 	rockstarShortMemoFile = "halo_short_%d.dat"
-	rockstarShortMemoNum = 10 * 1000
+	rockstarShortMemoNum  = 10 * 1000
 
 	headerMemoFile = "hd_snap%d.dat"
 )
@@ -34,27 +34,33 @@ func ReadSortedRockstarIDs(
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
 	if _, err := os.Stat(dir); err != nil {
 		err = os.Mkdir(dir, 0777)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var (
 		ids []int
-		ms []float64
+		ms  []float64
 		err error
 	)
-	
+
 	if maxID >= rockstarShortMemoNum || maxID == -1 {
 		file := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
 		ids, _, _, _, ms, _, err = readRockstar(
 			file, -1, snap, nil, vars, buf, e,
 		)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		file := path.Join(dir, fmt.Sprintf(rockstarShortMemoFile, snap))
 		ids, _, _, _, ms, _, err = readRockstar(
 			file, rockstarShortMemoNum, snap, nil, vars, buf, e,
 		)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if len(ids) < maxID {
@@ -62,18 +68,21 @@ func ReadSortedRockstarIDs(
 			"ID %d too large for snapshot %d", maxID, snap,
 		)
 	}
-	
+
 	sortRockstar(ids, ms)
-	if maxID == -1 { return ids, nil }
+	if maxID == -1 {
+		return ids, nil
+	}
 	return ids[:maxID+1], nil
 }
 
 type massSet struct {
 	ids []int
-	ms []float64
+	ms  []float64
 }
 
 func (set massSet) Len() int { return len(set.ids) }
+
 // We're reverse sorting.
 func (set massSet) Less(i, j int) bool { return set.ms[i] > set.ms[j] }
 func (set massSet) Swap(i, j int) {
@@ -82,7 +91,7 @@ func (set massSet) Swap(i, j int) {
 }
 
 func sortRockstar(ids []int, ms []float64) {
-	set := massSet{ ids, ms }
+	set := massSet{ids, ms}
 	sort.Sort(set)
 }
 
@@ -96,7 +105,9 @@ func ReadRockstar(
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
 	if _, err := os.Stat(dir); err != nil {
 		err = os.Mkdir(dir, 0777)
-		if err != nil { return nil, nil, nil, nil, nil, nil, err }
+		if err != nil {
+			return nil, nil, nil, nil, nil, nil, err
+		}
 	}
 
 	binFile := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
@@ -108,7 +119,9 @@ func ReadRockstar(
 		shortBinFile, rockstarShortMemoNum, snap, ids, vars, buf, e,
 	)
 	// TODO: Fix error handling here.
-	if err == nil { return outIDs, xs, ys, zs, ms, rs, err }
+	if err == nil {
+		return outIDs, xs, ys, zs, ms, rs, err
+	}
 	outIDs, xs, ys, zs, ms, rs, err = readRockstar(
 		binFile, -1, snap, ids, vars, buf, e,
 	)
@@ -120,7 +133,9 @@ func readRockstar(
 	vars *halo.VarColumns, buf io.VectorBuffer, e *env.Environment,
 ) (outIDs []int, xs, ys, zs, ms, rs []float64, err error) {
 	hds, _, err := ReadHeaders(snap, buf, e)
-	if err != nil { return nil, nil, nil, nil, nil, nil, err }
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, err
+	}
 	hd := &hds[0]
 
 	// If binFile doesn't exist, create it.
@@ -129,30 +144,44 @@ func readRockstar(
 			err = halo.RockstarConvert(
 				e.HaloCatalog(snap), binFile, vars, &hd.Cosmo,
 			)
-			if err != nil { return nil, nil, nil, nil, nil, nil, err }
+			if err != nil {
+				return nil, nil, nil, nil, nil, nil, err
+			}
 		} else {
 			err = halo.RockstarConvertTopN(
 				e.HaloCatalog(snap), binFile, n, vars, &hd.Cosmo,
 			)
-			if err != nil { return nil, nil, nil, nil, nil, nil, err }
+			if err != nil {
+				return nil, nil, nil, nil, nil, nil, err
+			}
 		}
 	}
 
 	rids, xs, ys, zs, ms, rs, err := halo.ReadBinaryRockstar(binFile)
-	if err != nil { return nil, nil, nil, nil, nil, nil, err }
-	rvals := [][]float64{ xs, ys, zs, ms, rs }
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, err
+	}
+	rvals := [][]float64{xs, ys, zs, ms, rs}
 
 	// Select out only the IDs we want.
-	if ids == nil { return rids, xs, ys, zs, ms, rs, nil }
+	if ids == nil {
+		return rids, xs, ys, zs, ms, rs, nil
+	}
 	vals := make([][]float64, len(rvals))
 
-	for i := range vals { vals[i] = make([]float64, len(ids)) }
+	for i := range vals {
+		vals[i] = make([]float64, len(ids))
+	}
 	f := NewIntFinder(rids)
 	for i, id := range ids {
 		line, ok := f.Find(id)
 		err = fmt.Errorf("Could not find ID %d", id)
-		if !ok { return nil, nil, nil, nil, nil, nil, err }
-		for vi := range vals { vals[vi][i] = rvals[vi][line] }
+		if !ok {
+			return nil, nil, nil, nil, nil, nil, err
+		}
+		for vi := range vals {
+			vals[vi][i] = rvals[vi][line]
+		}
 	}
 	xs, ys, zs, ms, rs = vals[0], vals[1], vals[2], vals[3], vals[4]
 
@@ -170,7 +199,9 @@ type IntFinder struct {
 func NewIntFinder(rids []int) IntFinder {
 	f := IntFinder{}
 	f.m = make(map[int]int)
-	for i, rid := range rids { f.m[rid] = i }
+	for i, rid := range rids {
+		f.m[rid] = i
+	}
 	return f
 }
 
@@ -190,7 +221,9 @@ func readUnmemoizedHeaders(
 	for i := range files {
 		files[i] = e.ParticleCatalog(snap, i)
 		err := buf.ReadHeader(files[i], &hds[i])
-		if err != nil { return nil, nil, err }
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	return hds, files, nil
 }
@@ -200,32 +233,42 @@ func readUnmemoizedHeaders(
 func ReadHeaders(
 	snap int, buf io.VectorBuffer, e *env.Environment,
 ) ([]io.Header, []string, error) {
-	if _, err := os.Stat(e.MemoDir); err != nil { return nil, nil, err }
+	if _, err := os.Stat(e.MemoDir); err != nil {
+		return nil, nil, err
+	}
 	memoFile := path.Join(e.MemoDir, fmt.Sprintf(headerMemoFile, snap))
 
 	if _, err := os.Stat(memoFile); err != nil {
 		// File not written yet.
 		hds, files, err := readUnmemoizedHeaders(snap, buf, e)
-		if err != nil { return nil, nil, err }
-		
-        f, err := os.Create(memoFile)
-        if err != nil { return nil, nil, err }
-        defer f.Close()
+		if err != nil {
+			return nil, nil, err
+		}
 
-        binary.Write(f, binary.LittleEndian, hds)
+		f, err := os.Create(memoFile)
+		if err != nil {
+			return nil, nil, err
+		}
+		defer f.Close()
+
+		binary.Write(f, binary.LittleEndian, hds)
 
 		return hds, files, nil
 	} else {
 		// File exists: read from it instead.
 
 		f, err := os.Open(memoFile)
-        if err != nil { return nil, nil, err }
-        defer f.Close()
+		if err != nil {
+			return nil, nil, err
+		}
+		defer f.Close()
 
 		hds := make([]io.Header, e.Blocks())
 		binary.Read(f, binary.LittleEndian, hds)
 		files := make([]string, e.Blocks())
-		for i := range files { files[i] = e.ParticleCatalog(snap, i) }
+		for i := range files {
+			files[i] = e.ParticleCatalog(snap, i)
+		}
 
 		return hds, files, nil
 	}

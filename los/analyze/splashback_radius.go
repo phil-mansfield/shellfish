@@ -5,7 +5,7 @@ type internalSplashbackRadiusOption func(*splashbackRadiusParams)
 type SplashbackRadiusOption internalSplashbackRadiusOption
 
 // DLim sets limit for d ln(rho) / d ln(r) above which point cannot be the
-// splashback radius. The default value is -5.
+// splashback radius.
 func DLim(dLim float64) SplashbackRadiusOption {
 	return func(p *splashbackRadiusParams) { p.dLim = dLim }
 }
@@ -17,6 +17,8 @@ func (p *splashbackRadiusParams) loadOptions(opts []SplashbackRadiusOption) {
 	}
 }
 
+// SplashbackRadius returns the point of steepest slope for a density profile.
+// It also allows for optional callbacks.
 func SplashbackRadius(
 	rs, rhos, derivs []float64, opts ...SplashbackRadiusOption,
 ) (r float64, ok bool) {

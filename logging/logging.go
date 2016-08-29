@@ -6,6 +6,7 @@ import (
 )
 
 type Flag int
+
 const (
 	Nil Flag = iota
 	Performance
@@ -18,11 +19,13 @@ var (
 	Mode Flag = Nil
 )
 
+// MemString returns a string containing various statistics on the current
+// memory usage of Shellfish.
 func MemString() string {
 	ms := runtime.MemStats{}
 	runtime.ReadMemStats(&ms)
 	return fmt.Sprintf(
-`Program Allocation: %d MB
+		`Program Allocation: %d MB
 System Allocation: %d MB
 Integrated Allocation: %d MB`, ms.Alloc, ms.Sys, ms.TotalAlloc,
 	)

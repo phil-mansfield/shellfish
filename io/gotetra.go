@@ -69,7 +69,6 @@ func (buf *GotetraBuffer) Read(fname string) (
 		return nil, nil, nil, err
 	}
 
-
 	si := 0
 	for z := 0; z < buf.sw; z++ {
 		for y := 0; y < buf.sw; y++ {

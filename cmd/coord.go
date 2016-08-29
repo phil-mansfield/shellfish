@@ -36,7 +36,9 @@ func (config *CoordConfig) Run(
 		)
 	}
 	var t time.Time
-	if logging.Mode == logging.Performance { t = time.Now() }
+	if logging.Mode == logging.Performance {
+		t = time.Now()
+	}
 
 	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
 	if err != nil {

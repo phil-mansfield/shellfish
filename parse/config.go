@@ -1,3 +1,58 @@
+/*package parse contains routines for parsing config files. To parse a config
+file, the user creates a ConfigVars struct and registers every variable in the
+config file with it. Registration requires 1) the variable name, 2) a
+default value, and 3) a location to write the variable to.
+
+Config files have two parse with this package have two parts, a title and a
+body. The title specifies the type of config file an the body contains
+Variable = Value pairs. The title ensures that when a project has multiple
+config files the wrong one isn't read by mistake.
+
+Here is an example configuration file that collects information about
+my cat:
+
+    # Title
+    [cat_info]
+
+    # Body:
+	CatName = Bob
+	FurColors = White, Black
+	Age = 7.5 # Inline comments are okay, too.
+	Paws = 4
+
+Here is an example of using the parse package to parse this type of config
+file.
+
+	type CatInfo struct {
+		CatName string
+		FurColors []string
+		Age float
+		Paws, Tails int
+	}
+
+	info := new(CatInfo)
+
+    vars := ConfigVars("cat_info")
+    vars.String(&info.CatName, "CatName", "")
+    vars.Strings(&info.FurColors, "FurColors", []string{})
+    vars.Float(&info.Age, "Age", -1)
+    vars.Int(&info.Paws, "Paws", 4)
+    vars.Int(&info.Tail, "Tail", 1)
+
+    // Then, once a file has been provided
+
+    err := ReadConfig("my_cat.config", vars)
+    if err != nil {
+        // Handle error
+    }
+
+A careful read of the above example will show that the supplied config file
+does not consider the config file missing one or more files an error. This will
+be annoying in some cases, but is usually the desired behavior. You will need to
+explicitly check for variables that have not been set.
+
+For additional examples, see the usage in config_test.go
+*/
 package parse
 
 import (
@@ -220,15 +275,23 @@ func (vars *ConfigVars) Bools(ptr *[]bool, name string, value []bool) {
 // Parsing Code //
 //////////////////
 
+// ReadConfig parses the config file specified by fname using the set of
+// variables vars. If successful nil is returned, otherwise an error is
+// returned.
 func ReadConfig(fname string, vars *ConfigVars) error {
 	for i := range vars.varNames {
 		vars.varNames[i] = strings.ToLower(vars.varNames[i])
 	}
 
+	// I/O
+
 	bs, err := ioutil.ReadFile(fname)
 	if err != nil {
 		return err
 	}
+
+	// Begin tokenization; remember line numbers for better errors.
+
 	lines := strings.Split(string(bs), "\n")
 	lines, lineNums := removeComments(lines)
 	for i := range lineNums {
@@ -242,6 +305,8 @@ func ReadConfig(fname string, vars *ConfigVars) error {
 		)
 	}
 	lines = lines[1:]
+
+	// Create associate list and check for name-based errors
 
 	names, vals, errLine := associationList(lines)
 	if errLine != -1 {
@@ -268,6 +333,8 @@ func ReadConfig(fname string, vars *ConfigVars) error {
 		)
 	}
 
+	// Convert every variable in the associate list.
+
 	if errLine = convertAssoc(names, vals, vars); errLine != -1 {
 		j := 0
 		for ; j < len(vars.varNames); j++ {
@@ -290,6 +357,8 @@ func ReadConfig(fname string, vars *ConfigVars) error {
 
 	return nil
 }
+
+// These functions are self-explanatory.
 
 func removeComments(lines []string) ([]string, []int) {
 	tmp := make([]string, len(lines))

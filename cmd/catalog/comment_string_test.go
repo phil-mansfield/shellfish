@@ -7,10 +7,10 @@ import (
 func TestCommentString(t *testing.T) {
 	tests := []struct {
 		intNames, floatNames []string
-		order []int
-		sizes []int
-		out string
-	} {
+		order                []int
+		sizes                []int
+		out                  string
+	}{
 		{[]string{"A"}, []string{}, []int{0}, []int{1},
 			"# Column contents: A(0)"},
 		{[]string{}, []string{"A"}, []int{0}, []int{1},

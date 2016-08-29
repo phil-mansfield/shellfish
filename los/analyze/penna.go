@@ -1,40 +1,16 @@
 package analyze
 
 import (
-	// "fmt"
 	"math"
-	
+
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/math/mat"
 
 	"github.com/gonum/matrix/mat64"
 )
 
-func pinv(m, t *mat.Matrix) *mat.Matrix {
-	// I HATE THIS
-	gm := mat64.NewDense(m.Height, m.Width, m.Vals)
-	gmt := mat64.NewDense(m.Width, m.Height, t.Vals)
-
-	out1 := mat64.NewDense(m.Height, m.Height,
-		make([]float64, m.Height*m.Height))
-	out2 := mat64.NewDense(m.Width, m.Height,
-		make([]float64, m.Height*m.Width))
-	out1.Mul(gm, gmt)
-
-	r, c := out1.Dims()
-	inv := mat64.NewDense(c, r, make([]float64, r*c))
-	inv.Inverse(out1)
-	out2.Mul(gmt, inv)
-
-	vals := make([]float64, m.Width*m.Height)
-	for y := 0; y < m.Width; y++ {
-		for x := 0; x < m.Height; x++ {
-			vals[y*m.Height+x] = out2.At(y, x)
-		}
-	}
-	return mat.NewMatrix(vals, m.Height, m.Width)
-}
-
+// PennaCoeffs calculates the Penna-Dines coefficients corresponding to the
+// parameters I, J, and K for a set of input points.
 func PennaCoeffs(xs, ys, zs []float64, I, J, K int) []float64 {
 	N := len(xs)
 	// TODO: Pass buffers to the function.
@@ -81,6 +57,8 @@ func PennaCoeffs(xs, ys, zs []float64, I, J, K int) []float64 {
 	return cs
 }
 
+// PennaFunc returns a shell function correpsonding to a particular set of
+// Penna-Dines coefficients.
 func PennaFunc(cs []float64, I, J, K int) Shell {
 	return func(phi, th float64) float64 {
 		idx, sum := 0, 0.0
@@ -103,6 +81,10 @@ func PennaFunc(cs []float64, I, J, K int) Shell {
 	}
 }
 
+// PennaVolumeFit fits a Penna-Dines shell to a set of points constrained to
+// a collection of planes belong to an los.Halo object.
+//
+// This function is essentially just a wrapper around PennaCoeffs.
 func PennaVolumeFit(
 	xs, ys [][]float64, h *los.Halo, I, J int,
 ) (cs []float64, shell Shell) {
@@ -125,6 +107,11 @@ func PennaVolumeFit(
 	return cs, PennaFunc(cs, I, J, 2)
 }
 
+// FilterPoints applies the filtering algorithm from section 2.2.3 of
+// Mansfield, Kravtsov, & Diemer (2016) to the points contained in each of
+// a collection of RingBuffers.
+//
+// This function is mostly just a wrapper around functions from kde.go.
 func FilterPoints(
 	rs []RingBuffer, levels int, h float64,
 ) (pxs, pys [][]float64, ok bool) {
@@ -133,7 +120,7 @@ func FilterPoints(
 		r := &rs[ri]
 		validXs := make([]float64, 0, r.N)
 		validYs := make([]float64, 0, r.N)
-		
+
 		for i := 0; i < r.N; i++ {
 			if r.Oks[i] {
 				validXs = append(validXs, r.PlaneXs[i])
@@ -149,6 +136,7 @@ func FilterPoints(
 			}
 		}
 
+		// If
 		factor := 1.0
 		fRs, fThs := []float64{}, []float64{}
 		var (
@@ -172,6 +160,34 @@ func FilterPoints(
 
 		pxs, pys = append(pxs, fXs), append(pys, fYs)
 	}
-	
+
 	return pxs, pys, true
+}
+
+// pinv calculates the pseudoinverse of a matrix, m, and its transpose, t.
+// Why doesn't this function just calculate the transpose, you ask? Because
+// mistakes were made.
+func pinv(m, t *mat.Matrix) *mat.Matrix {
+	// I HATE THIS
+	gm := mat64.NewDense(m.Height, m.Width, m.Vals)
+	gmt := mat64.NewDense(m.Width, m.Height, t.Vals)
+
+	out1 := mat64.NewDense(m.Height, m.Height,
+		make([]float64, m.Height*m.Height))
+	out2 := mat64.NewDense(m.Width, m.Height,
+		make([]float64, m.Height*m.Width))
+	out1.Mul(gm, gmt)
+
+	r, c := out1.Dims()
+	inv := mat64.NewDense(c, r, make([]float64, r*c))
+	inv.Inverse(out1)
+	out2.Mul(gmt, inv)
+
+	vals := make([]float64, m.Width*m.Height)
+	for y := 0; y < m.Width; y++ {
+		for x := 0; x < m.Height; x++ {
+			vals[y*m.Height+x] = out2.At(y, x)
+		}
+	}
+	return mat.NewMatrix(vals, m.Height, m.Width)
 }

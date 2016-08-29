@@ -1,5 +1,3 @@
-/*package los computes line of sight densities oriented in rings around a point.
- */
 package los
 
 import (
@@ -8,11 +6,30 @@ import (
 	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
-// ProfileRing is a ring of uniformly spaced profiles. The reported profiles are
-// the average densities at each radial bin in the profile.
+// ProfileRing is a ring of uniformly spaced profiles which allows step
+// functions to be added quickly to every profile.
 //
-// The saved format of the profiles is not neccessarily the same as the output
-// format of the profiles, so they must be accessed with the Retreive method.
+// Here is an example usage of profile rings where a ring of 100 profiles with
+// 200 bins each and with R ranges of [0, 1] are initialized. Then a hundred
+// random step functions of height 3.5 are inserted to the 42nd profile.
+//
+//     ring := &ProfileRing{}
+//     ring.Init(0, 1, 200, 100)
+//     for i := 0; i < 100; i++ {
+//         low, high := rand.Float64(), rand.Float64()
+//         if low > high { lo, high = high, low }
+//         ring.Insert(low, high, 3.5, 42)
+//     }
+//     out := make([]float64, 200)
+//     ring.Retrieve(42, out)
+//
+// The methods Join() and Split() have also been provided which allow the state
+// of a single profile ring to be split across many rings so that multiple
+// threads may work on the same ring at the same time.
+//
+// The current implementation of ProfileRing maintains the derivatives of
+// each profile in the ring and integrating only when a profile is requested
+// for analysis.
 type ProfileRing struct {
 	derivs          []float64 // Contiguous block of pofile data. Column-major.
 	Lines           []geom.Line
@@ -21,12 +38,8 @@ type ProfileRing struct {
 	lowR, highR, dr float64
 }
 
-func (p *ProfileRing) Reuse(lowR, highR float64) {
-	p.lowR = lowR
-	p.highR = highR
-	p.dr = (highR - lowR) / float64(p.bins)
-}
-
+// Join adds two ProfileRings, p1 and p2, together and puts the results in the
+// p1.
 func (p1 *ProfileRing) Join(p2 *ProfileRing) {
 	if p1.n != p2.n || p1.bins != p2.bins {
 		panic("ProfileRing sizes do not match.")
@@ -37,6 +50,9 @@ func (p1 *ProfileRing) Join(p2 *ProfileRing) {
 	}
 }
 
+// Split splits the state of a profile ring, p1, so that it is shared by a
+// second profile ring, p2. The state can later be rejoined by the Join()
+// method.
 func (p1 *ProfileRing) Split(p2 *ProfileRing) {
 	if p1.n != p2.n || p1.bins != p2.bins {
 		p2.Init(p1.lowR, p1.highR, p1.bins, p1.n)
@@ -77,7 +93,10 @@ func (p *ProfileRing) Insert(start, end, rho float64, i int) {
 		return
 	}
 
-	// You could be a bit more careful with floating point ops here.
+	// One could be a bit more careful with floating point ops here, if
+	// push comes to shove. In particular, Modf calls can be avoided trhough
+	// trickery. (However, most recent benchmarks reveal that very little time
+	// is spent in this method call anymore, so I wouldn't bother.)
 	if start > p.lowR {
 		fidx, rem := math.Modf((start - p.lowR) / p.dr)
 		idx := int(fidx)

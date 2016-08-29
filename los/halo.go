@@ -1,16 +1,15 @@
-/*package sphere_halo is essentially a redo of the implementation of
-HaloProfiles found in the los package but with a different internal geometry
-kernel. I've learned a few lessons since then about the right way to structure
-this stuff and I'm going to try applying those lessons here.
+/*package los contains all the actual science logic of Shellfish (i.e. the
+portion described in Mansfield, Kravtsov, & Diemer (2016)). The root package
+itself provides access to two datatypes, Halo and ProfileRing.
 
-Operating on a SphereHalo is relatively simple:
+Halo is relatively simple:
 
     hs := make([]SphereHalo, workers)
     h := &hs[0]
     h.Init(norms, origin, rMin, rMax, bins, n)
 
     // Read particle positions from disk. (Probably in a loop.)
-    vecs := Read()
+    vecs := myRead()
 
     h.Transform(vecs)
     intr := make([]bool, len(vecs))

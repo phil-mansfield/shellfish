@@ -7,6 +7,10 @@ import (
 	intr "github.com/phil-mansfield/shellfish/math/interpolate"
 )
 
+// GaussianKDE calculates a gaussian KDE from the points in the array
+// xs, which kernel widths of h. This is done by evaluating the KDE
+// at n uniformly-spaced points between low and high and then returning a
+// cubic Spline fit through these points.
 func GaussianKDE(xs []float64, h, low, high float64, n int) *intr.Spline {
 	dx := (high - low) / float64(n-1)
 	spXs, spYs := make([]float64, n), make([]float64, n)
@@ -35,14 +39,30 @@ func GaussianKDE(xs []float64, h, low, high float64, n int) *intr.Spline {
 	return intr.NewSpline(spXs, spYs)
 }
 
+// KDETree is a data structure that maintains all the state required for
+// the recursive KDE-based filtering used by Shellfish.
 type KDETree struct {
+	// h - width of KDE
+	// low - minimum radius
+	// high - maximum radius
 	h, low, high      float64
+	// spTree[i][j] - KDE in the jth bin of the ith level of recursion
 	spTree            [][]*intr.Spline
+	// maxesTree[i][j] - location of each local maxima
 	maxesTree         [][][]float64
+	// thTree[i][j] - angle of the jth bin at the ith level of recursion
+	// connMaxes[i][j] - the radius of KDE maximum in the jth bin of the ith
+	//                   level of recursion (after the connection process has
+	//                   been used).
 	thTree, connMaxes [][]float64
+	// spRs - Slice of radial bins shared by every
 	spRs              []float64
 }
 
+// NewKDETree performs filtering fo points using the recursive KDE-based
+// filtering described in section 2.2.3 of Mansfield, Kravtsov, Diemer (2016).
+//
+// splits is the number of levels of recursion minus one.
 func NewKDETree(
 	rs, phis []float64, splits int, h float64,
 ) (*KDETree, bool) {
@@ -81,10 +101,12 @@ func NewKDETree(
 	kt.growTrees(rs, phis, splits)
 	kt.findMaxes()
 	kt.connectMaxes()
-	
+
 	return kt, true
 }
 
+// PlotLevel plots the KDEs found at a particular level of a KDETree using the
+// pyplot options, opts. It is used purely for debugging purposed.
 func (kt *KDETree) PlotLevel(level, spIdx int, opts ...interface{}) {
 	sps := kt.spTree[level]
 	rs := make([]float64, 100)
@@ -113,6 +135,8 @@ func (kt *KDETree) PlotLevel(level, spIdx int, opts ...interface{}) {
 	}
 }
 
+// growTrees populated kt.thTree and kt.spTree with angles and splines,
+// respectively.
 func (kt *KDETree) growTrees(rs, phis []float64, splits int) {
 	for split := 0; split < splits; split++ {
 		bins := int(1 << uint((1 + split)))
@@ -127,6 +151,8 @@ func (kt *KDETree) growTrees(rs, phis []float64, splits int) {
 	}
 }
 
+// binByTheta breaks a group of (theta, r) coordinates into groups based on
+// their angular bin.
 func binByTheta(
 	rs, ths []float64, bins int,
 ) (rBins [][]float64, thBins []float64) {
@@ -148,6 +174,7 @@ func binByTheta(
 	return rBins, thBins
 }
 
+// findMaxes populated kt.maxesTree with local maxima.
 func (kt *KDETree) findMaxes() {
 	kt.maxesTree = [][][]float64{}
 	for _, sps := range kt.spTree {
@@ -161,6 +188,8 @@ func (kt *KDETree) findMaxes() {
 	}
 }
 
+// localSplineMaxes returns the radii of every local maximum in a spline when
+// evaluated at the the given input points.
 func localSplineMaxes(xs []float64, sp *intr.Spline) []float64 {
 	prev, curr, next := sp.Eval(xs[0]), sp.Eval(xs[1]), sp.Eval(xs[2])
 	maxes := []float64{}
@@ -176,6 +205,9 @@ func localSplineMaxes(xs []float64, sp *intr.Spline) []float64 {
 	return maxes
 }
 
+// connectMaxes is the code that actually creates the filtering curve from
+// section 2.2.3 in Mansfield+ (2016). The explanation is a bit involved, so
+// I'm just going to reference that section.
 func (kt *KDETree) connectMaxes() {
 	kt.connMaxes = [][]float64{{kt.maxesTree[0][0][0]}}
 
@@ -225,6 +257,8 @@ func (kt *KDETree) connectMaxes() {
 	}
 }
 
+// getFinestMax returns the connected maximum which corresponds to the finest
+// level of returns in the given bin and level of recursion.
 func (kt *KDETree) getFinestMax(idx, level int) float64 {
 	for i := 0; i <= level; i++ {
 		r := kt.connMaxes[level-i][idx/(1<<uint(i))]
@@ -235,6 +269,8 @@ func (kt *KDETree) getFinestMax(idx, level int) float64 {
 	panic(":3")
 }
 
+// GetConMaxes returns the location of the anchor points at a given level of
+// recursion.
 func (kt *KDETree) GetConnMaxes(level int) (rs, ths []float64) {
 	ths = kt.thTree[level]
 	maxes := kt.connMaxes[level]
@@ -245,6 +281,9 @@ func (kt *KDETree) GetConnMaxes(level int) (rs, ths []float64) {
 	return retMaxes, ths
 }
 
+// extendAngularRange extends a series of (r, theta) points through several
+// 2 pi repetitions. This is done so that a spline through these points will
+// not encounter boundary effects when evaluated in [0, 2 pi].
 func extendAngularRange(maxes, ths []float64) (spMaxes, spThs []float64) {
 	n := len(maxes)
 	buf := 5
@@ -278,6 +317,8 @@ const (
 	Cartesian
 )
 
+// GetRFunc returns the filtering curve at a particular level of recursion.
+// rt  should always be set to Cartesian.
 func (kt *KDETree) GetRFunc(level int, rt RFuncType) func(float64) float64 {
 	switch rt {
 	case Radial:
@@ -303,8 +344,11 @@ func (kt *KDETree) GetRFunc(level int, rt RFuncType) func(float64) float64 {
 	}
 }
 
+// H Returns the smoothing scale of the KDE tree.
 func (kt *KDETree) H() float64 { return kt.h }
 
+// FilterNearby returns all the points which are within dr of the filtering
+// curve at the specified level of recursion.
 func (kt *KDETree) FilterNearby(
 	rs, ths []float64, level int, dr float64,
 ) (fRs, fThs []float64, idxs []int) {
@@ -312,12 +356,12 @@ func (kt *KDETree) FilterNearby(
 	rFunc := kt.GetRFunc(level, Radial)
 	fRs, fThs, idxs = []float64{}, []float64{}, []int{}
 	for i := range rs {
-		if math.Abs(rFunc(ths[i])-rs[i]) < dr / 2 {
+		if math.Abs(rFunc(ths[i])-rs[i]) < dr/2 {
 			fRs = append(fRs, rs[i])
 			fThs = append(fThs, ths[i])
 			idxs = append(idxs, i)
 		}
 	}
-	
+
 	return fRs, fThs, idxs
 }

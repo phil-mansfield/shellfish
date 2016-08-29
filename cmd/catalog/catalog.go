@@ -36,7 +36,7 @@ func CommentString(
 			orderedTokens[i] = fmt.Sprintf("%s(%d)", orderedTokens[i], n)
 		} else {
 			orderedTokens[i] = fmt.Sprintf("%s(%d-%d)", orderedTokens[i],
-				n, n + orderedSizes[i-1] - 1)
+				n, n+orderedSizes[i-1]-1)
 		}
 		n += orderedSizes[i-1]
 	}

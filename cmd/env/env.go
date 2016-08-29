@@ -196,7 +196,7 @@ func interleave(cols [][]interface{}, snapAligned []bool) [][][]interface{} {
 			nonSnaps *= len(cols[i])
 		}
 	}
-	
+
 	if snaps == -1 {
 		snaps = 1
 	}

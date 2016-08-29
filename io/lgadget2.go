@@ -81,11 +81,11 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	count := int(gh.NPart[1] + gh.NPart[0]<<32)
 	xsBuf = expandVectors(xsBuf[:0], count)
 	idsBuf = expandInts(idsBuf[:0], count)
-	
+
 	_ = readInt32(f, order)
 	readVecAsByte(f, order, xsBuf)
 
-	f.Seek(4*2 + 12*int64(len(xsBuf)) + 4*2, 1)
+	f.Seek(4*2+12*int64(len(xsBuf))+4*2, 1)
 	readInt64AsByte(f, order, idsBuf)
 
 	tw := float32(gh.BoxSize)
@@ -229,7 +229,7 @@ func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
 	}
 
 	buf.hd.postprocess(xs, out)
-	
+
 	return nil
 }
 

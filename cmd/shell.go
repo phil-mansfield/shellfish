@@ -12,12 +12,12 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/cosmo"
+	"github.com/phil-mansfield/shellfish/io"
+	"github.com/phil-mansfield/shellfish/logging"
 	"github.com/phil-mansfield/shellfish/los"
 	"github.com/phil-mansfield/shellfish/los/analyze"
-	"github.com/phil-mansfield/shellfish/parse"
-	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/math/rand"
-	"github.com/phil-mansfield/shellfish/logging"
+	"github.com/phil-mansfield/shellfish/parse"
 )
 
 type ShellConfig struct {
@@ -178,7 +178,9 @@ func (config *ShellConfig) Run(
 		)
 	}
 	var t time.Time
-	if logging.Mode == logging.Performance { t = time.Now() }
+	if logging.Mode == logging.Performance {
+		t = time.Now()
+	}
 
 	// Parse.
 	intCols, coords, err := catalog.ParseCols(
@@ -225,7 +227,7 @@ func (config *ShellConfig) Run(
 
 	cString := catalog.CommentString(
 		intNames, floatNames, []int{0, 1, 2, 3, 4, 5, 6},
-		[]int{1, 1, 1, 1, 1, 1, 2*int(config.order*config.order)},
+		[]int{1, 1, 1, 1, 1, 1, 2 * int(config.order*config.order)},
 	)
 
 	if logging.Mode == logging.Performance {
@@ -396,7 +398,7 @@ func loadSphereVecs(
 	}
 
 	h.Split(sphWorkers)
-	
+
 	for i := range sphWorkers {
 		wh := &sphBuf.sphWorkers[i]
 		go chanLoadSphereVec(wh, xs, ms, intr, i, workers, hd, c, sync)
@@ -456,7 +458,7 @@ func haloAnalysis(
 		if logging.Mode == logging.Debug {
 			log.Printf("Halo %3d", i)
 		}
-		
+
 		var ok bool
 		out[idxs[i]], ok = calcCoeffs(halos[i], ringBuf, c)
 		if !ok {
@@ -558,8 +560,8 @@ func calcCoeffs(
 		buf[i].Clear()
 		buf[i].Splashback(halo, i, int(c.smoothingWindow), c.losSlopeCutoff)
 	}
-	pxs, pys, ok := analyze.FilterPoints(buf, int(c.levels), halo.RMax() / c.eta)
-	
+	pxs, pys, ok := analyze.FilterPoints(buf, int(c.levels), halo.RMax()/c.eta)
+
 	if !ok {
 		return nil, false
 	}

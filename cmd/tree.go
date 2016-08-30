@@ -37,7 +37,7 @@ func (config *TreeConfig) ReadConfig(fname string) error {
 		return nil
 	}
 
-	vars := parse.NewConfigVars("stats.config")
+	vars := parse.NewConfigVars("tree.config")
 	vars.Ints(&config.selectSnaps, "SelectSnaps", []int64{})
 
 	if err := parse.ReadConfig(fname, vars); err != nil {
@@ -98,12 +98,12 @@ func (config *TreeConfig) Run(
 	)
 	fLines := []string{}
 	for i := range lines {
-		if snaps[i] <= int(gConfig.SnapMin) &&
-			snaps[i] >= int(gConfig.SnapMax) {
+		if snaps[i] >= int(gConfig.SnapMin) &&
+			snaps[i] <= int(gConfig.SnapMax) {
 
 			if len(config.selectSnaps) > 0 {
-				for _, snap := range config.selectSnaps {
-					if int(snap) == snaps[i] {
+				for j := range config.selectSnaps {
+					if int(config.selectSnaps[j]) == snaps[i] {
 						fLines = append(fLines, lines[i])
 					}
 				}

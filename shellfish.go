@@ -27,7 +27,7 @@ var helpStrings = map[string]string{
 	"config":       new(cmd.GlobalConfig).ExampleConfig(),
 	"setup.config": `The setup mode does not have a non-global config file.`,
 	"id.config":    cmd.ModeNames["id"].ExampleConfig(),
-	"tree.config":  `The tree mode does not have a non-global config file.`,
+	"tree.config":  cmd.ModeNames["tree"].ExampleConfig(),
 	"coord.config": `The coord mode does not have a non-global config file.`,
 	"shell.config": cmd.ModeNames["shell"].ExampleConfig(),
 	"stats.config": cmd.ModeNames["stats"].ExampleConfig(),
@@ -43,7 +43,7 @@ shellfish setup ____.config
 
 My analysis modes are:
 shellfish id     [flags] ____.config [____.id.config]
-shellfish tree ____.config
+shellfish tree ____.config [____.tree.config]
 shellfish coord ____.config
 shellfish shell  [flags] ____.config [____.shell.config]
 shellfish stats  [flags] ____.config [____.stats.config]`

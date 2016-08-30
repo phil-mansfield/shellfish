@@ -97,15 +97,16 @@ func (config *IDConfig) ReadConfig(fname string) error {
 	vars.Int(&config.idEnd, "IDEnd", -1)
 	vars.Int(&config.mult, "Mult", 1)
 	vars.Int(&config.snap, "Snap", -1)
-	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "subhalo")
+	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "overlap")
 	vars.Float(&config.exclusionRadiusMult, "ExclusionRadiusMult", 1)
-
+	
 	if fname == "" {
 		return nil
 	}
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
+	
 	return config.validate()
 }
 

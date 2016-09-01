@@ -1,9 +1,10 @@
-package path
+package cmd
 
 import (
 	"log"
 	"time"
 
+	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/logging"
 )
@@ -50,8 +51,20 @@ flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 		t = time.Now()
 	}
 
+	//panic("NYI")
+	bins := 100
+
+	fLines := []string{}
+
+	cString := catalog.CommentString(
+		[]string{"ID", "Snapshot", "R [cMpc/h]", "Rho [rho_m]"},
+		[]string{}, []int{0, 1, 2, 3}, []int{1, 1, bins, bins},
+	)
+
 	if logging.Mode == logging.Performance {
 		log.Printf("Time: %s", time.Since(t).String())
 		log.Printf("Memory:\n%s", logging.MemString())
 	}
+
+	return append([]string{cString}, fLines...), nil
 }

@@ -19,6 +19,7 @@ var ModeNames map[string]Mode = map[string]Mode{
 	"id":    &IDConfig{},
 	"tree":  &TreeConfig{},
 	"coord": &CoordConfig{},
+	"prof": &ProfConfig{},
 	"shell": &ShellConfig{},
 	"stats": &StatsConfig{},
 }

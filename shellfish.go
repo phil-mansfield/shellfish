@@ -21,6 +21,7 @@ var helpStrings = map[string]string{
 	"id":    `Mode specifcations will be documented in version 0.3.0.`,
 	"tree":  `Mode specifcations will be documented in version 0.3.0.`,
 	"coord": `Mode specifcations will be documented in version 0.3.0.`,
+	"prof": `Mode specifcations will be documented in version 0.3.0.`,
 	"shell": `Mode specifcations will be documented in version 0.3.0.`,
 	"stats": `Mode specifcations will be documented in version 0.3.0.`,
 
@@ -29,14 +30,16 @@ var helpStrings = map[string]string{
 	"id.config":    cmd.ModeNames["id"].ExampleConfig(),
 	"tree.config":  cmd.ModeNames["tree"].ExampleConfig(),
 	"coord.config": `The coord mode does not have a non-global config file.`,
+	"prof.config": cmd.ModeNames["prof"].ExampleConfig(),
 	"shell.config": cmd.ModeNames["shell"].ExampleConfig(),
 	"stats.config": cmd.ModeNames["stats"].ExampleConfig(),
 }
 
 var modeDescriptions = `My help modes are:
 shellfish help
-shellfish help [ setup | id | tree | coord | shell | stats ]
-shellfish help [ config | id.config | shell.config | stats.config ]
+shellfish help [ setup | id | tree | coord | prof | shell | stats ]
+shellfish help [ config | id.config | prof.config |shell.config |
+                 stats.config | tree.config ]
 
 My setup mode is:
 shellfish setup ____.config
@@ -45,6 +48,7 @@ My analysis modes are:
 shellfish id     [flags] ____.config [____.id.config]
 shellfish tree ____.config [____.tree.config]
 shellfish coord ____.config
+shellfish prof  [flags] ____.config [____.prof.config]
 shellfish shell  [flags] ____.config [____.shell.config]
 shellfish stats  [flags] ____.config [____.stats.config]`
 
@@ -91,7 +95,7 @@ func main() {
 
 	var lines []string
 	switch args[1] {
-	case "tree", "coord", "shell", "stats":
+	case "tree", "coord", "prof", "shell", "stats":
 		var err error
 		lines, err = stdinLines()
 		if err != nil {
@@ -359,7 +363,7 @@ func initHalos(
 	mode string, gConfig *cmd.GlobalConfig, e *env.Environment,
 ) error {
 	switch mode {
-	case "shell", "stats":
+	case "shell", "stats", "prof":
 		return nil
 	}
 

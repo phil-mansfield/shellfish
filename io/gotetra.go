@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
-
+	
 	"github.com/phil-mansfield/shellfish/cosmo"
 
 	"unsafe"
@@ -37,9 +37,10 @@ func NewGotetraBuffer(fname string) (VectorBuffer, error) {
 		sheet: make([][3]float32, gw*gw*gw),
 		xs:    make([][3]float32, sw*sw*sw),
 		ms:    make([]float32, sw*sw*sw),
+		ids:   make([]int64, sw*sw*sw),
 		open:  false,
 		sw:    int(sw), gw: int(gw),
-		mass: calcUniformMass(hd.Count, hd.TotalWidth, hd.Cosmo),
+		mass:  calcUniformMass(hd.Count, hd.TotalWidth, hd.Cosmo),
 	}
 
 	return buf, nil

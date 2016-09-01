@@ -285,7 +285,7 @@ func (config *StatsConfig) Run(
 			}
 
 			xs, ms, pIDs, err := buf.Read(files[i])
-
+			
 			if err != nil {
 				return nil, err
 			}
@@ -591,7 +591,7 @@ func writeShellParticles(
 	for i := range ids {
 		ids64[i] = int64(ids[i])
 	}
-
+	
 	data := io.FilterData{
 		Snaps:     snaps64,
 		IDs:       ids64,

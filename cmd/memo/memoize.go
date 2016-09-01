@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 	"sort"
-
+	
 	"github.com/phil-mansfield/shellfish/cmd/env"
 
 	"github.com/phil-mansfield/shellfish/cmd/halo"
@@ -125,6 +125,10 @@ func ReadRockstar(
 	outIDs, xs, ys, zs, ms, rs, err = readRockstar(
 		binFile, -1, snap, ids, vars, buf, e,
 	)
+
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, err
+	}
 	return outIDs, xs, ys, zs, ms, rs, nil
 }
 

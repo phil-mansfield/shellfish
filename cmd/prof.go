@@ -232,6 +232,15 @@ func insertPoints(
 		if r2 <= rMin2 || r2 >= rMax2 { continue }
 		lr := math.Log(float64(r2)) / 2
 		ir := int(((lr) - lrMin) / dlr)
+		if ir == len(rhos) { ir-- }
+		if ir < 0 || i < 0 || ir >= len(rhos) || i >= len(ms) {
+			log.Println(
+				"ir", ir,
+				"i", i,
+				"|rhos|", len(rhos),
+				"|ms|", len(ms),
+			)
+		}
 		rhos[ir] += float64(ms[i])
 	}
 }

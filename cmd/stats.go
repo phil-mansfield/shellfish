@@ -266,11 +266,11 @@ func (config *StatsConfig) Run(
 		if err != nil {
 			return nil, err
 		}
-		hBounds, err := boundingSpheres(snapCoords, &hds[0], config, e)
+		hBounds, err := boundingSpheres(snapCoords, &hds[0], e)
 		if err != nil {
 			return nil, err
 		}
-		intrBins := binSphereIntersections(hds, hBounds)
+		intrBins, _ := binSphereIntersections(hds, hBounds)
 
 		rLows := make([]float64, len(snapCoeffs))
 		rHighs := make([]float64, len(snapCoeffs))
@@ -393,7 +393,7 @@ func binCoeffsBySnap(
 }
 
 func boundingSpheres(
-	coords [][]float64, hd *io.Header, c *StatsConfig, e *env.Environment,
+	coords [][]float64, hd *io.Header, e *env.Environment,
 ) ([]geom.Sphere, error) {
 	xs, ys, zs, rs := coords[0], coords[1], coords[2], coords[3]
 
@@ -661,14 +661,16 @@ func int64sEq(xs, ys []int64) bool {
 
 func binSphereIntersections(
 	hds []io.Header, spheres []geom.Sphere,
-) [][]geom.Sphere {
+) ([][]geom.Sphere, [][]int) {
 	bins := make([][]geom.Sphere, len(hds))
+	idxs := make([][]int, len(hds))
 	for i := range hds {
 		for si := range spheres {
 			if sheetIntersect(spheres[si], &hds[i]) {
 				bins[i] = append(bins[i], spheres[si])
+				idxs[i] = append(idxs[i], si)
 			}
 		}
 	}
-	return bins
+	return bins, idxs
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/logging"
 	"github.com/phil-mansfield/shellfish/parse"
+	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 )
 
@@ -43,16 +44,16 @@ func (config *ProfConfig) ExampleConfig() string {
 
 
 func (config *ProfConfig) ReadConfig(fname string) error {
-	if fname == "" {
-		return nil
-	}
-
 	vars := parse.NewConfigVars("shell.config")
 
 	vars.Int(&config.bins, "Bins", 150)
 	vars.Float(&config.rMaxMult, "RMaxMult", 3.0)
 	vars.Float(&config.rMinMult, "RMinMult", 0.03)
 
+	if fname == "" {
+		return nil
+	}
+	
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
@@ -83,8 +84,6 @@ func (config *ProfConfig) Run(
 ####################`,
 		)
 	}
-
-	log.Println("Starting ProfConfig.Run()")
 	
 	var t time.Time
 	if logging.Mode == logging.Performance {
@@ -133,7 +132,6 @@ func (config *ProfConfig) Run(
 		if snap == -1 {
 			continue
 		}
-		log.Println("Snap", snap)
 
 		idxs := idxBins[snap]
 		snapCoords := [][]float64{
@@ -161,7 +159,6 @@ func (config *ProfConfig) Run(
 			if len(intrIdxs[i]) == 0 {
 				continue
 			}
-			log.Println("hd", i, "->", len(intrIdxs))
 
 			xs, ms, _, err := buf.Read(files[i])
 			if err != nil {
@@ -173,7 +170,7 @@ func (config *ProfConfig) Run(
 				rhos := rhoSets[idxs[j]]
 				s := hBounds[j]
 
-				insertPoints(rhos, s, xs, ms, config)
+				insertPoints(rhos, s, xs, ms, config, &hds[i])
 			}
 
 			buf.Close()
@@ -181,8 +178,8 @@ func (config *ProfConfig) Run(
 	}
 
 	for i := range rSets {
-		rMax := coords[i][4]*config.rMaxMult
-		rMin := coords[i][4]*config.rMinMult
+		rMax := coords[3][i]*config.rMaxMult
+		rMin := coords[3][i]*config.rMinMult
 		processProfile(rSets[i], rhoSets[i], rMin, rMax)
 	}
 
@@ -194,7 +191,7 @@ func (config *ProfConfig) Run(
 	lines := catalog.FormatCols(
 			[][]int{ids, snaps}, append(rSets, rhoSets...), order,
 	)
-
+	
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot", "R [cMpc/h]", "Rho [h^2 Msun/cMpc^3]"},
 		[]string{}, []int{0, 1, 2, 3},
@@ -211,7 +208,7 @@ func (config *ProfConfig) Run(
 
 func insertPoints(
 	rhos []float64, s geom.Sphere, xs [][3]float32,
-	ms []float32, config *ProfConfig,
+	ms []float32, config *ProfConfig, hd *io.Header,
 ) {
 	lrMax := math.Log(float64(s.R) * config.rMaxMult)
 	lrMin := math.Log(float64(s.R) * config.rMinMult)
@@ -222,12 +219,17 @@ func insertPoints(
 	rMin2 *= rMin2
 
 	x0, y0, z0 := s.C[0], s.C[1], s.C[2]
-
+	tw2 := float32(hd.TotalWidth) / 2
+	
 	for i, vec := range xs {
 		x, y, z := vec[0], vec[1], vec[2]
 		dx, dy, dz := x - x0, y - y0, z - z0
+		dx = wrap(dx, tw2)
+		dy = wrap(dy, tw2)
+		dz = wrap(dz, tw2)
+
 		r2 := dx*dx + dy*dy + dz*dz
-		if r2 <= rMin2 || r2 >= rMax2 { return }
+		if r2 <= rMin2 || r2 >= rMax2 { continue }
 		lr := math.Log(float64(r2)) / 2
 		ir := int(((lr) - lrMin) / dlr)
 		rhos[ir] += float64(ms[i])

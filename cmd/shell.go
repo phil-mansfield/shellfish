@@ -214,7 +214,8 @@ func (config *ShellConfig) Run(
 	}
 
 	intNames := []string{"ID", "Snapshot"}
-	floatNames := []string{"X", "Y", "Z", "R200m", "P_ijk"}
+	floatNames := []string{"X [cMpc/h]", "Y [cMpc/h]", "Z [cMpc/h]",
+		"R200m [cMpc/h]", "P_ijk"}
 
 	colOrder := make([]int, 2+4+2*config.order*config.order)
 	for i := range colOrder {

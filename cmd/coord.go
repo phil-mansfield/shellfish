@@ -78,7 +78,7 @@ func (config *CoordConfig) Run(
 
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"},
-		[]string{"X", "Y", "Z", "R200m"},
+		[]string{"X [cMpc/h]", "Y [cMpc/h]", "Z [cMpc/h]", "R200m [cMpc/h]"},
 		[]int{0, 1, 2, 3, 4, 5},
 		[]int{1, 1, 1, 1, 1, 1},
 	)

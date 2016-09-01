@@ -335,11 +335,11 @@ func (config *StatsConfig) Run(
 	)
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"},
-		[]string{"M_sp [M_sun/h]", "R_sp [Mpc/h]",
-			"Volume [Mpc^3/h^3]", "Surface Area [Mpc^2/h^2]",
-			"Major Axis [Mpc/h]",
-			"Intermediate Axis [Mpc/h]",
-			"Minor Axis [Mpc/h]",
+		[]string{"M_sp [M_sun/h]", "R_sp [cMpc/h]",
+			"Volume [cMpc^3/h^3]", "Surface Area [cMpc^2/h^2]",
+			"Major Axis [cMpc/h]",
+			"Intermediate Axis [cMpc/h]",
+			"Minor Axis [cMpc/h]",
 			"Ax", "Ay", "Az",
 		},
 		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},

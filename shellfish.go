@@ -84,6 +84,7 @@ func main() {
 	}
 
 	mode, ok := cmd.ModeNames[args[1]]
+	
 	if !ok {
 		fmt.Fprintf(
 			os.Stderr, "You passed me the mode '%s', which I don't "+

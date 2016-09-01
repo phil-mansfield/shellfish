@@ -84,18 +84,20 @@ func (config *ProfConfig) Run(
 		)
 	}
 
+	log.Println("Starting ProfConfig.Run()")
+	
 	var t time.Time
 	if logging.Mode == logging.Performance {
 		t = time.Now()
 	}
 
 	intColIdxs := []int{0, 1}
-	floatColIdxs := make([]int, 4)
-
+	floatColIdxs := []int{2, 3, 4, 5}
+	
 	intCols, coords, err := catalog.ParseCols(
 		stdin, intColIdxs, floatColIdxs,
 	)
-
+	
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +133,7 @@ func (config *ProfConfig) Run(
 		if snap == -1 {
 			continue
 		}
+		log.Println("Snap", snap)
 
 		idxs := idxBins[snap]
 		snapCoords := [][]float64{
@@ -158,6 +161,7 @@ func (config *ProfConfig) Run(
 			if len(intrIdxs[i]) == 0 {
 				continue
 			}
+			log.Println("hd", i, "->", len(intrIdxs))
 
 			xs, ms, _, err := buf.Read(files[i])
 			if err != nil {

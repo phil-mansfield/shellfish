@@ -305,6 +305,40 @@ func (s Shell) RadiusHistogram(
 	return rs, ns
 }
 
+func (s Shell) AngularFractionProfile(
+	samples, bins int, rMin, rMax float64,
+) (rs, fs []float64) {
+	rs, fs = make([]float64, bins), make([]float64, bins)
+	ns := make([]int, bins)
+
+	lrMin, lrMax := math.Log(rMin), math.Log(rMax)
+	dlr := (lrMax + lrMin) / float64(bins)
+	for i := range rs {
+		rs[i] = math.Exp(lrMin + (float64(i) + 0.5) * dlr)
+	}
+
+	for i := 0; i < samples; i++ {
+		phi, theta := randomAngle()
+		lr := math.Log(s(phi, theta))
+		lri := int((lr - lrMin) / dlr)
+		if lri < 0 || lri >= bins {
+			continue
+		}
+		ns[lri]++
+	}
+
+	// reverse cumulative sum
+	for i := bins - 2; i >= 0; i-- {
+		ns[i] += ns[i+1]
+	}
+
+	for i := 0; i < bins; i++ {
+		fs[i] = float64(ns[i]) / float64(ns[0])
+	}
+
+	return rs, fs
+}
+
 // Contains returns true if a Shell contains a point and false otherwise. The
 // point must be in a coordinate system in which the Shell is at (0, 0, 0).
 func (s Shell) Contains(x, y, z float64) bool {

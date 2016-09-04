@@ -17,15 +17,41 @@ import (
 )
 
 type ProfConfig struct {
-	bins int64
-
+	bins, order int64
+	pType profileType
+	
 	rMaxMult, rMinMult float64
 }
+
+type profileType int
+const (
+	densityProfile profileType = iota
+	containedDensityProfile
+	angularFractionProfile
+)
 
 var _ Mode = &ProfConfig{}
 
 func (config *ProfConfig) ExampleConfig() string {
 	return `[prof.config]
+
+#####################
+## Required Fields ##
+#####################
+
+# ProfileType determines what type of profile will be output.
+# Known profile types are:
+# density -          the traditional spherical densiy profile that we all
+                     know and love.
+# contained-densiy - a density profile which only uses particles.
+# angular-fraction - the angular fraction at each radius which is contained
+                     within the shell.
+ProfileType = density
+
+# Order is the order of the Penna-Dines shell fit that Shellfish uses. This
+# variable only needs to be set if ProfileType is set to contained-density
+# or angular-fraction.
+Order = 3
 
 #####################
 ## Optional Fields ##
@@ -44,19 +70,36 @@ func (config *ProfConfig) ExampleConfig() string {
 
 
 func (config *ProfConfig) ReadConfig(fname string) error {
-	vars := parse.NewConfigVars("shell.config")
-
-	vars.Int(&config.bins, "Bins", 150)
-	vars.Float(&config.rMaxMult, "RMaxMult", 3.0)
-	vars.Float(&config.rMinMult, "RMinMult", 0.03)
-
 	if fname == "" {
 		return nil
 	}
-	
+
+	vars := parse.NewConfigVars("shell.config")
+
+	vars.Int(&config.bins, "Bins", 150)
+	vars.Int(&config.order, "Order", 3)
+	vars.Float(&config.rMaxMult, "RMaxMult", 3.0)
+	vars.Float(&config.rMinMult, "RMinMult", 0.03)
+	var pType string
+	vars.String(&pType, "ProfileType", "")
+
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
+
+	switch pType {
+	case "":
+		return fmt.Errorf("The variable 'ProfileType' was not set".)
+	case "density":
+		config.pType = densityProfile
+	case "contained-density":
+		config.pType = containedDensityProfile
+	case "angular-fraction":
+		config.pType = angularFractionProfile
+	default:
+		return fmt.Errorf("The varaiable 'ProfileType' was set to '%s'.", pType)
+	}
+
 	return config.validate()
 }
 
@@ -90,16 +133,44 @@ func (config *ProfConfig) Run(
 		t = time.Now()
 	}
 
-	intColIdxs := []int{0, 1}
-	floatColIdxs := []int{2, 3, 4, 5}
-	
-	intCols, coords, err := catalog.ParseCols(
-		stdin, intColIdxs, floatColIdxs,
+	var (
+		intCols []int
+		coords, coeffs []float64
+		err error
 	)
-	
-	if err != nil {
-		return nil, err
+
+	switch config.pType {
+	case densityProfile:
+		intColIdxs := []int{0, 1}
+		floatColIdxs := []int{2, 3, 4, 5}
+		
+		intCols, coords, err = catalog.ParseCols(
+			stdin, intColIdxs, floatColIdxs,
+		)
+		
+		if err != nil {
+			return nil, err
+		}
+	case containedDensityProfile, angularFractionProfile:
+		intColIdxs := []int{0, 1}
+		floatColIdxs := make([]int, 4 + pType.order*pType.order*2)
+		for i := range floatColIdxs {
+			floatColIdxs[i] + i + 2
+		}
+
+		var floatCols []float64
+		intCols, floatCols, err = catalog.ParseCols(
+			stdin, intColIdxs, floatColIdxs,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		coords = floatCols[:4]
+		coeffs = floatCols[4:]
 	}
+	
 	if len(intCols) == 0 {
 		return nil, fmt.Errorf("No input IDs.")
 	}

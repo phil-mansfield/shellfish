@@ -81,7 +81,7 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 		return nil
 	}
 
-	vars := parse.NewConfigVars("shell.config")
+	vars := parse.NewConfigVars("prof.config")
 
 	vars.Int(&config.bins, "Bins", 150)
 	vars.Int(&config.order, "Order", 3)

@@ -3,7 +3,7 @@ package analyze
 import (
 	"math"
 	"math/rand"
-
+	
 	"github.com/gonum/matrix/mat64"
 	grid "github.com/phil-mansfield/shellfish/los/analyze/ellipse_grid"
 	intr "github.com/phil-mansfield/shellfish/math/interpolate"
@@ -312,7 +312,8 @@ func (s Shell) AngularFractionProfile(
 	ns := make([]int, bins)
 
 	lrMin, lrMax := math.Log(rMin), math.Log(rMax)
-	dlr := (lrMax + lrMin) / float64(bins)
+	dlr := (lrMax - lrMin) / float64(bins)
+
 	for i := range rs {
 		rs[i] = math.Exp(lrMin + (float64(i) + 0.5) * dlr)
 	}

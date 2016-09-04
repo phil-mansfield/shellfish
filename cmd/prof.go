@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/phil-mansfield/shellfish/los/geom"
+	"github.com/phil-mansfield/shellfish/los/analyze"
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/logging"
@@ -89,7 +90,7 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 
 	switch pType {
 	case "":
-		return fmt.Errorf("The variable 'ProfileType' was not set".)
+		return fmt.Errorf("The variable 'ProfileType' was not set.")
 	case "density":
 		config.pType = densityProfile
 	case "contained-density":
@@ -134,8 +135,9 @@ func (config *ProfConfig) Run(
 	}
 
 	var (
-		intCols []int
-		coords, coeffs []float64
+		intCols [][]int
+		coords [][]float64
+		shells []analyze.Shell
 		err error
 	)
 
@@ -153,12 +155,12 @@ func (config *ProfConfig) Run(
 		}
 	case containedDensityProfile, angularFractionProfile:
 		intColIdxs := []int{0, 1}
-		floatColIdxs := make([]int, 4 + pType.order*pType.order*2)
+		floatColIdxs := make([]int, 4 + config.order*config.order*2)
 		for i := range floatColIdxs {
-			floatColIdxs[i] + i + 2
+			floatColIdxs[i] += i + 2
 		}
 
-		var floatCols []float64
+		var floatCols [][]float64
 		intCols, floatCols, err = catalog.ParseCols(
 			stdin, intColIdxs, floatColIdxs,
 		)
@@ -168,7 +170,16 @@ func (config *ProfConfig) Run(
 		}
 
 		coords = floatCols[:4]
-		coeffs = floatCols[4:]
+		coeffs := floatCols[4:]
+		shells = make([]analyze.Shell, len(coords[0]))
+		for i := range shells {
+			coeffVec := make([]float64, len(coeffs))
+			for j := range coeffVec {
+				coeffVec[j] = coeffs[j][i]
+			}
+			order := int(config.order)
+			shells[i] = analyze.PennaFunc(coeffVec, order, order, 2)
+		}
 	}
 	
 	if len(intCols) == 0 {
@@ -241,7 +252,7 @@ func (config *ProfConfig) Run(
 				rhos := rhoSets[idxs[j]]
 				s := hBounds[j]
 
-				insertPoints(rhos, s, xs, ms, config, &hds[i])
+				insertPoints(rhos, s, xs, ms, shells[idxs[j]], config, &hds[i])
 			}
 
 			buf.Close()
@@ -279,7 +290,7 @@ func (config *ProfConfig) Run(
 
 func insertPoints(
 	rhos []float64, s geom.Sphere, xs [][3]float32,
-	ms []float32, config *ProfConfig, hd *io.Header,
+	ms []float32, shell analyze.Shell, config *ProfConfig, hd *io.Header,
 ) {
 	lrMax := math.Log(float64(s.R) * config.rMaxMult)
 	lrMin := math.Log(float64(s.R) * config.rMinMult)
@@ -300,18 +311,18 @@ func insertPoints(
 		dz = wrap(dz, tw2)
 
 		r2 := dx*dx + dy*dy + dz*dz
-		if r2 <= rMin2 || r2 >= rMax2 { continue }
+		if r2 <= rMin2 || r2 >= rMax2 {
+			continue
+		}
+
+		if config.pType == containedDensityProfile &&
+			!shell.Contains(float64(dx), float64(dy), float64(dz)) {
+			continue
+		}
+
 		lr := math.Log(float64(r2)) / 2
 		ir := int(((lr) - lrMin) / dlr)
 		if ir == len(rhos) { ir-- }
-		if ir < 0 || i < 0 || ir >= len(rhos) || i >= len(ms) {
-			log.Println(
-				"ir", ir,
-				"i", i,
-				"|rhos|", len(rhos),
-				"|ms|", len(ms),
-			)
-		}
 		rhos[ir] += float64(ms[i])
 	}
 }

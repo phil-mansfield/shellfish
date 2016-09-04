@@ -160,6 +160,8 @@ func (config *ProfConfig) Run(
 		if err != nil {
 			return nil, err
 		}
+
+		shells = make([]analyze.Shell, len(coords[0]))
 	case containedDensityProfile, angularFractionProfile:
 		intColIdxs := []int{0, 1}
 		floatColIdxs := make([]int, 4 + config.order*config.order*2)

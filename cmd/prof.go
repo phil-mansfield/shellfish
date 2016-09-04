@@ -18,10 +18,11 @@ import (
 )
 
 type ProfConfig struct {
-	bins, order int64
-	pType profileType
-	
+	bins, order, samples int64
 	rMaxMult, rMinMult float64
+
+	pType profileType
+
 }
 
 type profileType int
@@ -52,7 +53,12 @@ ProfileType = density
 # Order is the order of the Penna-Dines shell fit that Shellfish uses. This
 # variable only needs to be set if ProfileType is set to contained-density
 # or angular-fraction.
-Order = 3
+# Order = 3
+
+# Samples is the number of Monte Carlo samples used when calculating angular
+# fraction profiles. It does not need to be set when other profiles are
+# calculated.
+# Samples = 50000
 
 #####################
 ## Optional Fields ##
@@ -79,6 +85,7 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 
 	vars.Int(&config.bins, "Bins", 150)
 	vars.Int(&config.order, "Order", 3)
+	vars.Int(&config.samples, "Samples", 50 * 1000)
 	vars.Float(&config.rMaxMult, "RMaxMult", 3.0)
 	vars.Float(&config.rMinMult, "RMinMult", 0.03)
 	var pType string
@@ -181,13 +188,17 @@ func (config *ProfConfig) Run(
 			shells[i] = analyze.PennaFunc(coeffVec, order, order, 2)
 		}
 	}
-	
+
 	if len(intCols) == 0 {
 		return nil, fmt.Errorf("No input IDs.")
 	}
 
 	ids, snaps := intCols[0], intCols[1]
 	snapBins, idxBins := binBySnap(snaps, ids)
+
+	if config.pType == angularFractionProfile {
+		return angularFractionMain(ids, snaps, shells, coords[3], config)
+	}
 
 	rSets := make([][]float64, len(ids))
 	rhoSets := make([][]float64, len(ids))
@@ -342,4 +353,40 @@ func processProfile(rs, rhos []float64, rMin, rMax float64) {
 
 		rhos[j] = rhos[j] / dV
 	}
+}
+
+func angularFractionMain(
+	ids, snaps []int, shells []analyze.Shell, rs []float64, config *ProfConfig,
+) ([]string, error) {
+	rCols := make([][]float64, config.bins)
+	fCols := make([][]float64, config.bins)
+	for i := range rCols {
+		rCols[i] = make([]float64, len(ids))
+		fCols[i] = make([]float64, len(ids))
+	}
+
+	for i := range shells {
+		rs, fs := shells[i].AngularFractionProfile(
+			int(config.samples), int(config.bins),
+			rs[i] * config.rMinMult, rs[i] * config.rMaxMult,
+		)
+
+		for j := range rs {
+			rCols[j][i], fCols[j][i] = rs[j], fs[j]
+		}
+	}
+
+	order := make([]int, len(rCols) + len(fCols) + 2)
+	for i := range order { order[i] = i }
+	lines := catalog.FormatCols(
+		[][]int{ids, snaps}, append(rCols, fCols...), order,
+	)
+
+	cString := catalog.CommentString(
+		[]string{"ID", "Snapshot", "R [cMpc/h]", "Volume Fraction Contained"},
+		[]string{}, []int{0, 1, 2, 3},
+		[]int{1, 1, int(config.bins), int(config.bins)},
+	)
+
+	return append([]string{cString}, lines...), nil
 }

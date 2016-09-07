@@ -310,6 +310,8 @@ func extendAngularRange(maxes, ths []float64) (spMaxes, spThs []float64) {
 	return spMaxes, spThs
 }
 
+// Don't worry about this type, just always set it to Cartesian 100% of
+// the time.
 type RFuncType int
 
 const (
@@ -318,7 +320,8 @@ const (
 )
 
 // GetRFunc returns the filtering curve at a particular level of recursion.
-// rt  should always be set to Cartesian.
+// rt should always be set to Cartesian unless you know exactly what you're
+// doing and why you're doing it.
 func (kt *KDETree) GetRFunc(level int, rt RFuncType) func(float64) float64 {
 	switch rt {
 	case Radial:

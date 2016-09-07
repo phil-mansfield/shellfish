@@ -169,6 +169,7 @@ func FilterPoints(
 // mistakes were made.
 func pinv(m, t *mat.Matrix) *mat.Matrix {
 	// I HATE THIS
+	// TODO: Make this function not painfully slow.
 	gm := mat64.NewDense(m.Height, m.Width, m.Vals)
 	gmt := mat64.NewDense(m.Width, m.Height, t.Vals)
 

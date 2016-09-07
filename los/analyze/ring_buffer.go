@@ -8,14 +8,23 @@ import (
 )
 
 // RingBuffer contains the locations of candidate splashback radii for a single
-// ring of a LOS profiles.
+// ring of a LOS profiles. They are stored in multiple forms: x and y within
+// the plane of the ring, x, y, and z in the coordinate system of the
+// simulation, and r and phi within the plane of the ring. It also contains a
+// bunch of buffers to prevent useless allocations in various operations.
 type RingBuffer struct {
-	PlaneXs, PlaneYs, Xs, Ys, Zs, Rs, Phis     []float64
-	Oks                                        []bool
-	profRs, profRhos, smoothRhos, smoothDerivs []float64
-	N, Bins                                    int
+	PlaneXs, PlaneYs []float64 // x and y coords in the plane of the ring.
+	Xs, Ys, Zs       []float64 // Cartesian coords in the simulation box.
+	Rs, Phis         []float64 // r and phi coords in the plane of the ring.
+	Oks              []bool // Corresponds to a valid splashback point.
+
+	profRs, profRhos []float64
+	smoothRhos, smoothDerivs []float64
+
+	N, Bins int
 }
 
+// Init initializes
 func (r *RingBuffer) Init(n, bins int) {
 	r.N, r.Bins = n, bins
 

@@ -305,6 +305,10 @@ func (s Shell) RadiusHistogram(
 	return rs, ns
 }
 
+// AngularFractionProfile the percentage of lines of sight at a given radius
+// which are inside the shell. (Note: it doesn't just perform the brute force
+// Monte Carlo calculation at every radius, so don't worry about the number of
+// bins having an effect on the performance.)
 func (s Shell) AngularFractionProfile(
 	samples, bins int, rMin, rMax float64,
 ) (rs, fs []float64) {

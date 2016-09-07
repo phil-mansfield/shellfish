@@ -72,8 +72,8 @@ func NewKDETree(
 	if len(rs) == 0 {
 		panic("No input r and phi seuqences to NewKDETree. This can " +
 			"sometimes happen if incorrect halo positions are given (e.g. " +
-			"using a halo catalog from the wrong simulation suite, mistyping " +
-			"a coordinate, etc). " +
+			"using a halo catalog from the wrong simulation suite, configuring"+
+			" your halo finder incorrectly, mistyping a coordinate, etc). " +
 			"If you are _sure_ that your input locations correspond to " +
 			"actual halo centers, this might also be an internal Shellfish " +
 			"error and you should submit a bug report.")

@@ -29,7 +29,8 @@ import (
 //
 // The current implementation of ProfileRing maintains the derivatives of
 // each profile in the ring and integrating only when a profile is requested
-// for analysis.
+// for analysis. This is why the Retrieve method needs to exist instead of just
+// using a struct field.
 type ProfileRing struct {
 	derivs          []float64 // Contiguous block of pofile data. Column-major.
 	Lines           []geom.Line
@@ -94,9 +95,9 @@ func (p *ProfileRing) Insert(start, end, rho float64, i int) {
 	}
 
 	// One could be a bit more careful with floating point ops here, if
-	// push comes to shove. In particular, Modf calls can be avoided trhough
-	// trickery. (However, most recent benchmarks reveal that very little time
-	// is spent in this method call anymore, so I wouldn't bother.)
+	// push comes to shove. In particular, Modf calls can be avoided through
+	// trickery. (However, my most recent benchmarks reveal that very little
+	// time is spent in this method call anymore, so I wouldn't bother.)
 	if start > p.lowR {
 		fidx, rem := math.Modf((start - p.lowR) / p.dr)
 		idx := int(fidx)
@@ -118,7 +119,7 @@ func (p *ProfileRing) Insert(start, end, rho float64, i int) {
 	}
 }
 
-// Retrieve does any neccessary post-processing on the specified profile and
+// Retrieve does any necessary post-processing on the specified profile and
 // writes in to an out buffer.
 func (p *ProfileRing) Retrieve(i int, out []float64) {
 	sum := float64(0)

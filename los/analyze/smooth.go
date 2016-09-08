@@ -79,6 +79,7 @@ func Smooth(
 	return vals, derivs, true
 }
 
+// TODO: mutexes
 func getSmoothingKernel(window int, dx float64) (k, kd *intr.Kernel) {
 	k, ok := kernels[window]
 	kd, _ = derivKernels[window]

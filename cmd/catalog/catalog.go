@@ -118,9 +118,9 @@ func formatIntCol(col []int) []string {
 }
 
 func formatFloatCol(col []float64) []string {
-	width := len(fmt.Sprintf("%.4g", col[0]))
+	width := len(fmt.Sprintf("%.6g", col[0]))
 	for i := 1; i < len(col); i++ {
-		n := len(fmt.Sprintf("%.4g", col[i]))
+		n := len(fmt.Sprintf("%.6g", col[i]))
 		if n > width {
 			width = n
 		}
@@ -128,7 +128,7 @@ func formatFloatCol(col []float64) []string {
 
 	out := []string{}
 	for i := range col {
-		out = append(out, fmt.Sprintf("%*.4g", width, col[i]))
+		out = append(out, fmt.Sprintf("%*.6g", width, col[i]))
 	}
 
 	return out

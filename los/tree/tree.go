@@ -55,46 +55,6 @@ func HaloHistories(
 	return ids, snaps, nil
 }
 
-// HaloSnaps takes a slice of Rockstar halo trees and a slice of IDs. It
-// will return the snapshots which each of those IDs are from.
-func HaloSnaps(files []string, ids []int) (snaps []int, err error) {
-	if len(ids) == 0 {
-		return []int{}, nil
-	}
-
-	snaps = make([]int, len(ids))
-	for i := range snaps {
-		snaps[i] = -1
-	}
-
-	foundCount := 0
-	for _, file := range files {
-		ct.ReadTree(file)
-		for i, id := range ids {
-			if snaps[i] != -1 {
-				continue
-			}
-			if _, snap, ok := findHalo(id); ok {
-				snaps[i] = snap
-				foundCount++
-			}
-		}
-		ct.DeleteTree()
-		if foundCount == len(ids) {
-			break
-		}
-	}
-
-	for i, snap := range snaps {
-		if snap == -1 {
-			return nil, fmt.Errorf(
-				"Halo %d not found in given files.", ids[i],
-			)
-		}
-	}
-	return snaps, nil
-}
-
 func findHalo(id int) (ct.Halo, int, bool) {
 	tree := ct.GetHaloTree()
 	for i := 0; i < tree.NumLists(); i++ {

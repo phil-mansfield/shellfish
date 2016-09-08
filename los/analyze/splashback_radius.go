@@ -1,5 +1,13 @@
 package analyze
 
+// This is a perfectly reasonable design which isn't used anywhere else in the
+// project. It makes sense when there are a stupidly huge number of options
+// (see, e.g., github.com/phil-mansfield/pyplot which is a Go-based port of
+// pyplot that relies very heavily on this pattern).
+//
+// So, with that said:
+// TODO: Refactor this file.
+
 type splashbackRadiusParams struct{ dLim float64 }
 type internalSplashbackRadiusOption func(*splashbackRadiusParams)
 type SplashbackRadiusOption internalSplashbackRadiusOption
@@ -49,6 +57,7 @@ func SplashbackRadius(
 	return rs[iMin], true
 }
 
+// Read as: "is [local] minimum"
 func isMinimum(xs []float64, i int) bool {
 	return xs[i] < xs[i+1] && xs[i] < xs[i-1]
 }

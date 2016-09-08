@@ -3,7 +3,7 @@ package analyze
 import (
 	"math"
 	"math/rand"
-
+	
 	"github.com/gonum/matrix/mat64"
 	grid "github.com/phil-mansfield/shellfish/los/analyze/ellipse_grid"
 	intr "github.com/phil-mansfield/shellfish/math/interpolate"
@@ -303,6 +303,45 @@ func (s Shell) RadiusHistogram(
 	}
 
 	return rs, ns
+}
+
+// AngularFractionProfile the percentage of lines of sight at a given radius
+// which are inside the shell. (Note: it doesn't just perform the brute force
+// Monte Carlo calculation at every radius, so don't worry about the number of
+// bins having an effect on the performance.)
+func (s Shell) AngularFractionProfile(
+	samples, bins int, rMin, rMax float64,
+) (rs, fs []float64) {
+	rs, fs = make([]float64, bins), make([]float64, bins)
+	ns := make([]int, bins)
+
+	lrMin, lrMax := math.Log(rMin), math.Log(rMax)
+	dlr := (lrMax - lrMin) / float64(bins)
+
+	for i := range rs {
+		rs[i] = math.Exp(lrMin + (float64(i) + 0.5) * dlr)
+	}
+
+	for i := 0; i < samples; i++ {
+		phi, theta := randomAngle()
+		lr := math.Log(s(phi, theta))
+		lri := int((lr - lrMin) / dlr)
+		if lri < 0 || lri >= bins {
+			continue
+		}
+		ns[lri]++
+	}
+
+	// reverse cumulative sum
+	for i := bins - 2; i >= 0; i-- {
+		ns[i] += ns[i+1]
+	}
+
+	for i := 0; i < bins; i++ {
+		fs[i] = float64(ns[i]) / float64(ns[0])
+	}
+
+	return rs, fs
 }
 
 // Contains returns true if a Shell contains a point and false otherwise. The

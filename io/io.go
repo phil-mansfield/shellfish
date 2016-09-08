@@ -1,3 +1,49 @@
+/*The io package contains code for reading particles from disk. It provides
+an abstract interface (VectorBuffer) that allows the main package to read
+particles from different catalog formats in the same way.
+
+Chances are that if you're reading this, you want to add a new type of catalog
+type to this project. (If you're trying to do something more complicated than
+that, chances are that you know what you're doing and aren't bothering with this
+package comment). It's not too painful to do that in most cases. I'll lay out
+exactly what this is going to look like. For the sake of the discussion I'm
+going pretend that you're adding the a file-type called "my_file" to Shellfish.
+
+0. Read up on the usual instructions for editing Shellfish code. You can find
+these in the main documentation directory.
+
+1. Make a file in this directory called my_file.go.
+
+2. Make a struct in that file named "MyFileBuffer". Write five methods for that
+struct that have the same names and type signatures as those found in the
+VectorBuffer interface (the first declaration in this file).
+
+3. Write a function "NewMyFileBuffer(...) *MyFileBuffer" that returns a new
+instance of your buffer that is initialized with all the information that it
+needs (or any work that you don't want to be repeated). Usually this will just
+mean taking in an argument representing the byte ordering that the user
+requested and, storing that in the struct and maybe allocating a couple internal
+buffers. Sometimes you might also want the name of the directory containing
+the files.
+
+4. Implement each of those methods so that they do what the VectorBuffer
+comments indicate that they should do. Only two are non-trivial: Read() and
+(to a lesser extent) ReadHeader(). Look at the example in lgadget2.go and copy
+code as needed. If your file format is just  couple arrays of particles with
+some type of header (which it probably is), you can copy almost all of it and
+won't have to do much.
+
+5. Update getVectorBuffer() in cmd/util.go. It'll just be adding a case to a
+switch statement.
+
+6. Update the config file so that it knows about your file type. This means
+going to cmd/cmd.go and doing two things: First, change the validate() method
+there so that it doesn't crash when you pass it the name of your file type (i.e.
+adding it to the first line of the config.SnapshotLine switch statement in
+cmd.go). Second, go into the example config file (the big string in the same
+file) and in the SnapshotType comment, explain that your file type is also
+supported now.
+*/
 package io
 
 import (

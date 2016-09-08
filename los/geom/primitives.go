@@ -190,6 +190,8 @@ func (s1 *Sphere) SphereIntersect(s2 *Sphere) bool {
 	sum := float32(0)
 	dr := s1.R + s2.R
 	dr2 := dr * dr
+	// TODO: It's not clear if the conditional evaluation and associated branch
+	// mispredictions are worth it over the conventional approach.
 	for i := 0; i < 3; i++ {
 		dx := s1.C[i] - s2.C[i]
 		sum += dx * dx

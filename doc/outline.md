@@ -31,6 +31,21 @@ has a different execution path, which I will go through below:
 
 ### `id`
 
+This mode only does two things. The first is [reading the halo catalogs](https://github.com/phil-mansfield/shellfish/blob/master/cmd/id.go#L207) and the
+second is [excluding subhalos](https://github.com/phil-mansfield/shellfish/blob/master/cmd/id.go#L255)
+if the user requests a geometric exclusion. Both are mainly handled by other packages.
+
+Catalog reading is handled by [`cmd/memo`](https://github.com/phil-mansfield/shellfish/tree/master/cmd/memo).
+The reason this needs its own package is because to speed up read times (which can be
+long enough to be annoying), shorter versions of the catalogs are stored in binary
+after the first time they are read. The name comes from the term
+"[memoization](https://en.wikipedia.org/wiki/Memoization)."
+
+Geometric exclusion is handled by [`cmd/halo`](https://github.com/phil-mansfield/shellfish/tree/master/cmd/halo).
+The main purpose of this package is speeding up the asymptoticaly quadratic task of checking for intersections
+between a collection of spheres. Because of a number of optimizations, doing the intersection checks becomes
+fast enough to not matter.
+
 ### `tree`
 
 This mode is very simple. Since the only supported tree format is Behroozi et al.'s
@@ -39,13 +54,13 @@ this file just calls functions from the
 [`los/tree`](https://github.com/phil-mansfield/shellfish/tree/master/los/tree)
 package, which are themselves wrappers around `consistent-trees`'s API.
 
-### coord
+### `coord`
 
-### shell
+### `shell`
 
-### stats
+### `stats`
 
-### prof
+### `prof`
 
 ## What Files are Difficult to Read?
 

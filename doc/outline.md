@@ -16,7 +16,9 @@ These implementations need to do three things:
 2. Parse a config file for this mode type.
 3. Execute a a mode given a particular set of config files and command line flags.
 
-The different modes are managed by `shellfish.go`. When the command is run, the
+The different modes are managed by
+[`shellfish.go`](https://github.com/phil-mansfield/shellfish/blob/master/shellfish.go).
+When the command is run, the
 `main()` function in this file is called. It selects to correct `Mode` implementation
 and calls its methods. This file also does a lot of other boring stuff, like parsing
 command line arguments, managing `stdin` and `stdout`, packing (potentially weird)
@@ -56,11 +58,17 @@ package, which are themselves wrappers around `consistent-trees`'s API.
 
 ### `coord`
 
+This mode is very simple. It uses the same memoized catalog reader from `cmd/memo`
+that the `id` mode uses to to obtain halo coordinates and radii.
+
+
 ### `shell`
 
 ### `stats`
 
 ### `prof`
+
+This mode is identical in structure to `stats`, except that it collects profile information.
 
 ## What Files are Difficult to Read?
 

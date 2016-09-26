@@ -176,6 +176,7 @@ func readRockstar(
 	for i := range vals {
 		vals[i] = make([]float64, len(ids))
 	}
+
 	f := NewIntFinder(rids)
 	for i, id := range ids {
 		line, ok := f.Find(id)

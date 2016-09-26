@@ -77,9 +77,6 @@ ProfileType = density
 
 
 func (config *ProfConfig) ReadConfig(fname string) error {
-	if fname == "" {
-		return nil
-	}
 
 	vars := parse.NewConfigVars("prof.config")
 
@@ -91,6 +88,10 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 	var pType string
 	vars.String(&pType, "ProfileType", "")
 
+	if fname == "" {
+		return nil
+	}
+	
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
@@ -271,7 +272,7 @@ func (config *ProfConfig) Run(
 			buf.Close()
 		}
 	}
-
+	
 	for i := range rSets {
 		rMax := coords[3][i]*config.rMaxMult
 		rMin := coords[3][i]*config.rMinMult

@@ -96,7 +96,7 @@ func main() {
 
 	var lines []string
 	switch args[1] {
-	case "tree", "coord", "prof", "shell", "stats":
+	case "tree", "coord", "prof", "shell", "stats", "id":
 		var err error
 		lines, err = stdinLines()
 		if err != nil {

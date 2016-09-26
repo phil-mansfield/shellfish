@@ -62,10 +62,13 @@ IDs = 10, 11, 12, 13, 14
 # ExclusionStrategy determines how to exclude IDs from the given set. This is
 # useful because splashback shells are not particularly meaningful for
 # subhalos. It can be set to the following modes:
-# none    - No halos are removed
-# subhalo - Halos flagged as subhalos in the catalog are removed
-# overlap - Halos which have an R200m shell that overlaps with a larger halo's
-#           R200m shell are removed
+# none      - No halos are removed
+# subhalo   - Halos flagged as subhalos in the catalog are removed (not yet
+#             implemented)
+# overlap   - Halos which have an R200m shell that overlaps with a larger halo's
+#             R200m shell are removed
+# neighbor  - Instead of removing halos, all neighboring halos within
+#             ExclusionRadiusMult*R200m are added to the list.
 #
 # ExclusionStrategy defaults to overlap if not set.
 #
@@ -76,7 +79,7 @@ IDs = 10, 11, 12, 13, 14
 #
 # ExclusionRadiusMult defaults to 1 if not set.
 #
-# ExclustionRadiusMult = 1
+# ExclusionRadiusMult = 1
 
 # Mult is the number of times a given ID should be repeated. This is most useful
 # if you want to estimate the scatter in shell measurements for halos with a
@@ -120,7 +123,7 @@ func (config *IDConfig) validate() error {
 	}
 
 	switch config.exclusionStrategy {
-	case "none", "subhalo":
+	case "none", "subhalo", "neighbor":
 	case "overlap":
 		if config.exclusionRadiusMult <= 0 {
 			return fmt.Errorf("The 'ExclusionRadiusMult' varaible is set to "+
@@ -132,6 +135,7 @@ func (config *IDConfig) validate() error {
 	}
 
 	// TODO: Check the ranges of the IDs as well as IDStart and IDEnd
+	/*
 	if len(config.ids) == 0 {
 		switch {
 		case config.idStart == -1 && config.idEnd == -1:
@@ -144,7 +148,7 @@ func (config *IDConfig) validate() error {
 			return fmt.Errorf("'IDEnd' variable set to %d, but 'IDStart' "+
 				"variable set to %d.", config.idEnd, config.idStart)
 		}
-	}
+	} */
 
 	switch {
 	case config.snap == -1:
@@ -164,7 +168,7 @@ func (config *IDConfig) validate() error {
 func (config *IDConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
-
+	
 	if logging.Mode != logging.Nil {
 		log.Println(`
 ##################
@@ -192,6 +196,8 @@ func (config *IDConfig) Run(
 	rawIds, err := getIDs(config.idStart, config.idEnd, config.ids, stdin)
 	if err != nil {
 		return nil, err
+	} else if len(rawIds) == 0 {
+		return nil, nil
 	}
 
 	vars := &halo.VarColumns{
@@ -253,15 +259,7 @@ func (config *IDConfig) Run(
 	case "none":
 	case "subhalo":
 		panic("subhalo is not implemented")
-	case "neighbors":
-		buf, err := getVectorBuffer(
-			e.ParticleCatalog(snaps[0], 0),
-			gConfig.SnapshotType, gConfig.Endianness,
-		)
-		if err != nil {
-			return nil, err
-		}
-
+	case "neighbor":
 		ids, snaps, err = readSubIDs(ids, snaps, vars, buf, e, config)
 		if err != nil {
 			return nil, err
@@ -389,7 +387,7 @@ func findOverlapSubs(
 		g.Insert(xs, ys, zs)
 		sf := halo.NewSubhaloFinder(g)
 		sf.FindSubhalos(xs, ys, zs, rs, config.exclusionRadiusMult)
-
+		
 		for i, id := range group {
 			origIdx := groupIdxs[snap][i]
 			// TODO: Holy linear search, batman! Fix this.
@@ -413,44 +411,49 @@ func readSubIDs(
 ) (
 	sIDs, sSnaps []int, err error,
 ) {
-	snapBins, idxBins := binBySnap(snaps, ids)
 	subIDs := make([][]int, len(ids))
 
+	snapGroups := make(map[int][]int)
+	groupIdxs := make(map[int][]int)
+	for i, id := range ids {
+		snap := snaps[i]
+		snapGroups[snap] = append(snapGroups[snap], id)
+		groupIdxs[snap] = append(groupIdxs[snap], i)
+	}
+	
+		// Load each snapshot.
 	hds, _, err := memo.ReadHeaders(snaps[0], buf, e)
 	if err != nil {
 		return nil, nil, err
 	}
 	hd := hds[0]
 
-	for snap, _ := range snapBins {
-		if snap == -1 {
-			continue
+	for snap, group := range snapGroups {
+		rids, err := memo.ReadSortedRockstarIDs(snap, -1, vars, buf, e)
+		if err != nil {
+			return nil, nil, err
 		}
-		snapIDs := snapBins[snap]
-		idxs := idxBins[snap]
-
-		allIDs, err := memo.ReadSortedRockstarIDs(snap, -1, vars, buf, e)
-		if err != nil { return nil, nil, err }
-		_, xs, ys, zs, _, rs, err := memo.ReadRockstar(
-			snap, allIDs, vars, buf, e,
-		)
+		_, xs, ys, zs, _, rs, err := memo.ReadRockstar(snap, rids, vars, buf, e)
 
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
-		g.Insert(xs, ys, xs)
+		g.Insert(xs, ys, zs)
 		sf := halo.NewSubhaloFinder(g)
 		sf.FindSubhalos(xs, ys, zs, rs, config.exclusionRadiusMult)
-
-		f := newIntFinder(allIDs)
-		for i, id := range snapIDs {
+		
+		f := newIntFinder(rids)
+		idxs := groupIdxs[snap]
+		for i, id := range group {
 			idx := idxs[i]
 			sIdx, ok := f.find(id)
 			if !ok {
 				return nil, nil, fmt.Errorf("Could not find ID %d.", id)
 			}
-
+			
 			subMassIDs := sf.Subhalos(sIdx)
+
+			subIDs[idx] = make([]int, len(subMassIDs))
 			for i := range subMassIDs {
-				subIDs[idx][i] = allIDs[subMassIDs[i]]
+				subIDs[idx][i] = rids[subMassIDs[i]]
 			}
 		}
 	}

@@ -189,7 +189,10 @@ func (config *IDConfig) Run(
 
 	// Get IDs and snapshots
 
-	rawIds := getIDs(config.idStart, config.idEnd, config.ids)
+	rawIds, err := getIDs(config.idStart, config.idEnd, config.ids, stdin)
+	if err != nil {
+		return nil, err
+	}
 
 	vars := &halo.VarColumns{
 		ID:    int(gConfig.HaloIDColumn),
@@ -250,6 +253,21 @@ func (config *IDConfig) Run(
 	case "none":
 	case "subhalo":
 		panic("subhalo is not implemented")
+	case "neighbors":
+		buf, err := getVectorBuffer(
+			e.ParticleCatalog(snaps[0], 0),
+			gConfig.SnapshotType, gConfig.Endianness,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		ids, snaps, err = readSubIDs(ids, snaps, vars, buf, e, config)
+		if err != nil {
+			return nil, err
+		}
+
+		exclude = make([]bool, len(ids))
 	case "overlap":
 		var err error
 		exclude, err = findOverlapSubs(ids, snaps, vars, buf, e, config)
@@ -293,19 +311,25 @@ func (config *IDConfig) Run(
 	return mLines, nil
 }
 
-func getIDs(idStart, idEnd int64, ids []int64) []int {
+func getIDs(idStart, idEnd int64, ids []int64, stdin []string) ([]int, error) {
 	if idStart != -1 {
 		out := make([]int, idEnd-idStart)
 		for i := range out {
 			out[i] = int(idStart) + i
 		}
-		return out
-	} else {
+		return out, nil
+	} else if len(ids) > 0 {
 		out := make([]int, len(ids))
 		for i := range out {
 			out[i] = int(ids[i])
 		}
-		return out
+		return out, nil
+	} else {
+		intCols, _, err := catalog.ParseCols(stdin, []int{0}, []int{})
+		if err != nil {
+			return nil, err
+		}
+		return intCols[0], nil
 	}
 }
 
@@ -380,4 +404,87 @@ func findOverlapSubs(
 		}
 	}
 	return isSub, nil
+}
+
+func readSubIDs(
+	ids, snaps []int, vars *halo.VarColumns,
+	buf io.VectorBuffer, e *env.Environment,
+	config *IDConfig,
+) (
+	sIDs, sSnaps []int, err error,
+) {
+	snapBins, idxBins := binBySnap(snaps, ids)
+	subIDs := make([][]int, len(ids))
+
+	hds, _, err := memo.ReadHeaders(snaps[0], buf, e)
+	if err != nil {
+		return nil, nil, err
+	}
+	hd := hds[0]
+
+	for snap, _ := range snapBins {
+		if snap == -1 {
+			continue
+		}
+		snapIDs := snapBins[snap]
+		idxs := idxBins[snap]
+
+		allIDs, err := memo.ReadSortedRockstarIDs(snap, -1, vars, buf, e)
+		if err != nil { return nil, nil, err }
+		_, xs, ys, zs, _, rs, err := memo.ReadRockstar(
+			snap, allIDs, vars, buf, e,
+		)
+
+		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
+		g.Insert(xs, ys, xs)
+		sf := halo.NewSubhaloFinder(g)
+		sf.FindSubhalos(xs, ys, zs, rs, config.exclusionRadiusMult)
+
+		f := newIntFinder(allIDs)
+		for i, id := range snapIDs {
+			idx := idxs[i]
+			sIdx, ok := f.find(id)
+			if !ok {
+				return nil, nil, fmt.Errorf("Could not find ID %d.", id)
+			}
+
+			subMassIDs := sf.Subhalos(sIdx)
+			for i := range subMassIDs {
+				subIDs[idx][i] = allIDs[subMassIDs[i]]
+			}
+		}
+	}
+	sIDs, sSnaps = []int{}, []int{}
+	for i := range subIDs {
+		sIDs = append(sIDs, ids[i])
+		sSnaps = append(sSnaps, snaps[i])
+		for _, id := range subIDs[i] {
+			sIDs = append(sIDs, id)
+			sSnaps = append(sSnaps, snaps[i])
+		}
+	}
+
+	return sIDs, sSnaps, nil
+}
+
+// A quick generic wrapper for doing those one-to-one mappings I need to do so
+// often. Written like this so the backend can be swapped out easily.
+type intFinder struct {
+	m map[int]int
+}
+
+// NewIntFinder creates a new IntFinder struct for a given slice of Rockstar
+// IDs.
+func newIntFinder(rids []int) intFinder {
+	f := intFinder{}
+	f.m = make(map[int]int)
+	for i, rid := range rids { f.m[rid] = i }
+	return f
+}
+
+// Find returns the index which the given ID corresponds to and true if the
+// ID is in the finder. Otherwise, false is returned.
+func (f intFinder) find(rid int) (int, bool) {
+	line, ok := f.m[rid]
+	return line, ok
 }

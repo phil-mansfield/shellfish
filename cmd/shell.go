@@ -242,7 +242,7 @@ func (config *ShellConfig) Run(
 	floatNames := []string{"X [cMpc/h]", "Y [cMpc/h]", "Z [cMpc/h]",
 		"R200m [cMpc/h]", "P_ijk"}
 
-	colOrder := make([]int, 2+4+2*config.order*config.order)
+	colOrder := make([]int, 2+4+len(out[0]))
 	for i := range colOrder {
 		colOrder[i] = i
 	}
@@ -253,7 +253,7 @@ func (config *ShellConfig) Run(
 
 	cString := catalog.CommentString(
 		intNames, floatNames, []int{0, 1, 2, 3, 4, 5, 6},
-		[]int{1, 1, 1, 1, 1, 1, 2 * int(config.order*config.order)},
+		[]int{1, 1, 1, 1, 1, 1, len(out[0])},
 	)
 
 	if logging.Mode == logging.Performance {

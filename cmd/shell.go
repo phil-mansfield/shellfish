@@ -18,12 +18,16 @@ import (
 	"github.com/phil-mansfield/shellfish/los/analyze"
 	"github.com/phil-mansfield/shellfish/math/rand"
 	"github.com/phil-mansfield/shellfish/parse"
+	msort "github.com/phil-mansfield/shellfish/math/sort"
 )
 
 type ShellConfig struct {
 	radialBins, spokes, rings int64
 	rMaxMult, rMinMult        float64
 	rKernelMult               float64
+
+	percentileProfile bool
+	percentile float64
 
 	eta                                             float64
 	order, smoothingWindow, levels, subsampleFactor int64
@@ -91,7 +95,22 @@ LOSSlopeCutoff = 0.0
 
 # BackgroundRhoMult is the density assigned to points which do not intersect
 # with any kernels as a multiple of the kernel density.
-BackgroundRhoMult = 0.5`
+BackgroundRhoMult = 0.5
+
+#########################
+## Optional Parameters ##
+#########################
+
+# Setting PercentileProfile to true switches to a mode where the nth percentile
+# across every line of sight profile. You might argue that this should be in
+# the "prof" mode, not the "shell" mode, but there's much more code reuse to put
+# it here.
+# PercentileProfile = false
+
+# Percentile is the percentile that will be evaluated when PercentileProfile
+# is set to true.
+# Percentile = 50
+`
 }
 
 func (config *ShellConfig) ReadConfig(fname string) error {
@@ -110,6 +129,8 @@ func (config *ShellConfig) ReadConfig(fname string) error {
 	vars.Int(&config.smoothingWindow, "SmoothingWindow", 121)
 	vars.Float(&config.losSlopeCutoff, "LOSSlopeCutoff", 0.0)
 	vars.Float(&config.backgroundRhoMult, "BackgroundRhoMult", 0.5)
+	vars.Bool(&config.percentileProfile, "PercentileProfile", false)
+	vars.Float(&config.percentile, "Percentile", 50.0)
 
 	if fname == "" {
 		return nil
@@ -200,7 +221,11 @@ func (config *ShellConfig) Run(
 	rowLength := config.order * config.order * 2
 
 	for i := range out {
-		out[i] = make([]float64, rowLength)
+		if config.percentileProfile {
+			out[i] = make([]float64, config.radialBins)
+		} else {
+			out[i] = make([]float64, rowLength)
+		}
 	}
 
 	buf, err := getVectorBuffer(
@@ -460,12 +485,16 @@ func haloAnalysis(
 			log.Printf("Halo %3d", i)
 		}
 
-		var ok bool
-		out[idxs[i]], ok = calcCoeffs(halos[i], ringBuf, c)
-		if !ok {
-			fmt.Errorf("Shell coefficients undetermined. The most likely " +
+		if c.percentileProfile {
+			out[idxs[i]] = calcPercentile(halos[i], c)
+		} else {
+			var ok bool
+			out[idxs[i]], ok = calcCoeffs(halos[i], ringBuf, c)
+			if !ok {
+				fmt.Errorf("Shell coefficients undetermined. The most likely " +
 				"explanation is that there is corruption in your particle " +
 				"snapshots.")
+			}
 		}
 	}
 	return nil
@@ -568,6 +597,39 @@ func calcCoeffs(
 	}
 	cs, _ := analyze.PennaVolumeFit(pxs, pys, halo, int(c.order), int(c.order))
 	return cs, true
+}
+
+func calcPercentile(
+	halo *los.Halo, c *ShellConfig,
+) []float64 {
+	out := make([]float64, c.radialBins*2)
+	outRs, outRhos := out[:c.radialBins], out[c.radialBins:]
+	halo.GetRs(outRs)
+
+	buf := make([][]float64, c.spokes*c.rings)
+	for i := range buf {
+		buf[i] = make([]float64, c.radialBins)
+	}
+
+	for r := 0; r < int(c.rings); r++ {
+		for s := 0; s < int(c.spokes); s++ {
+			halo.GetRhos(r, s, buf[s + r*int(c.spokes)])
+		}
+	}
+
+	rBuf := make([]float64, c.spokes*c.rings)
+	// Used for performance purposes in Percentile() calls.
+	medBuf := make([]float64, c.spokes*c.rings)
+
+	for ri := range buf {
+		for i := range rBuf {
+			rBuf[i] = buf[ri][i]
+		}
+
+		outRhos[ri] = msort.Percentile(rBuf, c.percentile / 100, medBuf)
+	}
+
+	return out
 }
 
 func binBySnap(snaps, ids []int) (snapBins, idxBins map[int][]int) {

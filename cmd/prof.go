@@ -43,11 +43,11 @@ func (config *ProfConfig) ExampleConfig() string {
 
 # ProfileType determines what type of profile will be output.
 # Known profile types are:
-# density -          the traditional spherical densiy profile that we all
-                     know and love.
-# contained-densiy - a density profile which only uses particles.
-# angular-fraction - the angular fraction at each radius which is contained
-                     within the shell.
+# density -            the traditional spherical densiy profile that we all
+#                      know and love.
+# contained-densiy -   a density profile which only uses particles.
+# angular-fraction -   the angular fraction at each radius which is contained
+#                      within the shell.
 ProfileType = density
 
 # Order is the order of the Penna-Dines shell fit that Shellfish uses. This

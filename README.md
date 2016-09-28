@@ -5,7 +5,7 @@ the splashback shells of individual halos within cosmological simulations. Shell
 is written in the programming langue [Go](https://golang.org/).
 
 Shellfish is currently in version 0.2.0 with the next planned release being version
-0.3.0. Its conifguration file API is mostly stable, it is not yet fully documented,
+0.3.0. Its configuration file API is mostly stable, it is not yet fully documented,
 and does not yet have a C-compatible API. The current maintainer in Phil Mansfield
 at the University of Chicago.
 

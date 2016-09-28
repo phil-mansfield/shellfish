@@ -621,9 +621,9 @@ func calcPercentile(
 	// Used for performance purposes in Percentile() calls.
 	medBuf := make([]float64, c.spokes*c.rings)
 
-	for ri := range buf {
-		for i := range rBuf {
-			rBuf[i] = buf[ri][i]
+	for ri := 0; ri < int(c.radialBins); ri++ {
+		for i := 0; i < int(c.spokes*c.rings); i++ {
+			rBuf[i] = buf[i][ri]
 		}
 
 		outRhos[ri] = msort.Percentile(rBuf, c.percentile / 100, medBuf)

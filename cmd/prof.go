@@ -423,7 +423,9 @@ func insertMedianPoints(
 		}
 
 		r := math.Sqrt(float64(r2))
-		phi := math.Atan2(float64(dy), float64(dx))
+		phi := math.Mod(
+			math.Atan2(float64(dy), float64(dx)) + math.Pi*2, math.Pi*2,
+		)
 		th := math.Acos(float64(dz) / r)
 		p := geom.SpherePixel(phi, th, int(config.medianPixelLevel))
 

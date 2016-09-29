@@ -4,8 +4,6 @@ import (
 	"math"
 	"math/rand"
 	"testing"
-
-	"github.com/phil-mansfield/shellfish/render/io"
 )
 
 var (
@@ -17,7 +15,6 @@ var (
 
 	L = [3]float32{0, 0, 1}
 
-	hd  io.SheetHeader
 	xs  [][3]float32
 	ts  []Tetra
 	pts []PluckerTetra

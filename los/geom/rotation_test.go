@@ -47,7 +47,7 @@ func TestRotate(t *testing.T) {
 	for i, test := range table {
 		m := EulerMatrix(test.phi, test.theta, test.psi)
 		v := test.start
-		RotateVec(v, m)
+		RotateVec(&v, m)
 		if !vecEpsEq(&v, &test.end, eps) {
 			t.Errorf(
 				"%d) %v.Rotate(%.4g %.4g %.4g) -> %v instead of %v",
@@ -81,7 +81,7 @@ func TestEulerMatrixBetween(t *testing.T) {
 	for i, test := range table {
 		m := EulerMatrixBetween(&test.v1, &test.v2)
 		v := test.v1
-		RotateVec(v, m)
+		RotateVec(&v, m)
 		if !vecEpsEq(&v, &test.v2, eps) {
 			t.Errorf(
 				"%d) %v.Rotate(EulerMatrixBetween(%v %v)) -> %v instead of %v",
@@ -119,7 +119,7 @@ func BenchmarkVecRotate(b *testing.B) {
 	v := [3]float32{1, 1, 1}
 	m := EulerMatrix(1, 2, 3)
 	for i := 0; i < b.N; i++ {
-		RotateVec(v, m)
+		RotateVec(&v, m)
 	}
 }
 

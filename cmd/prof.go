@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	msort "github.com/phil-mansfield/shellfish/math/sort"
 	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/los/analyze"
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
@@ -20,6 +21,7 @@ import (
 type ProfConfig struct {
 	bins, order, samples int64
 	rMaxMult, rMinMult float64
+	medianPixelLevel int64
 
 	pType profileType
 
@@ -28,6 +30,7 @@ type ProfConfig struct {
 type profileType int
 const (
 	densityProfile profileType = iota
+	medianDensityProfile
 	containedDensityProfile
 	angularFractionProfile
 )
@@ -43,11 +46,14 @@ func (config *ProfConfig) ExampleConfig() string {
 
 # ProfileType determines what type of profile will be output.
 # Known profile types are:
-# density -            the traditional spherical densiy profile that we all
-#                      know and love.
-# contained-densiy -   a density profile which only uses particles.
-# angular-fraction -   the angular fraction at each radius which is contained
-#                      within the shell.
+# density -           The traditional spherical densiy profile that we all
+#                     know and love.
+# median-density -    A density profile created by binning particles into
+#                     equal solid-angle pixels and taking the median density
+#                     across the angular bins at each radius.
+# contained-densiy -  A density profile which only uses particles.
+# angular-fraction -  The angular fraction at each radius which is contained
+#                     within the shell.
 ProfileType = density
 
 # Order is the order of the Penna-Dines shell fit that Shellfish uses. This
@@ -59,6 +65,13 @@ ProfileType = density
 # fraction profiles. It does not need to be set when other profiles are
 # calculated.
 # Samples = 50000
+
+# MedianPixelLevel sets the number of angular pixel used when ProfileType is
+# set to median-density. Because of Shellfish's pixelization scheme (a modified
+# version of the algorithm presented in Gringorten & Yepez, 1992), the total
+# number of pixels used is 2*(2*level - 1)^2. Quickly, that means 1 -> 2,
+# 2 -> 18, 3 -> 50, 10 -> 722 etc.
+# MedianPixelLevel = 3
 
 #####################
 ## Optional Fields ##
@@ -85,6 +98,7 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 	vars.Int(&config.samples, "Samples", 50 * 1000)
 	vars.Float(&config.rMaxMult, "RMaxMult", 3.0)
 	vars.Float(&config.rMinMult, "RMinMult", 0.03)
+	vars.Int(&config.medianPixelLevel, "MedianPixelLevel", 3)
 	var pType string
 	vars.String(&pType, "ProfileType", "")
 
@@ -101,6 +115,8 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 		return fmt.Errorf("The variable 'ProfileType' was not set.")
 	case "density":
 		config.pType = densityProfile
+	case "median-density":
+		config.pType = medianDensityProfile
 	case "contained-density":
 		config.pType = containedDensityProfile
 	case "angular-fraction":
@@ -122,7 +138,11 @@ func (config *ProfConfig) validate() error {
 	} else if config.rMaxMult <= 0 {
 		return fmt.Errorf("The variable '%s' was set to %g.",
 			"RMinMult", config.rMinMult)
+	} else if config.medianPixelLevel < 0 {
+		return fmt.Errorf("The variable '%s' was set to %g.",
+			"MedianPixelLevel", config.medianPixelLevel)
 	}
+
 	return nil
 }
 
@@ -132,7 +152,7 @@ func (config *ProfConfig) Run(
 	if logging.Mode != logging.Nil {
 		log.Println(`
 ####################
-## shellfish tree ##
+## shellfish prof ##
 ####################`,
 		)
 	}
@@ -150,7 +170,7 @@ func (config *ProfConfig) Run(
 	)
 
 	switch config.pType {
-	case densityProfile:
+	case densityProfile, medianDensityProfile:
 		intColIdxs := []int{0, 1}
 		floatColIdxs := []int{2, 3, 4, 5}
 		
@@ -203,12 +223,32 @@ func (config *ProfConfig) Run(
 		return angularFractionMain(ids, snaps, shells, coords[3], config)
 	}
 
+	// Profiles for everyone
 	rSets := make([][]float64, len(ids))
 	rhoSets := make([][]float64, len(ids))
 	for i := range rSets {
 		rSets[i] = make([]float64, config.bins)
 		rhoSets[i] = make([]float64, config.bins)
 	}
+
+	// Workspace buffers just for the median-density mode.
+	var (
+		medRhoSets [][][]float64
+		medScratchBuffer []float64
+	)
+	if config.pType == medianDensityProfile {
+		medRhoSets = make([][][]float64, len(ids))
+		n := geom.SpherePixelNum(int(config.medianPixelLevel))
+		medScratchBuffer = make([]float64, n)
+		for i := range medRhoSets {
+			medRhoSets[i] = make([][]float64, config.bins)
+			for j := range medRhoSets[i] {
+				medRhoSets[i][j] = make([]float64, n)
+			}
+		}
+
+	}
+
 
 	sortedSnaps := []int{}
 	for snap := range snapBins {
@@ -266,7 +306,14 @@ func (config *ProfConfig) Run(
 				rhos := rhoSets[idxs[j]]
 				s := hBounds[j]
 
-				insertPoints(rhos, s, xs, ms, shells[idxs[j]], config, &hds[i])
+				if config.pType == medianDensityProfile {
+					medRhos := medRhoSets[idxs[j]]
+					insertMedianPoints(medRhos, s, xs, ms, config, &hds[i])
+				} else {
+					insertPoints(
+						rhos, s, xs, ms, shells[idxs[j]], config, &hds[i],
+					)
+				}
 			}
 
 			buf.Close()
@@ -276,7 +323,12 @@ func (config *ProfConfig) Run(
 	for i := range rSets {
 		rMax := coords[3][i]*config.rMaxMult
 		rMin := coords[3][i]*config.rMinMult
-		processProfile(rSets[i], rhoSets[i], rMin, rMax)
+		if config.pType == medianDensityProfile {
+			processMedianProfile(rSets[i], rhoSets[i],
+				medRhoSets[i], medScratchBuffer, rMin, rMax)
+		} else {
+			processProfile(rSets[i], rhoSets[i], rMin, rMax)
+		}
 	}
 
 	rSets = transpose(rSets)
@@ -341,6 +393,48 @@ func insertPoints(
 	}
 }
 
+func insertMedianPoints(
+	medRhos [][]float64, s geom.Sphere,  xs [][3]float32,
+	ms []float32, config *ProfConfig, hd *io.Header,
+) {
+	lrMax := math.Log(float64(s.R) * config.rMaxMult)
+	lrMin := math.Log(float64(s.R) * config.rMinMult)
+	dlr := (lrMax - lrMin) / float64(config.bins)
+	rMax2 := s.R * float32(config.rMaxMult)
+	rMin2 := s.R * float32(config.rMinMult)
+	rMax2 *= rMax2
+	rMin2 *= rMin2
+
+	x0, y0, z0 := s.C[0], s.C[1], s.C[2]
+	tw2 := float32(hd.TotalWidth) / 2
+
+	pixelNum := geom.SpherePixelNum(int(config.medianPixelLevel))
+
+	for i, vec := range xs {
+		x, y, z := vec[0], vec[1], vec[2]
+		dx, dy, dz := x - x0, y - y0, z - z0
+		dx = wrap(dx, tw2)
+		dy = wrap(dy, tw2)
+		dz = wrap(dz, tw2)
+
+		r2 := dx*dx + dy*dy + dz*dz
+		if r2 <= rMin2 || r2 >= rMax2 {
+			continue
+		}
+
+		r := math.Sqrt(float64(r2))
+		phi := math.Atan2(float64(dy), float64(dx))
+		th := math.Acos(float64(dz) / r)
+		p := geom.SpherePixel(phi, th, int(config.medianPixelLevel))
+
+		lr := math.Log(r)
+		ir := int(((lr) - lrMin) / dlr)
+
+		if ir == len(medRhos) { ir-- }
+		medRhos[ir][p] += float64(ms[i])*float64(pixelNum)
+	}
+}
+
 func processProfile(rs, rhos []float64, rMin, rMax float64) {
 	n := len(rs)
 
@@ -355,6 +449,24 @@ func processProfile(rs, rhos []float64, rMin, rMax float64) {
 		dV := (rHi*rHi*rHi - rLo*rLo*rLo) * 4 * math.Pi / 3
 
 		rhos[j] = rhos[j] / dV
+	}
+}
+
+func processMedianProfile(rs, rhos []float64, medRhos [][]float64,
+	medScratchBuffer []float64, rMin, rMax float64) {
+	n := len(rs)
+
+	dlr := (math.Log(rMax) - math.Log(rMin)) / float64(n)
+	lrMin := math.Log(rMin)
+
+	for j := range rs {
+		rs[j] = math.Exp(lrMin + dlr*(float64(j) + 0.5))
+
+		rLo := math.Exp(dlr*float64(j) + lrMin)
+		rHi := math.Exp(dlr*float64(j+1) + lrMin)
+		dV := (rHi*rHi*rHi - rLo*rLo*rLo) * 4 * math.Pi / 3
+
+		rhos[j] = msort.Median(medRhos[j], medScratchBuffer) / dV
 	}
 }
 

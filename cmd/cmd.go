@@ -54,9 +54,8 @@ type GlobalConfig struct {
 
 	MemoDir string
 
-	HaloIDColumn        int64
-	HaloM200mColumn     int64
-	HaloPositionColumns []int64
+	HaloValueNames []string
+	HaloValueColumns []int
 
 	HaloPositionUnits string
 	HaloMassUnits     string
@@ -83,10 +82,8 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.String(&config.TreeType, "TreeType", "")
 	vars.String(&config.MemoDir, "MemoDir", "")
 
-	vars.Int(&config.HaloIDColumn, "HaloIDColumn", -1)
-	vars.Int(&config.HaloM200mColumn, "HaloM200mColumn", -1)
-	vars.Ints(&config.HaloPositionColumns, "HaloPositionColumns",
-		[]int64{-1, -1, -1})
+	vars.Ints(&config.HaloValueNames, "HaloValueNames", []string{})
+	vars.Ints(&config.HaloValueColumns, "HaloValueColumns", []int64{})
 
 	vars.String(&config.HaloPositionUnits, "HaloPositionUnits", "")
 	vars.String(&config.HaloMassUnits, "HaloMassUnits", "Msun/h")
@@ -211,17 +208,38 @@ func (config *GlobalConfig) validate() error {
 			config.MemoDir, err.Error())
 	}
 
-	if config.HaloIDColumn == -1 {
-		return fmt.Errorf("The 'HaloIDColumn' variable isn't set.")
-	} else if config.HaloM200mColumn == -1 {
-		return fmt.Errorf("The 'HaloM200mColumn' variable isn't set.")
-	} else if len(config.HaloPositionColumns) != 3 {
-		return fmt.Errorf("The 'HaloPositionColumns' variable must have " +
-			"three elements.")
-	} else if config.HaloPositionColumns[0] == -1 ||
-		config.HaloPositionColumns[1] == -1 ||
-		config.HaloPositionColumns[2] == -1 {
-		return fmt.Errorf("The 'HaloPositionColumns' variable wasn't set.")
+	if config.HaloType != "nil" {
+		if len(config.HaloValueNames) != 0 {
+			return fmt.Errorf("The 'HaloValueNames' variable isn't set.")
+		} else if len(config.HaloValueColumns) != 0 {
+			return fmt.Errorf("The 'HaloValueColumns' variable isn't set.")
+		} else if len(config.HaloValueNames) != len(config.HaloValueColumns) {
+			return fmt.Errorf("len(HaloValueColumns) = %d, but " +
+				"len(HaloValueNames) = %d.", len(config.HaloValueColumns),
+				len(config.HaloValueNames))
+		}
+		switch {
+		case !inStringSlice("ID", config.HaloValueNames):
+			return fmt.Errorf(
+				"'HaloValueNames' does not contain the 'X' name.",
+			)
+		case !inStringSlice("X", config.HaloValueNames):
+			return fmt.Errorf(
+				"'HaloValueNames' does not contain the 'X' name.",
+			)
+		case !inStringSlice("Y", config.HaloValueNames):
+			return fmt.Errorf(
+				"'HaloValueNames' does not contain the 'Y' name.",
+			)
+		case !inStringSlice("Z", config.HaloValueNames):
+			return fmt.Errorf(
+				"'HaloValueNames' does not contain the 'Z' name.",
+			)
+		case !inStringSlice("M200m", config.HaloValueNames):
+			return fmt.Errorf(
+				"'HaloValueNames' does not contain the 'M200m' name.",
+			)
+		}
 	}
 
 	switch config.Endianness {
@@ -234,6 +252,15 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	return validateFormat(config)
+}
+
+func inStringSlice(x string, xs []string) bool {
+	for _, xx := range xs {
+		if x == xx {
+			return true
+		}
+	}
+	return false
 }
 
 // validateDir returns an error if there are any problems with the given
@@ -346,21 +373,16 @@ SnapshotType = LGadget-2
 HaloType = Text
 TreeType = consistent-trees
 
+# HaloValueNames = ID, X, Y, Z, M200m
+# HaloValueColumns = 0, 2, 3, 4, 20
+
 # HaloPositionUnits = Mpc/h
 # HaloMassUnits = Msun/h
 
-# These variables specify which columns of your halo catalogs correspond to
-# the variables that Shellfish needs to read.
-HaloIDColumn = -1
-HaloM200mColumn = -1
-# HaloPositionColumns should correspond to the X, Y, and Z columns,
-# respectively.
-HaloPositionColumns = -1, -1, -1
-
-# These next couple of variables are neccessarys evil due to the fact that there
+# These next couple of variables are neccessary evils due to the fact that there
 # are a wide range of directory structures used in different simulations. They
 # will be sufficient to specify the location of snapshots in the vast majority
-# of cases. I give an in-dpeth description of how to use them in the file
+# of cases. I give an in-depth description of how to use them in the file
 # doc/directory_config.md.
 SnapshotFormat = path/to/snapshots/snapdir_%%03d/snapshot_%%03d.%%d
 # Valid values are "Snapshot", "ScaleFactor", "Block", "Block0", "Block1", ...

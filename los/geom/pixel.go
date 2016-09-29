@@ -4,6 +4,10 @@ import (
 	"math"
 )
 
+var (
+	cosPi4 = math.Cos(math.Pi/4)
+)
+
 // DiskPixel returns the pixel index of the point at (r, phi) within a unit
 // disk using the method of Gringorten & Yepez (1992).
 func DiskPixel(r, theta float64, lvl int) int {
@@ -25,10 +29,21 @@ func DiskPixelNum(lvl int) int {
 	return (lvl*2 + 1)*(lvl*2 + 1)
 }
 
-func SphericalPixel(phi, theta float64, lvl int) int {
-	panic("NYI")
+func SpherePixel(phi, theta float64, lvl int) int {
+	if lvl == 0 {
+		return 0
+	}
+	if theta > math.Pi/2 {
+		return DiskPixel(math.Cos(theta/2)/cosPi4, phi, lvl - 1)
+	} else {
+		return DiskPixelNum(lvl-1) +
+			DiskPixel(math.Cos((math.Pi-theta)/2)/cosPi4, phi, lvl-1)
+	}
 }
 
-func SphericalPixelNum(lvl int) int {
-	panic("NYI")
+func SpherePixelNum(lvl int) int {
+	if lvl == 0 {
+		return 1
+	}
+	return DiskPixelNum(lvl-1)*2
 }

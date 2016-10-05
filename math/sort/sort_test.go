@@ -36,6 +36,7 @@ func TestReverse(t *testing.T) {
 
 func BenchmarkReverse10(b *testing.B) {
 	xs := make([]float64, 10)
+	b.SetBytes(80)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Reverse(xs)
@@ -44,6 +45,7 @@ func BenchmarkReverse10(b *testing.B) {
 
 func BenchmarkReverse1000(b *testing.B) {
 	xs := make([]float64, 1000)
+	b.SetBytes(8000)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Reverse(xs)
@@ -52,6 +54,7 @@ func BenchmarkReverse1000(b *testing.B) {
 
 func BenchmarkReverse1000000(b *testing.B) {
 	xs := make([]float64, 1000000)
+	b.SetBytes(8000000)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Reverse(xs)
@@ -61,6 +64,9 @@ func BenchmarkReverse1000000(b *testing.B) {
 func BenchmarkShell10(b *testing.B) {
 	xs := randSlice(10)
 	buf := make([]float64, 10)
+
+	b.SetBytes(80)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
 		Shell(buf)
@@ -69,6 +75,8 @@ func BenchmarkShell10(b *testing.B) {
 
 func BenchmarkShell100(b *testing.B) {
 	xs := randSlice(100)
+	b.SetBytes(800)
+	b.ResetTimer()
 	buf := make([]float64, 100)
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
@@ -78,6 +86,8 @@ func BenchmarkShell100(b *testing.B) {
 
 func BenchmarkShell1000(b *testing.B) {
 	xs := randSlice(1000)
+	b.SetBytes(8000)
+	b.ResetTimer()
 	buf := make([]float64, 1000)
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
@@ -88,6 +98,8 @@ func BenchmarkShell1000(b *testing.B) {
 func BenchmarkShell10000(b *testing.B) {
 	xs := randSlice(10000)
 	buf := make([]float64, 10000)
+	b.SetBytes(80000)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
 		Shell(buf)
@@ -96,6 +108,8 @@ func BenchmarkShell10000(b *testing.B) {
 
 func BenchmarkQuick10(b *testing.B) {
 	xs := randSlice(10)
+	b.SetBytes(80)
+	b.ResetTimer()
 	buf := make([]float64, 10)
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
@@ -106,6 +120,8 @@ func BenchmarkQuick10(b *testing.B) {
 func BenchmarkQuick100(b *testing.B) {
 	xs := randSlice(100)
 	buf := make([]float64, 100)
+	b.SetBytes(800)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
 		Quick(buf)
@@ -115,6 +131,8 @@ func BenchmarkQuick100(b *testing.B) {
 func BenchmarkQuick1000(b *testing.B) {
 	xs := randSlice(1000)
 	buf := make([]float64, 1000)
+	b.SetBytes(8000)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
 		Quick(buf)
@@ -124,6 +142,19 @@ func BenchmarkQuick1000(b *testing.B) {
 func BenchmarkQuick10000(b *testing.B) {
 	xs := randSlice(10000)
 	buf := make([]float64, 10000)
+	b.SetBytes(80000)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		copy(buf, xs)
+		Quick(buf)
+	}
+}
+
+func BenchmarkQuick100000(b *testing.B) {
+	xs := randSlice(100000)
+	buf := make([]float64, 100000)
+	b.SetBytes(800000)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
 		Quick(buf)
@@ -132,6 +163,8 @@ func BenchmarkQuick10000(b *testing.B) {
 
 func BenchmarkGo10(b *testing.B) {
 	xs := randSlice(10)
+	b.SetBytes(80)
+	b.ResetTimer()
 	buf := make([]float64, 10)
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
@@ -142,6 +175,8 @@ func BenchmarkGo10(b *testing.B) {
 func BenchmarkGo100(b *testing.B) {
 	xs := randSlice(100)
 	buf := make([]float64, 100)
+	b.SetBytes(800)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
 		sort.Float64s(buf)
@@ -151,6 +186,8 @@ func BenchmarkGo100(b *testing.B) {
 func BenchmarkGo1000(b *testing.B) {
 	xs := randSlice(1000)
 	buf := make([]float64, 1000)
+	b.SetBytes(8000)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
 		sort.Float64s(buf)
@@ -160,6 +197,8 @@ func BenchmarkGo1000(b *testing.B) {
 func BenchmarkGo10000(b *testing.B) {
 	xs := randSlice(10000)
 	buf := make([]float64, 10000)
+	b.SetBytes(80000)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		copy(buf, xs)
 		sort.Float64s(buf)
@@ -170,6 +209,8 @@ func BenchmarkMedian10(b *testing.B) {
 	xs := randSlice(10)
 	buf := make([]float64, len(xs))
 	n := len(xs) / 2
+	b.SetBytes(80)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		NthLargest(xs, n, buf)
 	}
@@ -179,6 +220,8 @@ func BenchmarkMedian100(b *testing.B) {
 	xs := randSlice(100)
 	buf := make([]float64, len(xs))
 	n := len(xs) / 2
+	b.SetBytes(800)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		NthLargest(xs, n, buf)
 	}
@@ -188,6 +231,8 @@ func BenchmarkMedian1000(b *testing.B) {
 	xs := randSlice(1000)
 	buf := make([]float64, len(xs))
 	n := len(xs) / 2
+	b.SetBytes(8000)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		NthLargest(xs, n, buf)
 	}
@@ -197,6 +242,8 @@ func BenchmarkMedian10000(b *testing.B) {
 	xs := randSlice(10000)
 	buf := make([]float64, len(xs))
 	n := len(xs) / 2
+	b.SetBytes(80000)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		NthLargest(xs, n, buf)
 	}

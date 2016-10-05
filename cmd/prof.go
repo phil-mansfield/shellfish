@@ -514,7 +514,7 @@ func processMedianErrorProfile(rs, rhos []float64, medRhos [][]float64,
 		dV := (rHi*rHi*rHi - rLo*rLo*rLo) * 4 * math.Pi / 3
 
 		rhos[j] = bootstrapErrorPercentile(
-			medRhos[j], percentile/100, medScratchBuffer, samples,
+			medRhos[j], percentile, medScratchBuffer, samples,
 		) / dV
 	}
 }
@@ -530,11 +530,14 @@ func bootstrapErrorPercentile(
 	for i := int64(0); i < samples; i++ {
 		for j := range x {
 			sampleBuffer[j] = x[rand.Intn(len(x))]
-			p := msort.Percentile(sampleBuffer, percentile/100, scratchBuffer)
-			sum += p
-			sqrSum += p*p
 		}
+		p := msort.Percentile(sampleBuffer, percentile/100, scratchBuffer)
+		sum += p
+		sqrSum += p*p
 	}
+
+	sum /= float64(samples)
+	sqrSum /= float64(samples)
 
 	return math.Sqrt(sqrSum - sum*sum)
 }

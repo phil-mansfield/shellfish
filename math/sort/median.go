@@ -1,5 +1,6 @@
 package sort
 
+
 // Percentile calculates the element corresponding to the percentile, p,
 // of a non-empty slice. p must be in the range [0, 1]. An optional buffer
 // slice of the same size may be supplied to prevent unneeded heap allocations.
@@ -12,10 +13,11 @@ func Percentile(xs []float64, p float64, buf ...[]float64) float64 {
 	}
 
 	n := int(p * float64(len(xs)))
-	if n == len(xs) {
-		n--
+	// 1-indexing
+	if n == 0 {
+		n++
 	}
-
+	
 	return NthLargest(xs, n, buf...)
 }
 

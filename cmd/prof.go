@@ -22,6 +22,7 @@ type ProfConfig struct {
 	bins, order, samples int64
 	rMaxMult, rMinMult float64
 	medianPixelLevel int64
+	percentile float64
 
 	pType profileType
 
@@ -77,6 +78,10 @@ ProfileType = density
 ## Optional Fields ##
 #####################
 
+# Percentile sets the percentile used during median-profile mode so that
+# non-median percentiles can be measured.
+# Percentile = 50
+
 # Bins is the number of logarithmic radial bins used in a profile.
 # Bins = 150
 
@@ -99,6 +104,7 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 	vars.Float(&config.rMaxMult, "RMaxMult", 3.0)
 	vars.Float(&config.rMinMult, "RMinMult", 0.03)
 	vars.Int(&config.medianPixelLevel, "MedianPixelLevel", 3)
+	vars.Float(&config.percentile, "Percentile", 50)
 	var pType string
 	vars.String(&pType, "ProfileType", "")
 
@@ -325,7 +331,9 @@ func (config *ProfConfig) Run(
 		rMin := coords[3][i]*config.rMinMult
 		if config.pType == medianDensityProfile {
 			processMedianProfile(rSets[i], rhoSets[i],
-				medRhoSets[i], medScratchBuffer, rMin, rMax)
+				medRhoSets[i], medScratchBuffer, rMin, rMax,
+				config.percentile,
+			)
 		} else {
 			processProfile(rSets[i], rhoSets[i], rMin, rMax)
 		}
@@ -455,7 +463,9 @@ func processProfile(rs, rhos []float64, rMin, rMax float64) {
 }
 
 func processMedianProfile(rs, rhos []float64, medRhos [][]float64,
-	medScratchBuffer []float64, rMin, rMax float64) {
+	medScratchBuffer []float64, rMin, rMax float64,
+	percentile float64,
+) {
 	n := len(rs)
 
 	dlr := (math.Log(rMax) - math.Log(rMin)) / float64(n)
@@ -468,7 +478,9 @@ func processMedianProfile(rs, rhos []float64, medRhos [][]float64,
 		rHi := math.Exp(dlr*float64(j+1) + lrMin)
 		dV := (rHi*rHi*rHi - rLo*rLo*rLo) * 4 * math.Pi / 3
 
-		rhos[j] = msort.Median(medRhos[j], medScratchBuffer) / dV
+		rhos[j] = msort.Percentile(
+			medRhos[j], percentile/100, medScratchBuffer,
+		) / dV
 	}
 }
 

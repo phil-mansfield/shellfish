@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"time"
+	"math/rand"
 
 	msort "github.com/phil-mansfield/shellfish/math/sort"
 	"github.com/phil-mansfield/shellfish/los/geom"
@@ -32,6 +33,7 @@ type profileType int
 const (
 	densityProfile profileType = iota
 	medianDensityProfile
+	medianErrorProfile
 	containedDensityProfile
 	angularFractionProfile
 )
@@ -52,6 +54,7 @@ func (config *ProfConfig) ExampleConfig() string {
 # median-density -    A density profile created by binning particles into
 #                     equal solid-angle pixels and taking the median density
 #                     across the angular bins at each radius.
+# median-error -      Calculates error on the median through bootstrap sampling.
 # contained-densiy -  A density profile which only uses particles.
 # angular-fraction -  The angular fraction at each radius which is contained
 #                     within the shell.
@@ -123,6 +126,8 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 		config.pType = densityProfile
 	case "median-density":
 		config.pType = medianDensityProfile
+	case "median-error":
+		config.pType = medianErrorProfile
 	case "contained-density":
 		config.pType = containedDensityProfile
 	case "angular-fraction":
@@ -176,7 +181,7 @@ func (config *ProfConfig) Run(
 	)
 
 	switch config.pType {
-	case densityProfile, medianDensityProfile:
+	case densityProfile, medianDensityProfile, medianErrorProfile:
 		intColIdxs := []int{0, 1}
 		floatColIdxs := []int{2, 3, 4, 5}
 		
@@ -242,7 +247,9 @@ func (config *ProfConfig) Run(
 		medRhoSets [][][]float64
 		medScratchBuffer []float64
 	)
-	if config.pType == medianDensityProfile {
+	if config.pType == medianDensityProfile ||
+		config.pType == medianErrorProfile {
+
 		medRhoSets = make([][][]float64, len(ids))
 		n := geom.SpherePixelNum(int(config.medianPixelLevel))
 		medScratchBuffer = make([]float64, n)
@@ -312,7 +319,8 @@ func (config *ProfConfig) Run(
 				rhos := rhoSets[idxs[j]]
 				s := hBounds[j]
 
-				if config.pType == medianDensityProfile {
+				if config.pType == medianDensityProfile ||
+					config.pType == medianErrorProfile {
 					medRhos := medRhoSets[idxs[j]]
 					insertMedianPoints(medRhos, s, xs, ms, config, &hds[i])
 				} else {
@@ -333,6 +341,11 @@ func (config *ProfConfig) Run(
 			processMedianProfile(rSets[i], rhoSets[i],
 				medRhoSets[i], medScratchBuffer, rMin, rMax,
 				config.percentile,
+			)
+		} else if config.pType == medianErrorProfile {
+			processMedianErrorProfile(rSets[i], rhoSets[i],
+				medRhoSets[i], medScratchBuffer, rMin, rMax,
+				config.percentile, config.samples,
 			)
 		} else {
 			processProfile(rSets[i], rhoSets[i], rMin, rMax)
@@ -482,6 +495,48 @@ func processMedianProfile(rs, rhos []float64, medRhos [][]float64,
 			medRhos[j], percentile/100, medScratchBuffer,
 		) / dV
 	}
+}
+
+func processMedianErrorProfile(rs, rhos []float64, medRhos [][]float64,
+	medScratchBuffer []float64, rMin, rMax float64,
+	percentile float64, samples int64,
+) {
+	n := len(rs)
+
+	dlr := (math.Log(rMax) - math.Log(rMin)) / float64(n)
+	lrMin := math.Log(rMin)
+
+	for j := range rs {
+		rs[j] = math.Exp(lrMin + dlr*(float64(j) + 0.5))
+
+		rLo := math.Exp(dlr*float64(j) + lrMin)
+		rHi := math.Exp(dlr*float64(j+1) + lrMin)
+		dV := (rHi*rHi*rHi - rLo*rLo*rLo) * 4 * math.Pi / 3
+
+		rhos[j] = bootstrapErrorPercentile(
+			medRhos[j], percentile/100, medScratchBuffer, samples,
+		) / dV
+	}
+}
+
+func bootstrapErrorPercentile(
+	x []float64, percentile float64, scratchBuffer []float64, samples int64,
+) float64 {
+	sampleBuffer := make([]float64, len(x))
+
+	sum := 0.0
+	sqrSum := 0.0
+
+	for i := int64(0); i < samples; i++ {
+		for j := range x {
+			sampleBuffer[j] = x[rand.Intn(len(x))]
+			p := msort.Percentile(sampleBuffer, percentile/100, scratchBuffer)
+			sum += p
+			sqrSum += p*p
+		}
+	}
+
+	return math.Sqrt(sqrSum - sum*sum)
 }
 
 func angularFractionMain(

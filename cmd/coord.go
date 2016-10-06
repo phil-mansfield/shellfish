@@ -50,13 +50,9 @@ func (config *CoordConfig) Run(
 		return nil, fmt.Errorf("In input IDs.")
 	}
 
-	vars := &halo.VarColumns{
-		ID:    int(gConfig.HaloIDColumn),
-		X:     int(gConfig.HaloPositionColumns[0]),
-		Y:     int(gConfig.HaloPositionColumns[1]),
-		Z:     int(gConfig.HaloPositionColumns[2]),
-		M200m: int(gConfig.HaloM200mColumn),
-	}
+	vars := halo.NewVarColumns(
+		gConfig.HaloValueNames, gConfig.HaloValueColumns,
+	)
 
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(snaps[0], 0),
@@ -109,9 +105,10 @@ func readHaloCoords(
 		snapIDs := snapBins[snap]
 		idxs := idxBins[snap]
 
-		_, sxs, sys, szs, _, srs, err := memo.ReadRockstar(
-			snap, snapIDs, vars, buf, e,
+		_, vals, err := memo.ReadRockstar(
+			snap, []string{"X", "Y", "Z", "R200m"}, snapIDs, vars, buf, e,
 		)
+		sxs, sys, szs, srs := vals[0], vals[1], vals[2], vals[3]
 
 		if err != nil {
 			return nil, nil, nil, nil, err

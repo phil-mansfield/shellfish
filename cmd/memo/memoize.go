@@ -1,3 +1,4 @@
+/*package memo is the worst code I have ever written in my life.*/
 package memo
 
 import (
@@ -13,7 +14,6 @@ import (
 	"github.com/phil-mansfield/shellfish/io"
 )
 
-// TODO: rewrite the six return values as a alice of slices.
 
 const (
 	rockstarMemoDir       = "rockstar"
@@ -28,9 +28,13 @@ const (
 // values of some quantity in a particular snapshot. maxID is the number of
 // halos to return.
 func ReadSortedRockstarIDs(
-	snap, maxID int, vars *halo.VarColumns,
+	snap, maxID int, valName string, vars *halo.VarColumns,
 	buf io.VectorBuffer, e *env.Environment,
 ) ([]int, error) {
+	hds, _, err := ReadHeaders(snap, buf, e)
+	if err != nil { return nil, err }
+	cosmo := &hds[0].Cosmo
+
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
 	if _, err := os.Stat(dir); err != nil {
 		err = os.Mkdir(dir, 0777)
@@ -41,26 +45,29 @@ func ReadSortedRockstarIDs(
 
 	var (
 		ids []int
+		vals [][]float64
 		ms  []float64
-		err error
 	)
 
 	if maxID >= rockstarShortMemoNum || maxID == -1 {
 		file := path.Join(dir, fmt.Sprintf(rockstarMemoFile, snap))
-		ids, _, _, _, ms, _, err = readRockstar(
-			file, -1, snap, nil, vars, buf, e,
+		ids, vals, err = readRockstar(
+			file, []string{valName}, -1, snap, nil, vars, buf, e, cosmo,
 		)
 		if err != nil {
 			return nil, err
 		}
+		ms = vals[0]
 	} else {
 		file := path.Join(dir, fmt.Sprintf(rockstarShortMemoFile, snap))
-		ids, _, _, _, ms, _, err = readRockstar(
-			file, rockstarShortMemoNum, snap, nil, vars, buf, e,
+		ids, vals, err = readRockstar(
+			file, []string{valName}, rockstarShortMemoNum,
+			snap, nil, vars, buf, e, cosmo,
 		)
 		if err != nil {
 			return nil, err
 		}
+		ms = vals[0]
 	}
 
 	if len(ids) < maxID {
@@ -98,15 +105,19 @@ func sortRockstar(ids []int, ms []float64) {
 // This function does fairly large heap allocations even when it doesn't need
 // to. Consider passing it a buffer.
 func ReadRockstar(
-	snap int, ids []int, vars *halo.VarColumns,
+	snap int, valNames []string, ids []int, vars *halo.VarColumns,
 	buf io.VectorBuffer, e *env.Environment,
-) (outIDs []int, xs, ys, zs, ms, rs []float64, err error) {
+) (outIDs []int, vals [][]float64, err error) {
+	hds, _, err := ReadHeaders(snap, buf, e)
+	if err != nil { return nil, nil, err }
+	cosmo := &hds[0].Cosmo
+
 	// Find binFile.
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
 	if _, err := os.Stat(dir); err != nil {
 		err = os.Mkdir(dir, 0777)
 		if err != nil {
-			return nil, nil, nil, nil, nil, nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -114,31 +125,33 @@ func ReadRockstar(
 	shortBinFile := path.Join(dir, fmt.Sprintf(rockstarShortMemoFile, snap))
 
 	// This wastes a read the first time it's called. You need to decide if you
-	// care. (Answer: probably.)
-	outIDs, xs, ys, zs, ms, rs, err = readRockstar(
-		shortBinFile, rockstarShortMemoNum, snap, ids, vars, buf, e,
+	// care. (Answer: probably not.)
+	outIDs, vals, err = readRockstar(
+		shortBinFile, valNames, rockstarShortMemoNum, snap,
+		ids, vars, buf, e, cosmo,
 	)
 	// TODO: Fix error handling here.
+	// (Confession: I have no idea what this comment means: I wrote it half a
+	// year ago and didn't make an Issue about it.)
 	if err == nil {
-		return outIDs, xs, ys, zs, ms, rs, err
+		return outIDs, vals, err
 	}
-	outIDs, xs, ys, zs, ms, rs, err = readRockstar(
-		binFile, -1, snap, ids, vars, buf, e,
+	outIDs, vals, err = readRockstar(
+		binFile, valNames, -1, snap, ids, vars, buf, e, cosmo,
 	)
 
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
-	}
-	return outIDs, xs, ys, zs, ms, rs, nil
+	if err != nil { return nil, nil, err }
+	return outIDs, vals, nil
 }
 
 func readRockstar(
-	binFile string, n, snap int, ids []int,
+	binFile string, valNames []string, n, snap int, ids []int,
 	vars *halo.VarColumns, buf io.VectorBuffer, e *env.Environment,
-) (outIDs []int, xs, ys, zs, ms, rs []float64, err error) {
+	cosmo *io.CosmologyHeader,
+) (outIDs []int, vals [][]float64, err error) {
 	hds, _, err := ReadHeaders(snap, buf, e)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
+		return nil, nil, err
 	}
 	hd := &hds[0]
 
@@ -149,29 +162,31 @@ func readRockstar(
 				e.HaloCatalog(snap), binFile, vars, &hd.Cosmo,
 			)
 			if err != nil {
-				return nil, nil, nil, nil, nil, nil, err
+				return nil, nil, err
 			}
 		} else {
 			err = halo.RockstarConvertTopN(
 				e.HaloCatalog(snap), binFile, n, vars, &hd.Cosmo,
 			)
 			if err != nil {
-				return nil, nil, nil, nil, nil, nil, err
+				return nil, nil, err
 			}
 		}
 	}
 
-	rids, xs, ys, zs, ms, rs, err := halo.ReadBinaryRockstar(binFile)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
+	rids, rawCols, err := halo.ReadBinaryRockstar(binFile, vars)
+	if err != nil { return nil, nil, err }
+
+	rvals := make([][]float64, len(valNames))
+	for i := range valNames {
+		rvals[i] = vars.GetColumn(rawCols, valNames[i], cosmo)
 	}
-	rvals := [][]float64{xs, ys, zs, ms, rs}
 
 	// Select out only the IDs we want.
 	if ids == nil {
-		return rids, xs, ys, zs, ms, rs, nil
+		return rids, rvals, nil
 	}
-	vals := make([][]float64, len(rvals))
+	vals = make([][]float64, len(rvals))
 
 	for i := range vals {
 		vals[i] = make([]float64, len(ids))
@@ -182,15 +197,14 @@ func readRockstar(
 		line, ok := f.Find(id)
 		err = fmt.Errorf("Could not find ID %d", id)
 		if !ok {
-			return nil, nil, nil, nil, nil, nil, err
+			return nil, nil, err
 		}
 		for vi := range vals {
 			vals[vi][i] = rvals[vi][line]
 		}
 	}
-	xs, ys, zs, ms, rs = vals[0], vals[1], vals[2], vals[3], vals[4]
 
-	return ids, xs, ys, zs, ms, rs, nil
+	return ids, vals, nil
 }
 
 // A quick generic wrapper for doing those one-to-one mappings I need to do so

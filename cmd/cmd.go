@@ -54,8 +54,8 @@ type GlobalConfig struct {
 
 	MemoDir string
 
-	HaloValueNames []string
-	HaloValueColumns []int
+	HaloValueNames   []string
+	HaloValueColumns []int64
 
 	HaloPositionUnits string
 	HaloMassUnits     string
@@ -82,7 +82,7 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.String(&config.TreeType, "TreeType", "")
 	vars.String(&config.MemoDir, "MemoDir", "")
 
-	vars.Ints(&config.HaloValueNames, "HaloValueNames", []string{})
+	vars.Strings(&config.HaloValueNames, "HaloValueNames", []string{})
 	vars.Ints(&config.HaloValueColumns, "HaloValueColumns", []int64{})
 
 	vars.String(&config.HaloPositionUnits, "HaloPositionUnits", "")
@@ -337,6 +337,13 @@ func validateFormat(config *GlobalConfig) error {
 			return fmt.Errorf("I don't understand '%s' from "+
 				"'SnapshotFormatMeaning'[%d]", meaning, i)
 		}
+	}
+
+	if len(config.HaloValueNames) != len(config.HaloValueColumns) {
+		return fmt.Errorf(
+			"len(HaloValueNames) = %d, but len(HaloValueColumns = %d)",
+			len(config.HaloValueNames), len(config.HaloValueColumns),
+		)
 	}
 
 	switch config.Logging {

@@ -17,8 +17,63 @@ type halos struct {
 	xs, ys, zs, ms, rs []float64
 }
 
+// This type is a look into the heart of darkness.
 type VarColumns struct {
-	ID, X, Y, Z, M200m int
+	ColumnLookup map[string]int
+	Names []string
+	Columns []int
+	Generator []string
+	NBinary int
+}
+
+func NewVarColumns(names []string, columns []int64) *VarColumns {
+	vc :=&VarColumns{}
+
+	for i := range names {
+		vc.ColumnLookup[names[i]] = i
+		vc.Names = append(vc.Names, names[i])
+		vc.Columns = append(vc.Columns, int(columns[i]))
+	}
+	vc.Generator = make([]string, len(vc.Names))
+	vc.NBinary = len(vc.Names)
+
+	mNames := []string{"M200m", "M200c", "M500c", "M2500c"}
+	rNames := []string{"R200m", "R200c", "R500c", "R2500c"}
+	for i, _ := range mNames {
+		_, rOk := vc.ColumnLookup[rNames[i]]
+		_, mOk := vc.ColumnLookup[mNames[i]]
+		if mOk && !rOk {
+			vc.ColumnLookup[rNames[i]] = -1
+			vc.Names = append(vc.Names, rNames[i])
+			vc.Columns = append(vc.Columns, -1)
+			vc.Generator = append(vc.Generator, mNames[i])
+		}
+	}
+
+	return vc
+}
+
+func (vc *VarColumns) GetColumn(
+	cols [][]float64, name string, cosmo *io.CosmologyHeader,
+) []float64 {
+	col, _ := vc.ColumnLookup[name]
+	if vc.Generator[col] == "" { return cols[col] }
+	gCol, _ := vc.ColumnLookup[vc.Generator[col]]
+	ms := cols[gCol]
+	rs := make([]float64, len(ms))
+
+	rad, _ := RadiusFromString(name)
+	rad.Radius(cosmo, ms, rs)
+
+	return rs
+}
+
+func (vc *VarColumns) GetIDs(cols [][]float64) []int {
+	col, _ := vc.ColumnLookup["ID"]
+
+	out := make([]int, len(cols[col]))
+	for i := range out { out[i] = int(cols[col][i]) }
+	return out
 }
 
 func (hs *halos) Len() int           { return len(hs.rs) }
@@ -35,14 +90,18 @@ func (hs *halos) Swap(i, j int) {
 func RockstarConvert(
 	inFile, outFile string, vars *VarColumns, cosmo *io.CosmologyHeader,
 ) error {
-	valIdxs := []int{vars.ID, vars.X, vars.Y, vars.Z, vars.M200m}
+	valIdxs := vars.Columns
+	for i := range valIdxs {
+		if valIdxs[i] == -1 {
+			valIdxs = valIdxs[:1]
+			break
+		}
+	}
 
 	cols, err := readTable(inFile, valIdxs)
 	if err != nil {
 		return err
 	}
-
-	cols = genRadiiMasses(cols, vars, cosmo)
 
 	f, err := os.Create(outFile)
 	if err != nil {
@@ -62,18 +121,6 @@ func RockstarConvert(
 	}
 
 	return nil
-}
-
-func genRadiiMasses(
-	cols [][]float64, vars *VarColumns, cosmo *io.CosmologyHeader,
-) [][]float64 {
-	ms := cols[4]
-	rs := make([]float64, len(ms))
-	R200m.Radius(cosmo, ms, rs)
-
-	cols = append(cols, [][]float64{rs, ms}...)
-
-	return cols
 }
 
 type idxSet struct {
@@ -106,14 +153,18 @@ func idxSort(xs []float64) []int {
 func RockstarConvertTopN(
 	inFile, outFile string, n int, vars *VarColumns, cosmo *io.CosmologyHeader,
 ) error {
-	valIdxs := []int{vars.ID, vars.X, vars.Y, vars.Z, vars.M200m}
+	valIdxs := vars.Columns
+	for i := range valIdxs {
+		if valIdxs[i] == -1 {
+			valIdxs = valIdxs[:1]
+			break
+		}
+	}
 
 	cols, err := readTable(inFile, valIdxs)
 	if err != nil {
 		return err
 	}
-
-	cols = genRadiiMasses(cols, vars, cosmo)
 
 	if n > len(cols[0]) {
 		n = len(cols[0])
@@ -152,32 +203,28 @@ func RockstarConvertTopN(
 }
 
 func ReadBinaryRockstar(
-	file string,
-) (ids []int, xs, ys, zs, ms, rs []float64, err error) {
-	return readRockstarVals(file, binaryColGetter)
+	file string, vc *VarColumns,
+) (ids []int, rawCols [][]float64, err error) {
+	return readRockstarVals(file, binaryColGetter, vc)
 }
 
 func readRockstarVals(
-	file string, getter colGetter,
-) (ids []int, xs, ys, zs, ms, rs []float64, err error) {
-	colIdxs := []int{0, 1, 2, 3, 4, 5}
-	vals, err := getter(file, colIdxs)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
-	}
-	xs, ys, zs, ms, rs = vals[1], vals[2], vals[3], vals[4], vals[5]
+	file string, getter colGetter, vc *VarColumns,
+) (ids []int, rawCols [][]float64, err error) {
+	colIdxs := make([]int, vc.NBinary)
+	for i := range colIdxs { colIdxs[i] = i }
 
-	ids = make([]int, len(vals[0]))
-	for i := range vals[0] {
-		ids[i] = int(vals[0][i])
-	}
+	rawCols, err = getter(file, colIdxs)
+	if err != nil { return nil, nil, err }
 
-	return ids, xs, ys, zs, ms, rs, nil
+	ids = vc.GetIDs(rawCols)
+	return ids, rawCols, err
 }
 
 type colGetter func(file string, colIdxs []int) ([][]float64, error)
 
 func binaryColGetter(file string, colIdxs []int) ([][]float64, error) {
+	// TODO: make this not slow as molasses. Just read everything in one go.
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err

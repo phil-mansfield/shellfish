@@ -209,9 +209,9 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	if config.HaloType != "nil" {
-		if len(config.HaloValueNames) != 0 {
+		if len(config.HaloValueNames) == 0 {
 			return fmt.Errorf("The 'HaloValueNames' variable isn't set.")
-		} else if len(config.HaloValueColumns) != 0 {
+		} else if len(config.HaloValueColumns) == 0 {
 			return fmt.Errorf("The 'HaloValueColumns' variable isn't set.")
 		} else if len(config.HaloValueNames) != len(config.HaloValueColumns) {
 			return fmt.Errorf("len(HaloValueColumns) = %d, but " +

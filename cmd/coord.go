@@ -11,16 +11,36 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/logging"
+	"github.com/phil-mansfield/shellfish/parse"
 )
 
 type CoordConfig struct {
+	valueNames []string
 }
 
 var _ Mode = &CoordConfig{}
 
-func (config *CoordConfig) ExampleConfig() string { return "" }
+func (config *CoordConfig) ExampleConfig() string {
+	return`[coord.config]
 
-func (config *CoordConfig) ReadConfig(fname string) error { return nil }
+####################
+## OptionalFields ##
+####################
+
+ValueNames = X, Y, Z, R200m
+`
+}
+
+func (config *CoordConfig) ReadConfig(fname string) error {
+		if fname == "" {
+		return nil
+	}
+
+	vars := parse.NewConfigVars("tree.config")
+	vars.Strings(&config.valueNames, "ValueNames", []string{})
+
+	return parse.ReadConfig(fname, vars)
+}
 
 func (config *CoordConfig) validate() error { return nil }
 
@@ -106,10 +126,11 @@ func readHaloCoords(
 		idxs := idxBins[snap]
 
 		_, vals, err := memo.ReadRockstar(
-			snap, []string{"X", "Y", "Z", "R200m"}, snapIDs, vars, buf, e,
+			snap, []string{"X", "Y", "Z", "R200m", "Scale"}, snapIDs, vars, buf, e,
 		)
+		
 		sxs, sys, szs, srs := vals[0], vals[1], vals[2], vals[3]
-
+		
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}

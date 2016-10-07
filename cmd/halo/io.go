@@ -28,6 +28,7 @@ type VarColumns struct {
 
 func NewVarColumns(names []string, columns []int64) *VarColumns {
 	vc :=&VarColumns{}
+	vc.ColumnLookup = make(map[string]int)
 
 	for i := range names {
 		vc.ColumnLookup[names[i]] = i

@@ -170,7 +170,8 @@ func RockstarConvertTopN(
 	if n > len(cols[0]) {
 		n = len(cols[0])
 	}
-	idxs := idxSort(cols[4])[len(cols[0])-n:]
+	
+	idxs := idxSort(vars.GetColumn(cols, "M200m", cosmo))[len(cols[0])-n:]
 
 	outCols := make([][]float64, len(cols))
 	for i := range cols {

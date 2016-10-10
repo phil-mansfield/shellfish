@@ -330,9 +330,8 @@ func configEqual(m, c *cmd.GlobalConfig) bool {
 		stringsEqual(c.SnapshotFormatMeanings, m.SnapshotFormatMeanings) &&
 		c.HaloPositionUnits == m.HaloPositionUnits &&
 		c.HaloMassUnits == m.HaloMassUnits &&
-		c.HaloIDColumn == m.HaloIDColumn &&
-		c.HaloM200mColumn == m.HaloM200mColumn &&
-		int64sEqual(c.HaloPositionColumns, m.HaloPositionColumns) &&
+		int64sEqual(c.HaloValueColumns, m.HaloValueColumns) &&
+		stringsEqual(c.HaloValueNames, m.HaloValueNames) &&
 		c.Endianness == m.Endianness
 }
 

@@ -40,11 +40,7 @@ func (config *TreeConfig) ReadConfig(fname string) error {
 	vars := parse.NewConfigVars("tree.config")
 	vars.Ints(&config.selectSnaps, "SelectSnaps", []int64{})
 
-	if err := parse.ReadConfig(fname, vars); err != nil {
-		return err
-	}
-
-	return nil
+	return parse.ReadConfig(fname, vars)
 }
 
 func (config *TreeConfig) validate() error { return nil }

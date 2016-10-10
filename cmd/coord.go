@@ -166,6 +166,7 @@ func readHaloCoords(
 		_, scols, err := memo.ReadRockstar(
 			snap, valNames, snapIDs, vars, buf, e,
 		)
+
 		if err != nil {
 			return nil, err
 		}

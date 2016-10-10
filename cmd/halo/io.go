@@ -44,7 +44,7 @@ func NewVarColumns(names []string, columns []int64) *VarColumns {
 		_, rOk := vc.ColumnLookup[rNames[i]]
 		_, mOk := vc.ColumnLookup[mNames[i]]
 		if mOk && !rOk {
-			vc.ColumnLookup[rNames[i]] = -1
+			vc.ColumnLookup[rNames[i]] = len(vc.Names)
 			vc.Names = append(vc.Names, rNames[i])
 			vc.Columns = append(vc.Columns, -1)
 			vc.Generator = append(vc.Generator, mNames[i])
@@ -59,13 +59,15 @@ func (vc *VarColumns) GetColumn(
 ) []float64 {
 	col, _ := vc.ColumnLookup[name]
 	if vc.Generator[col] == "" { return cols[col] }
+	
 	gCol, _ := vc.ColumnLookup[vc.Generator[col]]
 	ms := cols[gCol]
 	rs := make([]float64, len(ms))
 
 	rad, _ := RadiusFromString(name)
+	
 	rad.Radius(cosmo, ms, rs)
-
+	
 	return rs
 }
 
@@ -157,7 +159,7 @@ func RockstarConvertTopN(
 	valIdxs := vars.Columns
 	for i := range valIdxs {
 		if valIdxs[i] == -1 {
-			valIdxs = valIdxs[:1]
+			valIdxs = valIdxs[:i]
 			break
 		}
 	}
@@ -170,7 +172,7 @@ func RockstarConvertTopN(
 	if n > len(cols[0]) {
 		n = len(cols[0])
 	}
-	
+
 	idxs := idxSort(vars.GetColumn(cols, "M200m", cosmo))[len(cols[0])-n:]
 
 	outCols := make([][]float64, len(cols))

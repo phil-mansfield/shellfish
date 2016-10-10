@@ -2,7 +2,6 @@ package halo
 
 import (
 	"math"
-	"strings"
 
 	"github.com/phil-mansfield/shellfish/cosmo"
 	"github.com/phil-mansfield/shellfish/io"
@@ -19,7 +18,6 @@ const (
 
 
 func RadiusFromString(s string) (r Radius, ok bool) {
-	s = strings.ToLower(s)
 	switch s {
 	case "R200m":
 		return R200m, true
@@ -65,7 +63,7 @@ func (r Radius) String() string {
 func (r Radius) Radius(c *io.CosmologyHeader, ms, out []float64) {
 	var rho float64
 	h0 := c.H100 * 100
-
+	
 	switch r {
 	case R200c:
 		rho = 200 * cosmo.RhoCritical(h0, c.OmegaM, c.OmegaL, c.Z)
@@ -75,11 +73,13 @@ func (r Radius) Radius(c *io.CosmologyHeader, ms, out []float64) {
 		rho = 500 * cosmo.RhoCritical(h0, c.OmegaM, c.OmegaL, c.Z)
 	case R2500c:
 		rho = 2500 * cosmo.RhoCritical(h0, c.OmegaM, c.OmegaL, c.Z)
+	default:
+		panic(":3")
 	}
-
+	
 	a := 1 / (1 + c.Z)
 	factor := rho * 4 * math.Pi / 3
-
+	
 	for i, m := range ms {
 		out[i] = math.Pow(m/factor, 1.0/3) / a
 	}

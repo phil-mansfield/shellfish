@@ -56,6 +56,7 @@ type GlobalConfig struct {
 
 	HaloValueNames   []string
 	HaloValueColumns []int64
+	HaloValueComments []string
 
 	HaloPositionUnits string
 	HaloMassUnits     string
@@ -344,6 +345,11 @@ func validateFormat(config *GlobalConfig) error {
 			"len(HaloValueNames) = %d, but len(HaloValueColumns = %d)",
 			len(config.HaloValueNames), len(config.HaloValueColumns),
 		)
+	} else if len(config.HaloValueNames) != len(config.HaloValueComments) {
+		return fmt.Errorf(
+			"len(HaloValueNames) = %d, but len(HaloValueComments = %d)",
+			len(config.HaloValueNames), len(config.HaloValueComments),
+		)
 	}
 
 	switch config.Logging {
@@ -380,8 +386,11 @@ SnapshotType = LGadget-2
 HaloType = Text
 TreeType = consistent-trees
 
-# HaloValueNames = ID, X, Y, Z, M200m
-# HaloValueColumns = 0, 2, 3, 4, 20
+HaloValueNames = ID, X, Y, Z, M200m
+HaloValueColumns = 0, 2, 3, 4, 20
+# HaloValueComments can be used to include notes about, e.g. units in output
+# catalogs. These are not analyzed by Shellfish in any way.
+HaloValueComments = "", "cMpc/h", "cMpc/h", "cMpc/h", "Msun/h"
 
 # HaloPositionUnits = Mpc/h
 # HaloMassUnits = Msun/h

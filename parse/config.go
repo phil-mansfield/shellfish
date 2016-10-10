@@ -161,7 +161,7 @@ func strToList(a string) []string {
 func intsConv(ptr *[]int64) conversionFunc {
 	return func(s string) bool {
 		toks := strToList(s)
-		*ptr = (*ptr)[:0]
+		*ptr = []int64{}
 		for j := range toks {
 			i, err := strconv.Atoi(toks[j])
 			if err != nil {
@@ -176,6 +176,7 @@ func intsConv(ptr *[]int64) conversionFunc {
 func floatsConv(ptr *[]float64) conversionFunc {
 	return func(s string) bool {
 		toks := strToList(s)
+		*ptr = []float64{}
 		for j := range toks {
 			f, err := strconv.ParseFloat(toks[j], 64)
 			if err != nil {
@@ -190,6 +191,7 @@ func floatsConv(ptr *[]float64) conversionFunc {
 func stringsConv(ptr *[]string) conversionFunc {
 	return func(s string) bool {
 		toks := strToList(s)
+		*ptr = []string{}
 		for j := range toks {
 			*ptr = append(*ptr, toks[j])
 		}
@@ -200,6 +202,7 @@ func stringsConv(ptr *[]string) conversionFunc {
 func boolsConv(ptr *[]bool) conversionFunc {
 	return func(s string) bool {
 		toks := strToList(s)
+		*ptr = []bool{}
 		for j := range toks {
 			b, err := strconv.ParseBool(toks[j])
 			if err != nil {

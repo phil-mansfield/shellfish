@@ -115,6 +115,14 @@ func makeCommentString(gConfig *GlobalConfig, config *CoordConfig) string {
 	colNames := make([]string, 2 + len(config.values))
 	colNames[0], colNames[1] = "ID", "Snap"
 	for i := range config.values {
+		switch config.values[i] {
+		case "R200m", "R200c", "R500c", "R2500c":
+			colNames[i+2] = fmt.Sprintf(
+				"%s [%s]", config.values[i], gConfig.HaloPositionUnits,
+			)
+			continue
+		}
+		
 		j := findString(config.values[i], gConfig.HaloValueNames)
 		if gConfig.HaloValueComments[j] == "" {
 			colNames[i+2] = config.values[i]

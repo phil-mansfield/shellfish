@@ -85,6 +85,7 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 
 	vars.Strings(&config.HaloValueNames, "HaloValueNames", []string{})
 	vars.Ints(&config.HaloValueColumns, "HaloValueColumns", []int64{})
+	vars.Strings(&config.HaloValueComments, "HaloValueComments", []string{})
 
 	vars.String(&config.HaloPositionUnits, "HaloPositionUnits", "")
 	vars.String(&config.HaloMassUnits, "HaloMassUnits", "Msun/h")
@@ -117,7 +118,8 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 		logging.Mode = logging.Debug
 	}
 
-	return config.validate()
+	err := config.validate()
+	return err//config.validate()
 }
 
 // validate checks that all the user-generated fields of GlobalConfig are
@@ -251,7 +253,19 @@ func (config *GlobalConfig) validate() error {
 		return fmt.Errorf("The variable 'Endianness' must be sent to " +
 			"either 'SystemOrder', 'LittleEndian', or 'BigEndian'.")
 	}
-
+	
+	if len(config.HaloValueNames) != len(config.HaloValueColumns) {
+		return fmt.Errorf(
+			"len(HaloValueNames) = %d, but len(HaloValueColumns = %d)",
+			len(config.HaloValueNames), len(config.HaloValueColumns),
+		)
+	} else if len(config.HaloValueNames) != len(config.HaloValueComments) {
+		return fmt.Errorf(
+			"len(HaloValueNames) = %d, but len(HaloValueComments = %d)",
+			len(config.HaloValueNames), len(config.HaloValueComments),
+		)
+	}
+	
 	return validateFormat(config)
 }
 
@@ -339,19 +353,7 @@ func validateFormat(config *GlobalConfig) error {
 				"'SnapshotFormatMeaning'[%d]", meaning, i)
 		}
 	}
-
-	if len(config.HaloValueNames) != len(config.HaloValueColumns) {
-		return fmt.Errorf(
-			"len(HaloValueNames) = %d, but len(HaloValueColumns = %d)",
-			len(config.HaloValueNames), len(config.HaloValueColumns),
-		)
-	} else if len(config.HaloValueNames) != len(config.HaloValueComments) {
-		return fmt.Errorf(
-			"len(HaloValueNames) = %d, but len(HaloValueComments = %d)",
-			len(config.HaloValueNames), len(config.HaloValueComments),
-		)
-	}
-
+	
 	switch config.Logging {
 	case "nil", "performance", "debug":
 	default:

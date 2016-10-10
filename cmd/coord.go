@@ -11,18 +11,43 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd/memo"
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/logging"
+	"github.com/phil-mansfield/shellfish/parse"
 )
 
 type CoordConfig struct {
+	values []string
 }
 
 var _ Mode = &CoordConfig{}
 
-func (config *CoordConfig) ExampleConfig() string { return "" }
+func (config *CoordConfig) ExampleConfig() string {
+	return`[config.coord]
+Values = X, Y, Z, R200m
+`
+}
 
-func (config *CoordConfig) ReadConfig(fname string) error { return nil }
+func (config *CoordConfig) ReadConfig(fname string) error {
+	vars := parse.NewConfigVars("coord.config")
+	vars.Strings(&config.values, "Values", []string{"X", "Y", "Z", "R200m"})
 
-func (config *CoordConfig) validate() error { return nil }
+	if fname == "" {
+		return nil
+	}
+
+	return parse.ReadConfig(fname, vars)
+}
+
+func (config *CoordConfig) validate(vars *halo.VarColumns) error {
+	for _, val := range config.values {
+		if _, ok := vars.ColumnLookup[val]; !ok {
+			return fmt.Errorf(
+				"Value '%s' requested by coord mode, but isn't " +
+				"in HaloVaueNames.", val,
+			)
+		}
+	}
+	return nil
+}
 
 func (config *CoordConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
@@ -53,6 +78,9 @@ func (config *CoordConfig) Run(
 	vars := halo.NewVarColumns(
 		gConfig.HaloValueNames, gConfig.HaloValueColumns,
 	)
+	if err := config.validate(vars); err != nil {
+		return nil, err
+	}
 
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(snaps[0], 0),
@@ -62,22 +90,18 @@ func (config *CoordConfig) Run(
 		return nil, err
 	}
 
-	xs, ys, zs, rs, err := readHaloCoords(ids, snaps, vars, buf, e)
+	columns, err := readHaloCoords(ids, snaps, config.values, vars, buf, e)
 	if err != nil {
 		return nil, err
 	}
 
-	lines := catalog.FormatCols(
-		[][]int{ids, snaps}, [][]float64{xs, ys, zs, rs},
-		[]int{0, 1, 2, 3, 4, 5},
-	)
+	colOrder := make([]int, 2 + len(columns))
+	for i := range colOrder {
+		colOrder[i] = i
+	}
+	lines := catalog.FormatCols([][]int{ids, snaps}, columns, colOrder)
 
-	cString := catalog.CommentString(
-		[]string{"ID", "Snapshot"},
-		[]string{"X [cMpc/h]", "Y [cMpc/h]", "Z [cMpc/h]", "R200m [cMpc/h]"},
-		[]int{0, 1, 2, 3, 4, 5},
-		[]int{1, 1, 1, 1, 1, 1},
-	)
+	cString := makeCommentString(gConfig, config)
 
 	if logging.Mode == logging.Performance {
 		log.Printf("Time: %s", time.Since(t).String())
@@ -87,16 +111,50 @@ func (config *CoordConfig) Run(
 	return append([]string{cString}, lines...), nil
 }
 
+func makeCommentString(gConfig *GlobalConfig, config *CoordConfig) string {
+	colNames := make([]string, 2 + len(config.values))
+	colNames[0], colNames[1] = "ID", "Snap"
+	for i := range config.values {
+		j := findString(config.values[i], gConfig.HaloValueNames)
+		if gConfig.HaloValueComments[j] == "" {
+			colNames[i+2] = config.values[i]
+		} else {
+			colNames[i+2] = fmt.Sprintf(
+				"%s [%s]", config.values[i], gConfig.HaloValueComments[j],
+			)
+		}
+	}
+
+	colOrder := make([]int, 2 + len(config.values))
+	colSizes := make([]int, 2 + len(config.values))
+	for i := range colOrder {
+		colOrder[i], colSizes[i] = i, 1
+	}
+
+	return catalog.CommentString(
+		[]string{"ID", "Snapshot"}, config.values, colOrder, colSizes,
+	)
+}
+
+func findString(x string, xs []string) int {
+	for i := range xs {
+		if xs[i] == x { return i }
+	}
+	panic("Impossible")
+}
+
+
+
 func readHaloCoords(
-	ids, snaps []int, vars *halo.VarColumns,
+	ids, snaps []int, valNames []string, vars *halo.VarColumns,
 	buf io.VectorBuffer, e *env.Environment,
-) (xs, ys, zs, rs []float64, err error) {
+) (cols [][]float64, err error) {
 	snapBins, idxBins := binBySnap(snaps, ids)
 
-	xs = make([]float64, len(ids))
-	ys = make([]float64, len(ids))
-	zs = make([]float64, len(ids))
-	rs = make([]float64, len(ids))
+	cols = make([][]float64, len(valNames))
+	for i := range cols {
+		cols[i] = make([]float64, len(ids))
+	}
 
 	for snap, _ := range snapBins {
 		if snap == -1 {
@@ -105,22 +163,19 @@ func readHaloCoords(
 		snapIDs := snapBins[snap]
 		idxs := idxBins[snap]
 
-		_, vals, err := memo.ReadRockstar(
-			snap, []string{"X", "Y", "Z", "R200m"}, snapIDs, vars, buf, e,
+		_, scols, err := memo.ReadRockstar(
+			snap, valNames, snapIDs, vars, buf, e,
 		)
-		sxs, sys, szs, srs := vals[0], vals[1], vals[2], vals[3]
-
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, err
 		}
 
 		for i, idx := range idxs {
-			xs[idx] = sxs[i]
-			ys[idx] = sys[i]
-			zs[idx] = szs[i]
-			rs[idx] = srs[i]
+			for j := range cols {
+				cols[j][idx] = scols[j][i]
+			}
 		}
 	}
 
-	return xs, ys, zs, rs, nil
+	return cols, nil
 }

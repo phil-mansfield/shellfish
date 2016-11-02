@@ -32,7 +32,9 @@ func ReadSortedRockstarIDs(
 	buf io.VectorBuffer, e *env.Environment,
 ) ([]int, error) {
 	hds, _, err := ReadHeaders(snap, buf, e)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	cosmo := &hds[0].Cosmo
 
 	dir := path.Join(e.MemoDir, rockstarMemoDir)
@@ -109,7 +111,9 @@ func ReadRockstar(
 	buf io.VectorBuffer, e *env.Environment,
 ) (outIDs []int, vals [][]float64, err error) {
 	hds, _, err := ReadHeaders(snap, buf, e)
-	if err != nil { return nil, nil, err }
+	if err != nil {
+		return nil, nil, err
+	}
 	cosmo := &hds[0].Cosmo
 
 	// Find binFile.
@@ -140,7 +144,9 @@ func ReadRockstar(
 		binFile, valNames, -1, snap, ids, vars, buf, e, cosmo,
 	)
 
-	if err != nil { return nil, nil, err }
+	if err != nil {
+		return nil, nil, err
+	}
 	return outIDs, vals, nil
 }
 
@@ -175,7 +181,9 @@ func readRockstar(
 	}
 
 	rids, rawCols, err := halo.ReadBinaryRockstar(binFile, vars)
-	if err != nil { return nil, nil, err }
+	if err != nil {
+		return nil, nil, err
+	}
 
 	rvals := make([][]float64, len(valNames))
 	for i := range valNames {
@@ -195,8 +203,8 @@ func readRockstar(
 	f := NewIntFinder(rids)
 	for i, id := range ids {
 		line, ok := f.Find(id)
-		err = fmt.Errorf("Could not find ID %d", id)
 		if !ok {
+			err = fmt.Errorf("Could not find ID %d", id)
 			return nil, nil, err
 		}
 		for vi := range vals {

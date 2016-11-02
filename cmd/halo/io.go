@@ -96,7 +96,7 @@ func RockstarConvert(
 	valIdxs := vars.Columns
 	for i := range valIdxs {
 		if valIdxs[i] == -1 {
-			valIdxs = valIdxs[:1]
+			valIdxs = valIdxs[:i]
 			break
 		}
 	}
@@ -111,7 +111,7 @@ func RockstarConvert(
 		return err
 	}
 	defer f.Close()
-
+	
 	err = binary.Write(f, binary.LittleEndian, int64(len(cols[0])))
 	if err != nil {
 		return err
@@ -215,6 +215,7 @@ func ReadBinaryRockstar(
 func readRockstarVals(
 	file string, getter colGetter, vc *VarColumns,
 ) (ids []int, rawCols [][]float64, err error) {
+	
 	colIdxs := make([]int, vc.NBinary)
 	for i := range colIdxs { colIdxs[i] = i }
 
@@ -239,7 +240,7 @@ func binaryColGetter(file string, colIdxs []int) ([][]float64, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
 	jump := n * 8
 	cols := make([][]float64, len(colIdxs))
 	for i := range cols {

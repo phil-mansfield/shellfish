@@ -96,7 +96,7 @@ func main() {
 
 	var lines []string
 	switch args[1] {
-	case "tree", "coord", "prof", "shell", "stats", "id":
+	case "tree", "coord", "prof", "shell", "stats":
 		var err error
 		lines, err = stdinLines()
 		if err != nil {
@@ -113,7 +113,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-
+	
 	flags := getFlags(args)
 	config, ok := getConfig(args)
 	gConfigName, gConfig, err := getGlobalConfig(args)
@@ -122,7 +122,7 @@ func main() {
 		fmt.Println("Shellfish terminating.")
 		os.Exit(1)
 	}
-
+	
 	if ok {
 		if err = mode.ReadConfig(config); err != nil {
 			log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
@@ -142,7 +142,7 @@ func main() {
 		fmt.Println("Shellfish terminating.")
 		os.Exit(1)
 	}
-
+	
 	e := &env.Environment{MemoDir: gConfig.MemoDir}
 	err = initCatalogs(gConfig, e)
 	if err != nil {
@@ -150,13 +150,14 @@ func main() {
 		fmt.Println("Shellfish terminating.")
 		os.Exit(1)
 	}
+	
 	err = initHalos(args[1], gConfig, e)
 	if err != nil {
 		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 		fmt.Println("Shellfish terminating.")
 		os.Exit(1)
 	}
-
+	
 	out, err := mode.Run(flags, gConfig, e, lines)
 	if err != nil {
 		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())

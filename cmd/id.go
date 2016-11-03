@@ -167,8 +167,7 @@ func (config *IDConfig) validate() error {
 // Run executes the ID mode of shellfish tool.
 func (config *IDConfig) Run(
 	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
-) ([]string, error) {
-	
+) ([]string, error) {	
 	if logging.Mode != logging.Nil {
 		log.Println(`
 ##################

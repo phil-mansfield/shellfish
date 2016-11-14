@@ -160,7 +160,7 @@ func (config *GlobalConfig) validate() error {
 	)
 
 	switch config.HaloPositionUnits {
-	case "Mpc/h":
+	case "cMpc/h":
 	case "":
 		return fmt.Errorf("The 'HaloPositionUnits' variable isn't set.")
 	default:
@@ -394,7 +394,7 @@ HaloValueColumns = 0, 2, 3, 4, 20
 # catalogs. These are not analyzed by Shellfish in any way.
 HaloValueComments = "", "cMpc/h", "cMpc/h", "cMpc/h", "Msun/h"
 
-# HaloPositionUnits = Mpc/h
+# HaloPositionUnits = cMpc/h
 # HaloMassUnits = Msun/h
 
 # These next couple of variables are neccessary evils due to the fact that there

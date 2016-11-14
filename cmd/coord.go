@@ -112,22 +112,24 @@ func (config *CoordConfig) Run(
 }
 
 func makeCommentString(gConfig *GlobalConfig, config *CoordConfig) string {
-	colNames := make([]string, 2 + len(config.values))
-	colNames[0], colNames[1] = "ID", "Snap"
-	for i := range config.values {
+	//colNames := make([]string, 2 + len(config.values))
+	//colNames[0], colNames[1] = "ID", "Snap"
+	colNames := make([]string, len(config.values))
+	for i := 0; i < len(config.values); i++ {
 		switch config.values[i] {
-		case "R200m", "R200c", "R500c", "R2500c":
-			colNames[i+2] = fmt.Sprintf(
+		case "R200m", "R200c", "R500c", "Rs":
+			colNames[i] = fmt.Sprintf(
 				"%s [%s]", config.values[i], gConfig.HaloPositionUnits,
 			)
 			continue
 		}
 		
 		j := findString(config.values[i], gConfig.HaloValueNames)
-		if gConfig.HaloValueComments[j] == "" {
-			colNames[i+2] = config.values[i]
+		if gConfig.HaloValueComments[j] == "" ||
+			gConfig.HaloValueComments[j] == "\"\"" {
+			colNames[i] = config.values[i]
 		} else {
-			colNames[i+2] = fmt.Sprintf(
+			colNames[i] = fmt.Sprintf(
 				"%s [%s]", config.values[i], gConfig.HaloValueComments[j],
 			)
 		}
@@ -140,7 +142,7 @@ func makeCommentString(gConfig *GlobalConfig, config *CoordConfig) string {
 	}
 
 	return catalog.CommentString(
-		[]string{"ID", "Snapshot"}, config.values, colOrder, colSizes,
+		[]string{"ID", "Snapshot"}, colNames, colOrder, colSizes,
 	)
 }
 
@@ -177,6 +179,15 @@ func readHaloCoords(
 
 		if err != nil {
 			return nil, err
+		}
+
+		for i := range valNames {
+			switch valNames[i] {
+			case "R200m", "R200c", "R500c", "Rs":
+				for j := range scols[i] {
+					scols[i][j] /= 1000
+				}
+			}
 		}
 
 		for i, idx := range idxs {

@@ -77,6 +77,7 @@ func (config *CoordConfig) Run(
 
 	vars := halo.NewVarColumns(
 		gConfig.HaloValueNames, gConfig.HaloValueColumns,
+		gConfig.HaloRadiusUnits,
 	)
 	if err := config.validate(vars); err != nil {
 		return nil, err

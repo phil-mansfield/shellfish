@@ -197,6 +197,7 @@ func (config *IDConfig) Run(
 	}
 	vars := halo.NewVarColumns(
 		gConfig.HaloValueNames, gConfig.HaloValueColumns,
+		gConfig.HaloRadiusUnits,
 	)
 
 	var (

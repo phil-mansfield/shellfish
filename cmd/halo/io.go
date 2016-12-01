@@ -24,9 +24,12 @@ type VarColumns struct {
 	Columns []int
 	Generator []string
 	NBinary int
+	RadiusUnits string
 }
 
-func NewVarColumns(names []string, columns []int64) *VarColumns {
+func NewVarColumns(
+	names []string, columns []int64, radiusUnits string,
+) *VarColumns {
 	vc :=&VarColumns{}
 	vc.ColumnLookup = make(map[string]int)
 
@@ -50,6 +53,7 @@ func NewVarColumns(names []string, columns []int64) *VarColumns {
 			vc.Generator = append(vc.Generator, mNames[i])
 		}
 	}
+	vc.RadiusUnits = radiusUnits
 
 	return vc
 }
@@ -67,6 +71,11 @@ func (vc *VarColumns) GetColumn(
 	rad, _ := RadiusFromString(name)
 	
 	rad.Radius(cosmo, ms, rs)
+	// Convert from Mpc/h to the units of the halo catalog.
+	ucf := UnitConversionFactor(vc.RadiusUnits)
+	for i := range rs {
+		rs[i] /= ucf
+	}
 	
 	return rs
 }

@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
+	"fmt"
 	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
@@ -179,17 +179,14 @@ func (config *IDConfig) Run(
 	if logging.Mode == logging.Performance {
 		t = time.Now()
 	}
-
 	if config.snap == -1 {
 		return nil, fmt.Errorf("Either no id.config file was provided or " +
 			"the 'Snap' variable wasn't set.")
 	}
-
 	if config.snap < gConfig.SnapMin || config.snap > gConfig.SnapMax {
 		return nil, fmt.Errorf("'Snap' = %d, but 'SnapMin' = %d and "+
 			"'SnapMax = %d'", config.snap, gConfig.SnapMin, gConfig.SnapMax)
 	}
-
 	// Get IDs and snapshots
 
 	rawIds, err := getIDs(config.idStart, config.idEnd, config.ids, stdin)
@@ -198,7 +195,6 @@ func (config *IDConfig) Run(
 	} else if len(rawIds) == 0 {
 		return nil, nil
 	}
-
 	vars := halo.NewVarColumns(
 		gConfig.HaloValueNames, gConfig.HaloValueColumns,
 	)
@@ -207,7 +203,6 @@ func (config *IDConfig) Run(
 		ids, snaps []int
 		buf        io.VectorBuffer
 	)
-
 	switch config.idType {
 	case "halo-id":
 		snaps = make([]int, len(rawIds))
@@ -243,7 +238,6 @@ func (config *IDConfig) Run(
 		if err != nil {
 			return nil, err
 		}
-
 	default:
 		panic("Impossible")
 	}
@@ -268,7 +262,7 @@ func (config *IDConfig) Run(
 			return nil, err
 		}
 	}
-
+	
 	// Generate lines
 	intCols := [][]int{ids, snaps}
 	floatCols := [][]float64{}
@@ -370,7 +364,6 @@ func findOverlapSubs(
 		return nil, err
 	}
 	hd := hds[0]
-
 	for snap, group := range snapGroups {
 		rids, err := memo.ReadSortedRockstarIDs(
 			snap, -1, "M200m", vars, buf, e,
@@ -381,8 +374,12 @@ func findOverlapSubs(
 		_, vals, err := memo.ReadRockstar(
 			snap, []string{"X", "Y", "Z", "R200m"}, rids, vars, buf, e,
 		)
+		if err != nil {
+			return nil, err
+		}
 		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
-
+		for i := range rs { rs[i] /= 1000 }
+		
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
 		g.Insert(xs, ys, zs)
 		sf := halo.NewSubhaloFinder(g)
@@ -439,7 +436,12 @@ func readSubIDs(
 			snap, []string{"X", "Y", "Z", "R200m"}, rids, vars, buf, e,
 		)
 		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
+		for i := range rs {
+			rs[i] /= 1000
+		}
 
+		log.Println()
+		
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
 		g.Insert(xs, ys, zs)
 		sf := halo.NewSubhaloFinder(g)

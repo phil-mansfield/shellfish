@@ -59,6 +59,7 @@ type GlobalConfig struct {
 	HaloValueComments []string
 
 	HaloPositionUnits string
+	HaloRadiusUnits   string
 	HaloMassUnits     string
 
 	Endianness      string
@@ -88,7 +89,8 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 	vars.Strings(&config.HaloValueComments, "HaloValueComments", []string{})
 
 	vars.String(&config.HaloPositionUnits, "HaloPositionUnits", "")
-	vars.String(&config.HaloMassUnits, "HaloMassUnits", "Msun/h")
+	vars.String(&config.HaloRadiusUnits, "HaloRadiusUnits", "")
+	vars.String(&config.HaloMassUnits, "HaloMassUnits", "")
 
 	vars.Strings(&config.SnapshotFormatMeanings,
 		"SnapshotFormatMeanings", []string{})
@@ -160,12 +162,27 @@ func (config *GlobalConfig) validate() error {
 	)
 
 	switch config.HaloPositionUnits {
-	case "cMpc/h":
+	case "cMpc/h", "ckpc/h":
 	case "":
 		return fmt.Errorf("The 'HaloPositionUnits' variable isn't set.")
 	default:
 		return fmt.Errorf("The 'HaloPositionUnits variable is set to '%s', "+
-			"which I don't understand.", config.HaloPositionUnits)
+			"which I don't support. Only supported units are " +
+			"ckpc/h and cMpc/h", config.HaloPositionUnits)
+	}
+
+	config.HaloRadiusUnits = strings.Join(
+		strings.Split(config.HaloRadiusUnits, " "), "",
+	)
+
+	switch config.HaloRadiusUnits {
+	case "cMpc/h", "ckpc/h":
+	case "":
+		return fmt.Errorf("The 'HaloRadiusUnits' variable isn't set.")
+	default:
+		return fmt.Errorf("The 'HaloRadiusUnits variable is set to '%s', "+
+		"which I don't support. Only supported units are " +
+		"ckpc/h and cMpc/h", config.HaloPositionUnits)
 	}
 
 	config.HaloMassUnits = strings.Join(
@@ -394,12 +411,15 @@ HaloValueColumns = 0, 2, 3, 4, 20
 # catalogs. These are not analyzed by Shellfish in any way.
 HaloValueComments = "", "cMpc/h", "cMpc/h", "cMpc/h", "Msun/h"
 
-# The units which your halo catalog reports positions and radii in. Currently
-# supported values are "cMpc/h" and "ckpc/h" (the "c" stands for "comoving").
-# HaloPositionUnits = cMpc/h
+# The units which your halo catalog reports positions in. Currently supported
+# values are "cMpc/h" and "ckpc/h" (the "c" stands for "comoving").
+HaloPositionUnits = cMpc/h
+# The units which your halo catalog reports radii in. Currently supported
+# values are "cMpc/h" and "ckpc/h" (the "c" stands for "comoving").
+HaloRadiusUnits = ckpc/h
 # The units which your halo catalog reports masses in. Currently only "Msun/h"
 # is supported.
-# HaloMassUnits = Msun/h
+HaloMassUnits = Msun/h
 
 # These next couple of variables are neccessary evils due to the fact that there
 # are a wide range of directory structures used in different simulations. They

@@ -185,9 +185,13 @@ func readHaloCoords(
 
 		for i := range valNames {
 			switch valNames[i] {
-			// All positional variables
-			case "R200m", "R200c", "R500c", "Rs", "X", "Y", "Z":
-				ucf := UnitConversionFactor(gConfig.HaloPositionUnits)
+			case "X", "Y", "Z":
+				ucf := halo.UnitConversionFactor(gConfig.HaloPositionUnits)
+				for j := range scols[i] {
+					scols[i][j] *= ucf
+				}
+			case "R200m", "R200c", "R500c", "Rs" :
+				ucf := halo.UnitConversionFactor(gConfig.HaloRadiusUnits)
 				for j := range scols[i] {
 					scols[i][j] *= ucf
 				}
@@ -202,14 +206,4 @@ func readHaloCoords(
 	}
 
 	return cols, nil
-}
-
-// UnitConversionFactor returns the multiplicative factor needed to convert
-// the given units into cMpc/h.
-func UnitConversionFactor(unitStr string) float64 {
-	switch unitStr {
-	case "cMpc/h": return 1.0
-	case "ckpc/h": return 1e-3
-	default: panic(fmt.Sprintf("Unrecognized unit string '%s'", unitStr))
-	}
 }

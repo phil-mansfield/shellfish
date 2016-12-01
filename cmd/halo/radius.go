@@ -1,6 +1,7 @@
 package halo
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/phil-mansfield/shellfish/cosmo"
@@ -105,5 +106,15 @@ func (r Radius) Mass(c *io.CosmologyHeader, rs, out []float64) {
 	for i, r := range rs {
 		r = r * a
 		out[i] = factor * (r * r * r)
+	}
+}
+
+// UnitConversionFactor returns the multiplicative factor needed to convert
+// the given units into cMpc/h.
+func UnitConversionFactor(unitStr string) float64 {
+	switch unitStr {
+	case "cMpc/h": return 1.0
+	case "ckpc/h": return 1e-3
+	default: panic(fmt.Sprintf("Unrecognized unit string '%s'", unitStr))
 	}
 }

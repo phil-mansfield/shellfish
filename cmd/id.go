@@ -249,7 +249,9 @@ func (config *IDConfig) Run(
 	case "subhalo":
 		panic("subhalo is not implemented")
 	case "neighbor":
-		ids, snaps, err = readSubIDs(ids, snaps, vars, buf, e, config)
+		ids, snaps, err = readSubIDs(
+			ids, snaps, vars, buf, e, config, gConfig,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -257,7 +259,9 @@ func (config *IDConfig) Run(
 		exclude = make([]bool, len(ids))
 	case "overlap":
 		var err error
-		exclude, err = findOverlapSubs(ids, snaps, vars, buf, e, config)
+		exclude, err = findOverlapSubs(
+			ids, snaps, vars, buf, e, config, gConfig,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -346,6 +350,7 @@ func convertSortedIDs(
 func findOverlapSubs(
 	rawIDs, snaps []int, vars *halo.VarColumns,
 	buf io.VectorBuffer, e *env.Environment, config *IDConfig,
+	gConfig *GlobalConfig,
 ) ([]bool, error) {
 	isSub := make([]bool, len(rawIDs))
 
@@ -378,8 +383,15 @@ func findOverlapSubs(
 			return nil, err
 		}
 		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
-		for i := range rs { rs[i] /= 1000 }
-		
+		rucf := halo.UnitConversionFactor(gConfig.HaloRadiusUnits)
+		pucf := halo.UnitConversionFactor(gConfig.HaloPositionUnits)
+		for i := range rs {
+			rs[i] *= rucf // Rusev, crush!
+			xs[i] *= pucf
+			ys[i] *= pucf
+			zs[i] *= pucf
+		}
+
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
 		g.Insert(xs, ys, zs)
 		sf := halo.NewSubhaloFinder(g)
@@ -404,7 +416,7 @@ func findOverlapSubs(
 func readSubIDs(
 	ids, snaps []int, vars *halo.VarColumns,
 	buf io.VectorBuffer, e *env.Environment,
-	config *IDConfig,
+	config *IDConfig, gConfig *GlobalConfig,
 ) (
 	sIDs, sSnaps []int, err error,
 ) {
@@ -436,11 +448,14 @@ func readSubIDs(
 			snap, []string{"X", "Y", "Z", "R200m"}, rids, vars, buf, e,
 		)
 		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
+		rucf := halo.UnitConversionFactor(gConfig.HaloRadiusUnits)
+		pucf := halo.UnitConversionFactor(gConfig.HaloPositionUnits)
 		for i := range rs {
-			rs[i] /= 1000
+			rs[i] *= rucf
+			xs[i] *= pucf
+			ys[i] *= pucf
+			zs[i] *= pucf
 		}
-
-		log.Println()
 		
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
 		g.Insert(xs, ys, zs)

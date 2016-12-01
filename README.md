@@ -1,94 +1,57 @@
 # Shellfish
 
+![The splashback shell around a Milky Way-sized halo](shell.png)
+
 Shellfish (**SHELL** **F**inding **I**n **S**pheroidal **H**alos) is a toolchain for finding
 the splashback shells of individual halos within cosmological simulations. Shellfish
 is written in the programming langue [Go](https://golang.org/).
 
-Shellfish is currently in version 0.2.0 with the next planned release being version
-0.3.0. Its configuration file API is mostly stable, it is not yet fully documented,
-and does not yet have a C-compatible API. The current maintainer in Phil Mansfield
-at the University of Chicago.
+Shellfish is currently in version 0.2.0. The current maintainer is
+[Phil Mansfield](http://astro.uchicago.edu/people/philip-mansfield.php) at the
+University of Chicago.
+
+### Getting help
+
+If you run into problems that you cannot solve yourself, the best thing to do is to
+[make a github account](github.com/join) (it's quick!) and submit an "Issue" about
+your question or bug [here](https://github.com/phil-mansfield/shellfish/issues).
+(Don't worry about the tabs on the right hand part of the submit form: I'll
+take care of this when I see it). The second best option is to email me:
+you should do this if you do not want your question or bug report to be public.
 
 ### Installation
 
 There are two steps to installing Shellfish. The first is installing a Go compiler
 (which is relatively painless compared to installing most other compilers), and the
-second is compiling Shellfish and its dependencies (which is also painless).
-
-If you run into significant problems during installation, you can ask me for help.
-I go over the best way to do this in the next section.
+second is compiling Shellfish and its dependencies (which is completely painless).
 
 If you are working on a computer that you own, download the latest version of the Go
-compiler from [here](https://golang.org/doc/install) and following the instructions.
+compiler from [here](https://golang.org/doc/install) and follow the instructions.
 If you are working on a cluster, you can also ask the cluster staff to install the
 compiler for you. Regardless of how you install it, you will need to make a few changes
 to your `.profile` file, so make sure to read the section titled *Test your installation*
 and run the hello world program there.
 
-Once you've done this, its time to download and install Shellfish's dependencies. Type
-the following commands into your console:
-
-	$ go get github.com/gonum/matrix
-	$ go get github.com/gonum/floats
-	$ go get github.com/gonum/internal/asm
-	$ go get github.com/phil-mansfield/consistent_trees
-	$ go get github.com/phil-mansfield/go-artio
-	$ go get github.com/phil-mansfield/shellfish
-	
-Lastly, type
-
-	$ go install github.com/phil-mansfield/shellfish
-
-And you're done!
-
-### Getting Help
-
-The best way to get help is to submit an issue on this project's
-[Issues page](https://github.com/phil-mansfield/shellfish/issues). This
-is a page that collects all the bug reports, feature requests, and
-help requests in the same place. You will need a github account, but
-[signing up](https://github.com/join) is quick.
-
-You can submit an issue by clicking the green button titled "New Issue"
-in the upper right corner of the issues page. This will open a submission
-form where you can describe the problem you are encountering. Feel free to
-select descriptive tags from the panels on the right of the form, but if
-you don't, I will handle it for you.
-
-The standard suggestions for reporting software bugs/problems applies:
-* Check beforehand to see if someone else already encountered your problem.
-(Look [here](https://github.com/phil-mansfield/shellfish/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
-for bugs, [here](https://github.com/phil-mansfield/shellfish/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement)
-for feature requests, [here](https://github.com/phil-mansfield/shellfish/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22help+wanted%22) for generic help requests and [here](https://github.com/phil-mansfield/shellfish/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3Aquestion+) for questions)
-* Make sure you are using the most up to date version of Shellfish (check your
-version by typing the command `$ shellfish version`).
-* Provide all information relevant to your problem (shell commands, config files, manual
-input catalogs if relevant, etc.)
-* If you encounter your problem when running a complex set of operations, try to find the
-simplest possible configuration which still exhibits the problem.
+Once you've done this, its time to download and install Shellfish's dependencies. Run
+the shell script `download.sh` (no need for root access). To test whether installation
+was successful, type `$ shellfish hello`.
 
 ### How to Use Shellfish
 
-Because of the nature of the problem it is trying to solve, Shellfish works differently
-from most other halo catalog tools. In particular, it is designed as a family of isolated
-tools which communicate with one another through I/O redirection, in the same way that
-unix utilities often do. This allows the average user to run Shellfish without excessive
-configuration while also allowing advanced users to do more complicated tasks.
+Shellfish is a set of unix-like command line tools which produce human-readable catalogs.
+You can write a configuration file describing the layout of your particle snapshots and
+halo catalogs
 
 You can find a tutorial on using Shellfish [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md).
 It typically takes about 10 minutes to read through.
-
-Future versions of Shellfish (0.3.0 and up) will be packaged with a
-`simple_shellfish` tool which will perform the most common sequences of commands
-automatically.
 
 ### List of Supported File Formats
 
 Currently supported particle catalog types:
 
 * gotetra
-* LGadget-2
-* ARTIO
+* LGadget-2 (works on most other versions of Gadget, too)
+* ARTIO (experimental)
 
 Currently supported halo catalog types:
 
@@ -102,15 +65,15 @@ If you would like to use a particle catalog type which is not supported here,
 plase submit an Issue requesting support. Shellfish is written in a way that
 makes it easy to interact with unsupported halo catalogs and meger trees (as
 covered in [the tutorial](https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md)),
-but feel free to submit an issue requesting support as well. When submitting
-an issue asking for support of other file formats, please make sure to link
-to either a specification of the file format or to a C or Go library
-which reads from this format.
+but feel free to submit an issue requesting support as well.
 
-### Useful Background Reading
+### Warning
 
-Coming soon!
+Current accuracy tests indicate that Shellfish overestimates shell sizes for
+small, slowly accreting halos (Gamma < ~1-1.5) by about 10%. We recommend against
+using it for these halos.
 
-### Contributing to Shellfish
+### Next Planned Release
 
-Coming soon!
+The next planned release is version 1.0.0, which will contain a finalized API and
+complete documentation.

@@ -17,19 +17,17 @@ import (
 )
 
 var helpStrings = map[string]string{
-	"setup": `The setup mode isn't implemented yet.`,
-	"id":    `Mode specifcations will be documented in version 0.3.0.`,
-	"tree":  `Mode specifcations will be documented in version 0.3.0.`,
-	"coord": `Mode specifcations will be documented in version 0.3.0.`,
-	"prof": `Mode specifcations will be documented in version 0.3.0.`,
-	"shell": `Mode specifcations will be documented in version 0.3.0.`,
-	"stats": `Mode specifcations will be documented in version 0.3.0.`,
+	"id":    `Mode specifcations will be documented in version 1.0.`,
+	"tree":  `Mode specifcations will be documented in version 1.0.`,
+	"coord": `Mode specifcations will be documented in version 1.0.`,
+	"prof": `Mode specifcations will be documented in version 1.0.`,
+	"shell": `Mode specifcations will be documented in version 1.0.`,
+	"stats": `Mode specifcations will be documented in version 1.0.`,
 
 	"config":       new(cmd.GlobalConfig).ExampleConfig(),
-	"setup.config": `The setup mode does not have a non-global config file.`,
 	"id.config":    cmd.ModeNames["id"].ExampleConfig(),
 	"tree.config":  cmd.ModeNames["tree"].ExampleConfig(),
-	"coord.config": `The coord mode does not have a non-global config file.`,
+	"coord.config": cmd.ModeNames["coord"].ExampleConfig(),
 	"prof.config": cmd.ModeNames["prof"].ExampleConfig(),
 	"shell.config": cmd.ModeNames["shell"].ExampleConfig(),
 	"stats.config": cmd.ModeNames["stats"].ExampleConfig(),
@@ -62,7 +60,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if args[1] == "help" {
+	switch args[1] {
+	case "help":
 		switch len(args) - 2 {
 		case 0:
 			fmt.Println(modeDescriptions)
@@ -78,8 +77,11 @@ func main() {
 		}
 		os.Exit(0)
 		// TODO: Implement the help command.
-	} else if args[1] == "version" {
+	case "version":
 		fmt.Printf("Shellfish version %s\n", version.SourceVersion)
+		os.Exit(0)
+	case "hello":
+		fmt.Printf("Hello back at you! Installation was successful.\n")
 		os.Exit(0)
 	}
 

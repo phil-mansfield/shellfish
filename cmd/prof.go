@@ -58,7 +58,7 @@ func (config *ProfConfig) ExampleConfig() string {
 # contained-densiy -  A density profile which only uses particles.
 # angular-fraction -  The angular fraction at each radius which is contained
 #                     within the shell.
-ProfileType = density
+ProfileType = median-density
 
 # Order is the order of the Penna-Dines shell fit that Shellfish uses. This
 # variable only needs to be set if ProfileType is set to contained-density

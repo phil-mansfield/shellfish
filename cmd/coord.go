@@ -22,6 +22,9 @@ var _ Mode = &CoordConfig{}
 
 func (config *CoordConfig) ExampleConfig() string {
 	return`[config.coord]
+# Values are the names of the values you want to write to an output catalog.
+# The default order is the one which is needed by Shellfish. Any other order
+# would correspond to a catalog which is for your personal use only.
 Values = X, Y, Z, R200m
 `
 }

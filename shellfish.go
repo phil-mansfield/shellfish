@@ -17,6 +17,7 @@ import (
 )
 
 var helpStrings = map[string]string{
+// id mode
 	"id":    `Type "shellfish help" for basic information on invoking the id tool.
 
 The id tool reads halo catalogs and finds the IDs of halos that correspond to
@@ -24,7 +25,7 @@ some user-specified range in either ID or mass space. It will automatically
 throw out (R200m-identified) subhalos if asked, and can also return the IDs of
 the (R200m-identified) subhalos of every host.
 
-For a documented example of a config file used by the id tool, type:
+For a documented example of an id config file, type:
 
      shellfish help id.config
 
@@ -35,12 +36,39 @@ The id tool prints the following catalogs to stdout:
 Column 0 - ID:   The halo's catalog ID.
 Column 1 - Snap: Index of the halo's snapshot.
 
-If ExclusionStrategy = neighbor (i.e. if you want to find subhalos)
+(This can be fed directly to shellfish tree and shellfish coord.)
+
+If ExclusionStrategy = neighbor (i.e. if you want to find subhalos):
 
 Column 0 - ID: The subhalo's catalog ID.
-Column 1 - Snap: Index of the halo's snapshot`,
+Column 1 - Snap: Index of the halo's snapshot
 
-	"tree":  `Mode specifcations will be documented in version 1.0.`,
+(This can be fed directly to shellfish tree and shellfish coord.)`,
+// tree mode
+	"tree":  `Type "shellfish help" for basic information on invoking the tree tool.
+
+The tree tool reads a merger tree catalog and extracts the main progenitor
+branch for every input halo. The IDs of every halo along the progenitor
+branches of the input halos are then output.
+
+For a documented example of a tree config file, type:
+
+     shellfish help tree.config
+
+The id tool takes the following input from stdin:
+
+Column 0 - ID:   The halo's catalog ID.
+Column 1 - Snap: Index of the halo's snapshot.
+
+The id tool prints the following catalogs to stdout:
+
+Column 0 - ID:   The halo's catalog ID.
+Column 1 - Snap: Index of the halo's snapshot.
+
+For conveinece of automated reading, the trees belonging to different halos
+will be separated by a line reading "-1 -1".
+
+(This can be fed directly to shellfish coord)`,
 	"coord": `Mode specifcations will be documented in version 1.0.`,
 	"prof": `Mode specifcations will be documented in version 1.0.`,
 	"shell": `Mode specifcations will be documented in version 1.0.`,

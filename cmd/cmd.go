@@ -390,34 +390,45 @@ Version = %s
 
 # These variables describe the formats used by the files which Shellfish reads.
 # If your simulation output uses a format not included here, you can submit a
-# request for support on https://github.com/phil-mansfield/shellfish/issues,
-# (or you can implement it yourself: Go is extremely similar to C and can be
-# learned in about an hour: http://tour.golang.org/).
+# request for support on https://github.com/phil-mansfield/shellfish/issues.
 #
-# Supported SnapshotTypes: LGadget-2, gotetra
+# The "nil" flag tells shellfish that you won't try to use any of the tools
+# related to this type of tile. If you set HaloType to nil, you can't use
+# id, coord, or tree, and if you set TreeType to nil, you can't use tree. Do
+# this if you're planning to read your own halo catlogs/merger trees and hand
+# input directly to shellfish's shell mode. If HaloType is nil, you don't need
+# to fill out any of the Halo* variables in this config file and if TreeType
+# is nil, you don't need to fill out any of the Tree* variables.
+#
+# Supported SnapshotTypes: LGadget-2, ARTIO (experimental), gotetra
 # Supported HaloTypes: Text, nil
 # Supported TreeTypes: consistent-trees, nil
-#
-# Note the 'nil' type. This allows you to use unsupported halo types by piping
-# coordinates directly into 'shellfish shell'.
 SnapshotType = LGadget-2
 HaloType = Text
 TreeType = consistent-trees
 
+# HaloValueNames and HaloValueColumns tell Shellfish about the structure of your
+# halo catalogs. It needs to be able to read three pieces of information: the
+# halos IDs, the positions and the masses. HaloValueNames should be an ordered
+# list of columns (the set below is the minimum required) and the 0-indexed
+# columns of your halo catalog that they appear in.
 HaloValueNames = ID, X, Y, Z, M200m
 HaloValueColumns = 0, 2, 3, 4, 20
 # HaloValueComments can be used to include notes about, e.g. units in output
-# catalogs. These are not analyzed by Shellfish in any way.
+# catalogs. These are not analyzed by Shellfish in any way, but will be
+# propagated to output catalogs when relevant.
 HaloValueComments = "", "cMpc/h", "cMpc/h", "cMpc/h", "Msun/h"
 
-# The units which your halo catalog reports positions in. Currently supported
-# values are "cMpc/h" and "ckpc/h" (the "c" stands for "comoving").
+# HaloPositionUnits are the units which your halo catalog reports positions in.
+# Currently supported values are "cMpc/h" and "ckpc/h" (the "c" stands for
+# "comoving").
 HaloPositionUnits = cMpc/h
-# The units which your halo catalog reports radii in. Currently supported
-# values are "cMpc/h" and "ckpc/h" (the "c" stands for "comoving").
+# HaloRadiusUnits are the units which your halo catalog reports radii in.
+# Currently supported values are "cMpc/h" and "ckpc/h" (the "c" stands for
+# "comoving").
 HaloRadiusUnits = ckpc/h
-# The units which your halo catalog reports masses in. Currently only "Msun/h"
-# is supported.
+# HaloMassUnits are the units which your halo catalog reports masses in.
+# Currently only "Msun/h" is supported.
 HaloMassUnits = Msun/h
 
 # These next couple of variables are neccessary evils due to the fact that there
@@ -426,7 +437,7 @@ HaloMassUnits = Msun/h
 # of cases. I give an in-depth description of how to use them in the file
 # doc/directory_config.md.
 SnapshotFormat = path/to/snapshots/snapdir_%%03d/snapshot_%%03d.%%d
-# Valid values are "Snapshot", "ScaleFactor", "Block", "Block0", "Block1", ...
+# Valid values are "Snapshot", "ScaleFactor", "Block", "Block0", "Block1", etc.
 # BlockN will reference the Nth element of the BlockMins and Block Maxes
 # variables.
 SnapshotFormatMeanings = Snapshot, Snapshot, Block
@@ -442,24 +453,38 @@ SnapMax = 100
 # for an example.
 # ScaleFactorFile = path/to/file.txt
 
-# Directory containing halo catalogs.
+# Directory containing halo catalogs. It is assumed that when the catalog
+# catalog files in this directory are sorted in alphabetical order (really: in
+# lexicographical order), they will also be sorted temporally. It's also assumed
+# that there are no missing snapshots in the middle of your simulation (e.g.
+# if snapshot #83 and #85 exist, but snapshot #84 got corrupted and was deleted,
+# that would be bad, but if you don't have catalogs for the firt ten snapshots
+# your simulation, that would be fine.)
+#
+# If either of these isn't true, you'll still be able to use the shell finding
+# and analyzing parts of Shellfish, but won't be able to use its catalog reading
+# tools.
 HaloDir = path/to/halos/dir/
 
 # Directory containing merger tree.
 TreeDir = path/to/merger/tree/dir/
 
 # A directory you create the first time you run Shellfish for a particular
-# simulation. Shellfish will memoize certain partial results in this directoy.
+# simulation. Shellfish will cache certain partial results in this directoy.
 # Every time a value is changed in this file, you must change the location of
 # this directory.
+# ("memo" is a reference to the term "memoization," which is just  a fancy
+# word for caching.)
 MemoDir = path/to/memo/dir/
 
-# Endianness of any external binary files read by Shellfish. It should be set
-# to either SystemOrder, LittleEndian, BigEndian. This variable defaults to
+# Endianness of any external binary data files read by Shellfish. It should be
+# set to either SystemOrder, LittleEndian, BigEndian. This variable defaults to
 # SystemOrder.
 #
-# (Any _internal binaries_ written by Shellfish will ignore this variable and
-# will be written in little endian order.)
+# (Any binaries data files _written_ by Shellfish will ignore this variable and
+# will be written in little endian order. This and a few other details allows
+# binary files written by Shellfish on one machine to be read by it on any other
+# machine.)
 Endianness = SystemOrder
 
 # ValidateFormats checks the the specified halo files and snapshot catalogs all
@@ -475,14 +500,14 @@ ValidateFormats = false
 # is set to a non-positive value (as it is by default), it will automatically
 # be set equal to the number of available cores on the current node. All threads
 # will be balanced across available cores. Setting this to a value larger than
-# the number of cores on the node will result in slightly suboptimal
+# the number of cores on the node might result in slightly suboptimal
 # performance.
 Threads = -1
 
-# The loggign mode to be used. There are three different logging modes:
+# The logging mode to be used. There are three different logging modes:
 # nil - no logging is performed.
 # performance - runtime and memory consumption logging are written to stderr.
-# debugging - debugging loggig is written to stderr
+# debugging - debugging information is written to stderr
 Logging = nil`, version.SourceVersion)
 }
 

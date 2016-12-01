@@ -39,6 +39,7 @@ func (config *IDConfig) ExampleConfig() string {
 # Index of the snapshot to be analyzed.
 Snap = 100
 
+# List of IDs to analyze.
 IDs = 10, 11, 12, 13, 14
 
 #####################

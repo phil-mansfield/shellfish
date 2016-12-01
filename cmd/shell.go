@@ -44,8 +44,9 @@ func (config *ShellConfig) ExampleConfig() string {
 # change any of these values.
 #
 # If you find that the default parameters are behaving suboptimally in some
-# significant way on halos with more than 50,000 particles, please submit a
-# report on https://github.com/phil-mansfield/shellfish/issues.
+# significant way on halos with more than 50,000 particles compared to some
+# other set of parameters, PLEASE submit a bug report on
+# https://github.com/phil-mansfield/shellfish/issues.
 
 # SubsampleFactor is the factor by which the points should be subsampled. This
 # parameter is chiefly useful for convergence testing.
@@ -95,22 +96,7 @@ LOSSlopeCutoff = 0.0
 
 # BackgroundRhoMult is the density assigned to points which do not intersect
 # with any kernels as a multiple of the kernel density.
-BackgroundRhoMult = 0.5
-
-#########################
-## Optional Parameters ##
-#########################
-
-# Setting PercentileProfile to true switches to a mode where the nth percentile
-# across every line of sight profile. You might argue that this should be in
-# the "prof" mode, not the "shell" mode, but there's much more code reuse to put
-# it here.
-# PercentileProfile = false
-
-# Percentile is the percentile that will be evaluated when PercentileProfile
-# is set to true.
-# Percentile = 50
-`
+BackgroundRhoMult = 0.5`
 }
 
 func (config *ShellConfig) ReadConfig(fname string) error {

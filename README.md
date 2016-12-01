@@ -10,13 +10,14 @@ Shellfish is currently in version 0.2.0. The current maintainer is
 [Phil Mansfield](http://astro.uchicago.edu/people/philip-mansfield.php) at the
 University of Chicago.
 
-## Getting help
+### Getting help
 
 If you run into problems that you cannot solve yourself, the best thing to do is to
 [make a github account](github.com/join) (it's quick!) and submit an "Issue" about
 your question or bug [here](https://github.com/phil-mansfield/shellfish/issues).
-(Don't worry about the tabs on the right hand part of the submit form). The
-second best option is to email the current maintiner.
+(Don't worry about the tabs on the right hand part of the submit form: I'll
+take care of this when I see it). The second best option is to email me:
+you should do this if you do not want your question or bug report to be public.
 
 ### Installation
 

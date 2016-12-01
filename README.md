@@ -40,7 +40,8 @@ was successful, type `$ shellfish hello`.
 
 Shellfish is a set of unix-like command line tools which produce human-readable catalogs.
 You can write a configuration file describing the layout of your particle snapshots and
-halo catalogs
+halo catalog, specify the halos you want to measure the splashback shell for, and then
+Shellfish will take care of the rest.
 
 You can find a tutorial on using Shellfish [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md).
 It typically takes about 10 minutes to read through.

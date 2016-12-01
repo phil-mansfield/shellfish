@@ -37,26 +37,6 @@ func (config *StatsConfig) ExampleConfig() string {
 	return `[stats.config]
 
 #####################
-## Required Fields ##
-#####################
-
-# Values determines what columns will be written to stdout.
-#
-# The supported columns are:
-# id    - The ID of the halo, as initially supplied.
-# snap  - The snapshot index of the halo, as initially supplied.
-# r_sp  - The volume-weighted splashback radius of the halo.
-# m_sp  - The total mass contained within the splashback shell of the halo.
-# V_sp  - Volume of splashback shell.
-# SA_sp - Surface area of splashback shell.
-# a_sp  - Largest axis of ellipsoidal fit to splashback shell.
-# b_sp  - Largest axis of ellipsoidal fit to splashback shell.
-# c_sp  - Largest axis of ellipsoidal fit to splashback shell.
-#
-# WARNING: THIS IS NOT FULLY IMPLEMENTED
-Values = snap, id, m_sp, r_sp, SA_sp, V_sp, a_sp, b_sp, c_sp
-
-#####################
 ## Optional Fields ##
 #####################
 

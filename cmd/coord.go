@@ -90,7 +90,9 @@ func (config *CoordConfig) Run(
 		return nil, err
 	}
 
-	columns, err := readHaloCoords(ids, snaps, config.values, vars, buf, e)
+	columns, err := readHaloCoords(
+		ids, snaps, config.values, vars, buf, e, gConfig,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +159,7 @@ func findString(x string, xs []string) int {
 
 func readHaloCoords(
 	ids, snaps []int, valNames []string, vars *halo.VarColumns,
-	buf io.VectorBuffer, e *env.Environment,
+	buf io.VectorBuffer, e *env.Environment, gConfig *GlobalConfig,
 ) (cols [][]float64, err error) {
 	snapBins, idxBins := binBySnap(snaps, ids)
 
@@ -183,9 +185,11 @@ func readHaloCoords(
 
 		for i := range valNames {
 			switch valNames[i] {
-			case "R200m", "R200c", "R500c", "Rs":
+			// All positional variables
+			case "R200m", "R200c", "R500c", "Rs", "X", "Y", "Z":
+				ucf := UnitConversionFactor(gConfig.HaloPositionUnits)
 				for j := range scols[i] {
-					scols[i][j] /= 1000
+					scols[i][j] *= ucf
 				}
 			}
 		}
@@ -198,4 +202,14 @@ func readHaloCoords(
 	}
 
 	return cols, nil
+}
+
+// UnitConversionFactor returns the multiplicative factor needed to convert
+// the given units into cMpc/h.
+func UnitConversionFactor(unitStr string) float64 {
+	switch unitStr {
+	case "cMpc/h": return 1.0
+	case "ckpc/h": return 1e-3
+	default: panic(fmt.Sprintf("Unrecognized unit string '%s'", unitStr))
+	}
 }

@@ -394,7 +394,11 @@ HaloValueColumns = 0, 2, 3, 4, 20
 # catalogs. These are not analyzed by Shellfish in any way.
 HaloValueComments = "", "cMpc/h", "cMpc/h", "cMpc/h", "Msun/h"
 
+# The units which your halo catalog reports positions and radii in. Currently
+# supported values are "cMpc/h" and "ckpc/h" (the "c" stands for "comoving").
 # HaloPositionUnits = cMpc/h
+# The units which your halo catalog reports masses in. Currently only "Msun/h"
+# is supported.
 # HaloMassUnits = Msun/h
 
 # These next couple of variables are neccessary evils due to the fact that there
@@ -449,7 +453,7 @@ Endianness = SystemOrder
 ValidateFormats = false
 
 # Threads is the number of threads that should be run simultaneously. If Threads
-# is set to a non-positive value (as it iis by default), it will automatically
+# is set to a non-positive value (as it is by default), it will automatically
 # be set equal to the number of available cores on the current node. All threads
 # will be balanced across available cores. Setting this to a value larger than
 # the number of cores on the node will result in slightly suboptimal

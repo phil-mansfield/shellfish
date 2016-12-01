@@ -17,17 +17,29 @@ import (
 )
 
 var helpStrings = map[string]string{
-	"id":    `The id tool reads halo catalogs and finds the IDs of halos that
-correspond to some user-specified range. It will automatically throw out
-(R200m-identified) subhalos if asked, and can also return the IDs of the
-(R200m-identified) subhalos of every host.
+	"id":    `Type "shellfish help" for basic information on invoking the id tool.
 
-For details on 
+The id tool reads halo catalogs and finds the IDs of halos that correspond to
+some user-specified range in either ID or mass space. It will automatically
+throw out (R200m-identified) subhalos if asked, and can also return the IDs of
+the (R200m-identified) subhalos of every host.
+
+For a documented example of a config file used by the id tool, type:
+
+     shellfish help id.config
 
 The id tool takes no input from stdin.
 
-The id tool
-`,
+The id tool prints the following catalogs to stdout:
+
+Column 0 - ID:   The halo's catalog ID.
+Column 1 - Snap: Index of the halo's snapshot.
+
+If ExclusionStrategy = neighbor (i.e. if you want to find subhalos)
+
+Column 0 - ID: The subhalo's catalog ID.
+Column 1 - Snap: Index of the halo's snapshot`,
+
 	"tree":  `Mode specifcations will be documented in version 1.0.`,
 	"coord": `Mode specifcations will be documented in version 1.0.`,
 	"prof": `Mode specifcations will be documented in version 1.0.`,

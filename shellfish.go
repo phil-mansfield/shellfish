@@ -17,7 +17,17 @@ import (
 )
 
 var helpStrings = map[string]string{
-	"id":    `Mode specifcations will be documented in version 1.0.`,
+	"id":    `The id tool reads halo catalogs and finds the IDs of halos that
+correspond to some user-specified range. It will automatically throw out
+(R200m-identified) subhalos if asked, and can also return the IDs of the
+(R200m-identified) subhalos of every host.
+
+For details on 
+
+The id tool takes no input from stdin.
+
+The id tool
+`,
 	"tree":  `Mode specifcations will be documented in version 1.0.`,
 	"coord": `Mode specifcations will be documented in version 1.0.`,
 	"prof": `Mode specifcations will be documented in version 1.0.`,
@@ -28,27 +38,55 @@ var helpStrings = map[string]string{
 	"id.config":    cmd.ModeNames["id"].ExampleConfig(),
 	"tree.config":  cmd.ModeNames["tree"].ExampleConfig(),
 	"coord.config": cmd.ModeNames["coord"].ExampleConfig(),
-	"prof.config": cmd.ModeNames["prof"].ExampleConfig(),
+	"prof.config":  cmd.ModeNames["prof"].ExampleConfig(),
 	"shell.config": cmd.ModeNames["shell"].ExampleConfig(),
 	"stats.config": cmd.ModeNames["stats"].ExampleConfig(),
 }
 
-var modeDescriptions = `My help modes are:
-shellfish help
-shellfish help [ setup | id | tree | coord | prof | shell | stats ]
-shellfish help [ config | id.config | prof.config |shell.config |
-                 stats.config | tree.config ]
+var modeDescriptions = `The best way to learn how to use shellfish is the tutorial on its github page:
+https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md
 
-My setup mode is:
-shellfish setup ____.config
+The different tools in the Shellfish toolchain are:
 
-My analysis modes are:
-shellfish id     [flags] ____.config [____.id.config]
-shellfish tree ____.config [____.tree.config]
-shellfish coord ____.config
-shellfish prof  [flags] ____.config [____.prof.config]
-shellfish shell  [flags] ____.config [____.shell.config]
-shellfish stats  [flags] ____.config [____.stats.config]`
+    shellfish id     [____.id.config]    [flags]
+    shellfish tree   [____.tree.config]  [flags]
+    shellfish coord  [____.coord.config] [flags]
+    shellfish prof   [____.prof.config]  [flags]
+    shellfish shell  [____.shell.config] [flags]
+    shellfish stats  [____.stats.config] [flags]
+
+Each tool takes the name of a tool-specific config file. Without them, a
+default set of variables will be used. You can also specify config variables
+through command line flags of the form
+
+    shellfish id --IDs "0, 1, 2, 3, 4, 5" --IDType "M200m"
+
+If you supply both a config file and flags and the two give different values to
+the same variable, the command line value will be used.
+
+For documented example config files, type any of:
+
+    shellfish help [ id.config | prof.config |shell.config |
+                     stats.config | tree.config ]
+
+In addition to any arguments passed at the command line, before calling
+Shellfish rountines you will need to specify a "global" config file (it
+has the file ending ".config"). Do this by setting the $SHELLFISH_GLOBAL_CONFIG
+environment variable. For a documented global config file, type
+
+    shellfish help config
+
+The Shellfish tools expect an input catalog through stdin and will return an
+output catalog through standard out. (The only exception is the id tool, which
+doesn't take any input thorugh stdin) This means that you will generally invoke
+shellfish as a series of piped commands. E.g:
+
+    shellfish id example.id.config | shellfish coord | shellfish shell    
+
+For more information on the input and output that a given tool expects, type
+any of:
+
+    shellfish help [ id | tree | coord | prof | shell | stats ]`
 
 func main() {
 	args := os.Args

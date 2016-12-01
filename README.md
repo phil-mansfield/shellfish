@@ -50,8 +50,8 @@ It typically takes about 10 minutes to read through.
 Currently supported particle catalog types:
 
 * gotetra
-* LGadget-2
-* ARTIO
+* LGadget-2 (works on most other versions of Gadget, too)
+* ARTIO (experimental)
 
 Currently supported halo catalog types:
 

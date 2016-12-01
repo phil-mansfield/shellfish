@@ -120,8 +120,7 @@ func (config *GlobalConfig) ReadConfig(fname string) error {
 		logging.Mode = logging.Debug
 	}
 
-	err := config.validate()
-	return err//config.validate()
+	return config.validate()
 }
 
 // validate checks that all the user-generated fields of GlobalConfig are

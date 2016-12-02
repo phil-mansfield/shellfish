@@ -3,7 +3,7 @@
 ### Quickstart
 
 I outline the simplest possible usage of Shellfish
-[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/toolset.md).
+[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/quickstart.md).
 
 ### Toolset Description
 

@@ -17,6 +17,10 @@ Shellfish.
 A detailed description of the resource requirements of Shellfish can be found
 [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/resources.md)
 
+### Common Problems
+
+Some common issues and their solutions can be found [here]((https://github.com/phil-mansfield/shellfish/blob/master/doc/common_problems.md).
+
 ### Penna Coefficients
 
 The mathematical form of the full 3D shell is described in depth

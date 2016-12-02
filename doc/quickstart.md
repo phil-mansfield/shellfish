@@ -122,7 +122,7 @@ catalog and print them out. A toy example might look something like this:
 
 ids = list_of_ids_I_want()
 for id in ids:
-    snap, x, y, z, r200m = parse_my_halo_catalog()
+    snap, x, y, z, r200m = parse_my_halo_catalog(id)
     print id, snap, x, y, z, r200m
 ```
 which can then be used like this

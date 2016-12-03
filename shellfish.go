@@ -246,6 +246,8 @@ The different tools in the Shellfish toolchain are:
     shellfish shell  [____.shell.config] [flags]
     shellfish stats  [____.stats.config] [flags]
 
+(Arguments in brackets are optional.)
+
 Each tool takes the name of a tool-specific config file. Without them, a
 default set of variables will be used. You can also specify config variables
 through command line flags of the form

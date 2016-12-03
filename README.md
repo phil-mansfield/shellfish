@@ -2,13 +2,17 @@
 
 ![The splashback shell around a Milky Way-sized halo](shell.png)
 
-Shellfish (**SHELL** **F**inding **I**n **S**pheroidal **H**alos) is a toolchain for finding
-the splashback shells of individual halos within cosmological simulations. Shellfish
-is written in the programming langue [Go](https://golang.org/).
+Shellfish (**SHELL** **F**inding **I**n **S**pheroidal **H**alos) is a command line toolchain
+for finding the splashback shells of individual halos within cosmological simulations.
+
+After configuration, generating halo catalogs with shellfish can be as easy as the command
+```bash
+cat my_halo_catalog.dat | shellfish shell | shellfish stats > my_splashback_catalog.dat
+```
 
 Shellfish is currently in version 0.2.0. The current maintainer is
 [Phil Mansfield](http://astro.uchicago.edu/people/philip-mansfield.php) at the
-University of Chicago.
+University of Chicago. Shellfish is written in the programming langue [Go](https://golang.org/).
 
 ### Getting help
 

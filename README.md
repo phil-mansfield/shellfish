@@ -73,7 +73,7 @@ but feel free to submit an issue requesting support as well.
 Current accuracy tests indicate that Shellfish overestimates shell sizes for
 small, slowly accreting halos (Gamma < 0.5) by about 15%. Although these halos
 are fairly uncommon, we suggest explicitly flagging halos in this accretion rate
-range before doing any analysis on Shellfish.
+range before doing any analysis with Shellfish.
 
 ### Next Planned Release
 

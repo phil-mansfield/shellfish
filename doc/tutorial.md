@@ -1,51 +1,38 @@
 # Tutorial
 
-## Walkthrough
+### Quickstart
 
-A walkthrough of how to set up Shellfish and use it to create halo catalogs can
-be found [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/walkthrough.md).
+I outline the simplest possible usage of Shellfish
+[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/quickstart.md).
 
-The most complicated part of the set up procedure is describing what your internal
-directory structure looks like in your configuration files. This step is described
-[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/walkthrough.md),
-with examples.
+### Toolset Description
 
-## Advanced Topics
+A more complete description of the Shellfish toolset can be found
+[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/toolset.md).
+It gives examples of how to generate a wide variety of useful catalogs in
+Shellfish.
 
-#### Resource Consumption (And Parallelism)
+### Performance and Memory Restrictions
 
 A detailed description of the resource requirements of Shellfish can be found
-[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/resources.md).
+[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/resources.md)
 
-#### Manual ID selection
+### Common Problems
 
-If you want to perform more fine-grained halo selection that what the `shellfish id`
-mode does, follow the instructions [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/manual_selection.md).
+Some common issues and their solutions can be found [here]((https://github.com/phil-mansfield/shellfish/blob/master/doc/common_problems.md).
 
-#### Using Unsupported Halo Catalogs and Merger Trees
+### Penna Coefficients
 
-If you are using a halo catalog or merger tree format that isn't supported by
-Shellfish, you can get Shellfish to analyze your halos anyway by following the
-instrucitons [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/unsupported_catalogs.md)
+The mathematical form of the full 3D shell is described in depth
+[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/penna_coefficients.md).
 
-#### Penna Coefficients
+### Contributing to Shellfish
 
-The mathematical form of the full 3D shell is described in depth [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/penna_coefficients.md)
-
-#### Full Specifications for Each Mode
-
-(Coming soon!)
-
-## Adding Code to Shellfish
-
-#### Overview
+Shellfish is an open source project and I'm more than happy to accept code contributions
+and to give credit to any significant contributors.
 
 An overview of adding code to Shellfish can be found [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/code_overview.md).
 It gives links to resources, goes over how to contribute your changes back to 
-this repo.
-
-#### Project Outline
-
-A qualitative description of the structure of the Shellfish project can be found [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/outline.md).
-This includes short descriptions of every pacakge an file. More detailed descriptions
-can be found in the code itself.
+this repo. A qualitative description of the code structure of the Shellfish project
+can be found [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/outline.md).
+(Note: this outline is under construction.)

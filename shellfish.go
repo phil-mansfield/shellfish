@@ -347,9 +347,9 @@ func main() {
 		}
 	}
 	
-	flags := getFlags(args)
-	config, ok := getConfig(args)
-	gConfigName, gConfig, err := getGlobalConfig(args)
+	flags := getFlags(args[2:])
+	config, ok := getConfig(args[2:])
+	gConfigName, gConfig, err := getGlobalConfig(args[:2])
 	if err != nil {
 		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 		fmt.Println("Shellfish terminating.")

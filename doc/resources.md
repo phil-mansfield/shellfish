@@ -45,3 +45,10 @@ can take as long to analyze as the clusters themselves. The real figure of merit
 many particles are contained within 3*R200m, a value which is only loosely correlated
 with how many particles are contained within R200m. However, most halo catalogs do not
 contain this information.
+
+Shellfish does not currently support MPI. Are parallelism is thread-based and done
+on a single node. In fact, due to the way that caching works,
+you can't even run two Shellfish processes using the same configuration file on
+two different nodes simulataneously (unless you're sure caching is finished, which you
+might be.) There are plans to [add MPI support](https://github.com/phil-mansfield/shellfish/issues/128)
+by version 1.1.0.

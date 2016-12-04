@@ -34,20 +34,23 @@ compiler from [here](https://golang.org/doc/install) and follow the instructions
 If you are working on a cluster, you can also ask the cluster staff to install the
 compiler for you. Regardless of how you install it, you will need to make a few changes
 to your `.profile` file, so make sure to read the section titled *Test your installation*
-and run the hello world program there.
+and run the hello world program there (don't worry: you don't need to know the language to
+use Shellfish).
 
-Once you've done this, its time to download and install Shellfish's dependencies. Run
-the shell script `download.sh` (no need for root access). To test whether installation
-was successful, type `$ shellfish hello`.
+Once you've done this, its time to download and install Shellfish's dependencies. You
+will need the version control software [git](https://git-scm.com/) installed on your
+machine. Run the shell script `download.sh` (no need for root access). To test whether
+installation was successful, type `$ shellfish hello`.
 
 ### How to Use Shellfish
 
 Shellfish is a set of unix-like command line tools which produce human-readable catalogs.
-You can write a configuration file describing the layout of your particle snapshots and
+You write a configuration file describing the layout of your particle snapshots and
 halo catalog, specify the halos you want to measure the splashback shell for, and then
 Shellfish will take care of the rest.
 
-You can find a tutorial on using Shellfish [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md).
+You can find a tutorial on using Shellfish
+[here](https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md).
 It typically takes about 10 minutes to read through.
 
 ### List of Supported File Formats

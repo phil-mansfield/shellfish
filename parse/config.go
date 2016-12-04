@@ -309,7 +309,7 @@ func ReadConfig(fname string, vars *ConfigVars) error {
 	}
 	lines = lines[1:]
 
-	// Create associate list and check for name-based errors
+	// Create association list and check for name-based errors
 
 	names, vals, errLine := associationList(lines)
 	if errLine != -1 {
@@ -359,6 +359,107 @@ func ReadConfig(fname string, vars *ConfigVars) error {
 	}
 
 	return nil
+}
+
+func ReadFlags(args []string, vars *ConfigVars) error {
+	if len(args) == 0 { return nil }
+	for _, arg := range args {
+		for j := range arg {
+			if arg[j] == '=' {
+				return fmt.Errorf(
+					"The argument '%s' contains an equals sign.", arg,
+				)
+			}
+		}
+	}
+
+	isFlag := make([]bool, len(args))
+	for i := range args {
+		isFlag[i] = len(args[i]) > 0 && args[i][0] == '-'
+	}
+
+	if !isFlag[0] {
+		return fmt.Errorf("The argument '%s' does not have a flag.", args[0])
+	}
+
+	varNames, values := []string{}, []string{}
+	currValue := []string{}
+
+	varNames = append(varNames, flagVarName(args[0]))
+	for i := 1; i < len(args); i++ {
+		if !isFlag[i] {
+			currValue = append(currValue, args[i])
+		} else {
+			valStr := strings.Join(currValue, ",")
+			values = append(values, valStr)
+			currValue = []string{}
+			varNames = append(varNames, flagVarName(args[i]))
+		}
+	}
+	valStr := strings.Join(currValue, ",")
+	values = append(values, valStr)
+
+	for i, value := range values {
+		if value == "" {
+			return fmt.Errorf(
+				"The flag '%s' wasn't set to a value.", varNames[i],
+			)
+		}
+	}
+
+	lines := make([]string, len(values))
+	for i := range lines {
+		lines[i] = fmt.Sprintf("%s=%s", varNames[i], values[i])
+	}
+
+	// From here on, we're almost identical to ReadConfig
+
+	names, vals, errLine := associationList(lines)
+	if errLine != -1 {
+		panic(fmt.Sprintf(
+			"Internal error! Flag %d could not be parsed. " +
+			"Please report this to Shellfish's current maintainer.", errLine,
+		))
+	}
+
+	if errLine = checkValidNames(names, vars); errLine != -1 {
+		return fmt.Errorf(
+			"The flag '%s' cannot be set for this program.", names[errLine],
+		)
+	}
+
+	if errLine1, _ := checkDuplicateNames(names); errLine1 != -1 {
+		return fmt.Errorf(
+			"The flag '%s' was assigned twice.", names[errLine1],
+		)
+	}
+
+	// Convert every variable in the associate list.
+
+	if errLine = convertAssoc(names, vals, vars); errLine != -1 {
+		j := 0
+		for ; j < len(vars.varNames); j++ {
+			if vars.varNames[j] == names[errLine] {
+				break
+			}
+		}
+		typeName := vars.varTypes[j].String()
+		a := "a"
+		if typeName[0] == 'i' {
+			a = "an"
+		}
+		return fmt.Errorf(
+			"I could not parse the flag '%s', because it "+
+			"expects values of type %s and '%s' cannnot be converted to "+
+			"%s %s.", vars.varNames[j], typeName, vals[j], a, typeName,
+		)
+	}
+
+	return nil
+}
+
+func flagVarName(flag string) string {
+	return strings.TrimLeft(flag, "-")
 }
 
 // These functions are self-explanatory.

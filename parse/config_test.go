@@ -403,3 +403,34 @@ func TestInvalidConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestValidFlags(t *testing.T) {
+	config, vars := makeTestConfig()
+	flags := []string{
+		"--Num", "16",
+		"--Nums", "1, 2, 3, 4, 5",
+		"--Float", "16",
+		"--Floats", "1", "2", "3", "4", "5",
+		"-Okay", "true",
+		"---Okays", "true, true", "false",
+	}
+
+	err := ReadFlags(flags, vars)
+	if err != nil {
+		t.Errorf("Could not parse valid flags: got the error '%s'", err.Error())
+	}
+	switch {
+	case config.num != 16:
+		t.Errorf("Flag Num not set.")
+	case !int64sEq(config.nums, []int64{1, 2, 3, 4, 5}):
+		t.Errorf("Flag Nums not set.")
+	case config.float != 16:
+		t.Errorf("Flag Float not set.")
+	case !floatsEq(config.floats, []float64{1, 2, 3,4, 5}, 0.001):
+		t.Errorf("Flag Floats not set.")
+	case !config.okay:
+		t.Errorf("Flag Okay not set.")
+	case !boolsEq(config.okays, []bool{true, true, false}):
+		t.Errorf("Flag Okay not set.")
+	}
+}

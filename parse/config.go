@@ -47,9 +47,9 @@ file.
     }
 
 A careful read of the above example will show that the supplied config file
-does not consider the config file missing one or more files an error. This will
-be annoying in some cases, but is usually the desired behavior. You will need to
-explicitly check for variables that have not been set.
+does not consider the config file missing one or more variables an error. This
+will be annoying in some cases, but is usually the desired behavior. You will
+need to explicitly check for variables that have not been set.
 
 For additional examples, see the usage in config_test.go
 */
@@ -282,9 +282,9 @@ func (vars *ConfigVars) Bools(ptr *[]bool, name string, value []bool) {
 // variables vars. If successful nil is returned, otherwise an error is
 // returned.
 func ReadConfig(fname string, vars *ConfigVars) error {
-	for i := range vars.varNames {
-		vars.varNames[i] = strings.ToLower(vars.varNames[i])
-	}
+	//for i := range vars.varNames {
+	//	vars.varNames[i] = strings.ToLower(vars.varNames[i])
+	//}
 
 	// I/O
 
@@ -401,7 +401,8 @@ func associationList(lines []string) ([]string, []string, int) {
 		if len(lines[i])-1 > eq {
 			val = lines[i][eq+1:]
 		}
-		names = append(names, strings.ToLower(strings.Trim(name, " ")))
+		//names = append(names, strings.ToLower(strings.Trim(name, " ")))
+		names = append(names, strings.Trim(name, " "))
 		if len(names[len(names)-1]) == 0 {
 			return nil, nil, i
 		}
@@ -414,7 +415,7 @@ func checkValidNames(names []string, vars *ConfigVars) int {
 	for i := range names {
 		found := false
 		for j := range vars.varNames {
-			if vars.varNames[j] == names[i] {
+			if strings.ToLower(vars.varNames[j]) == strings.ToLower(names[i]) {
 				found = true
 				break
 			}
@@ -429,7 +430,7 @@ func checkValidNames(names []string, vars *ConfigVars) int {
 func checkDuplicateNames(names []string) (int, int) {
 	for i := range names {
 		for j := i + 1; j < len(names); j++ {
-			if names[i] == names[j] {
+			if strings.ToLower(names[i]) == strings.ToLower(names[j]) {
 				return i, j
 			}
 		}
@@ -441,7 +442,7 @@ func convertAssoc(names, vals []string, vars *ConfigVars) int {
 	for i := range names {
 		j := 0
 		for ; j < len(vars.varNames); j++ {
-			if vars.varNames[j] == names[i] {
+			if strings.ToLower(vars.varNames[j]) == strings.ToLower(names[i]) {
 				break
 			}
 		}

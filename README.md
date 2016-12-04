@@ -75,13 +75,6 @@ makes it easy to interact with unsupported halo catalogs and meger trees (as
 covered in [the tutorial](https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md)),
 but feel free to submit an issue requesting support as well.
 
-### Warning
-
-Current accuracy tests indicate that Shellfish overestimates shell sizes for
-small, slowly accreting halos (Gamma < 0.5) by about 15%. Although these halos
-are fairly uncommon, we suggest explicitly flagging halos in this accretion rate
-range before doing any analysis with Shellfish.
-
 ### Next Planned Release
 
 The next planned release is version 1.0.0, which will contain a finalized API and

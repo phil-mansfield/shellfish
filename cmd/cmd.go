@@ -297,7 +297,8 @@ func inStringSlice(x string, xs []string) bool {
 // directory.
 func validateDir(name string) error {
 	if info, err := os.Stat(name); err != nil {
-		return fmt.Errorf("%s does not exist.", name)
+		//return fmt.Errorf("%s does not exist.", name)
+		return os.MkdirAll(name, os.ModeDir)
 	} else if !info.IsDir() {
 		return fmt.Errorf("%s is not a directory.", name)
 	}

@@ -32,21 +32,35 @@ func (config *TreeConfig) ExampleConfig() string {
 # SelectSnaps = 36, 47, 64, 77, 87, 100`
 }
 
-func (config *TreeConfig) ReadConfig(fname string) error {
-	if fname == "" {
-		return nil
-	}
-
+func (config *TreeConfig) ReadConfig(fname string, flags []string) error {
 	vars := parse.NewConfigVars("tree.config")
 	vars.Ints(&config.selectSnaps, "SelectSnaps", []int64{})
 
-	return parse.ReadConfig(fname, vars)
+	if fname == "" {
+		if len(flags) == 0 {
+			return nil
+		}
+		err := parse.ReadFlags(flags, vars)
+		if err != nil {
+			return err
+		}
+
+		return config.validate()		
+	}
+	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
+	if err := parse.ReadFlags(flags, vars); err != nil {
+		return err
+	}
+	
+	return config.validate()
 }
 
 func (config *TreeConfig) validate() error { return nil }
 
 func (config *TreeConfig) Run(
-	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	if logging.Mode != logging.Nil {
 		log.Println(`

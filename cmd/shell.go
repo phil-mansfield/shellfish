@@ -99,7 +99,7 @@ LOSSlopeCutoff = 0.0
 BackgroundRhoMult = 0.5`
 }
 
-func (config *ShellConfig) ReadConfig(fname string) error {
+func (config *ShellConfig) ReadConfig(fname string, flags []string) error {
 	vars := parse.NewConfigVars("shell.config")
 
 	vars.Int(&config.subsampleFactor, "SubsampleFactor", 1)
@@ -119,11 +119,24 @@ func (config *ShellConfig) ReadConfig(fname string) error {
 	vars.Float(&config.percentile, "Percentile", 50.0)
 
 	if fname == "" {
-		return nil
+		if len(flags) == 0 {
+			return nil
+		}
+
+		err := parse.ReadFlags(flags, vars)
+		if err != nil {
+			return err
+		}
+		
+		return config.validate()		
 	}
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
+	if err := parse.ReadFlags(flags, vars); err != nil {
+		return err
+	}
+	
 	return config.validate()
 }
 
@@ -174,7 +187,7 @@ func (config *ShellConfig) validate() error {
 }
 
 func (config *ShellConfig) Run(
-	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 
 	if logging.Mode != logging.Nil {

@@ -357,13 +357,13 @@ func main() {
 	}
 	
 	if ok {
-		if err = mode.ReadConfig(config); err != nil {
+		if err = mode.ReadConfig(config, flags); err != nil {
 			log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 			fmt.Println("Shellfish terminating.")
 			os.Exit(1)
 		}
 	} else {
-		if err = mode.ReadConfig(""); err != nil {
+		if err = mode.ReadConfig("", flags); err != nil {
 			log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 			fmt.Println("Shellfish terminating.")
 			os.Exit(1)
@@ -391,7 +391,7 @@ func main() {
 		os.Exit(1)
 	}
 	
-	out, err := mode.Run(flags, gConfig, e, lines)
+	out, err := mode.Run(gConfig, e, lines)
 	if err != nil {
 		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 		fmt.Println("Shellfish terminating.")
@@ -437,7 +437,7 @@ func getGlobalConfig(args []string) (string, *cmd.GlobalConfig, error) {
 	}
 	
 	config := &cmd.GlobalConfig{}
-	err := config.ReadConfig(name)
+	err := config.ReadConfig(name, []string{})
 	if err != nil {
 		return "", nil, err
 	}
@@ -468,10 +468,10 @@ func checkMemoDir(memoDir, configFile string) error {
 	}
 
 	config, memoConfig := &cmd.GlobalConfig{}, &cmd.GlobalConfig{}
-	if err := config.ReadConfig(configFile); err != nil {
+	if err := config.ReadConfig(configFile, []string{}); err != nil {
 		return err
 	}
-	if err := memoConfig.ReadConfig(memoConfigFile); err != nil {
+	if err := memoConfig.ReadConfig(memoConfigFile, []string{}); err != nil {
 		return err
 	}
 

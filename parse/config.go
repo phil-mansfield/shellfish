@@ -282,10 +282,6 @@ func (vars *ConfigVars) Bools(ptr *[]bool, name string, value []bool) {
 // variables vars. If successful nil is returned, otherwise an error is
 // returned.
 func ReadConfig(fname string, vars *ConfigVars) error {
-	for i := range vars.varNames {
-		vars.varNames[i] = strings.ToLower(vars.varNames[i])
-	}
-
 	// I/O
 
 	bs, err := ioutil.ReadFile(fname)
@@ -341,7 +337,8 @@ func ReadConfig(fname string, vars *ConfigVars) error {
 	if errLine = convertAssoc(names, vals, vars); errLine != -1 {
 		j := 0
 		for ; j < len(vars.varNames); j++ {
-			if vars.varNames[j] == names[errLine] {
+			if strings.ToLower(vars.varNames[j]) ==
+				strings.ToLower(names[errLine]) {
 				break
 			}
 		}
@@ -398,11 +395,12 @@ func ReadFlags(args []string, vars *ConfigVars) error {
 	}
 	valStr := strings.Join(currValue, ",")
 	values = append(values, valStr)
-
+	
 	for i, value := range values {
 		if value == "" {
 			return fmt.Errorf(
-				"The flag '%s' wasn't set to a value.", varNames[i],
+				"The flag '%s' was supplied, but wasn't set to a value.",
+				varNames[i],
 			)
 		}
 	}
@@ -413,7 +411,6 @@ func ReadFlags(args []string, vars *ConfigVars) error {
 	}
 
 	// From here on, we're almost identical to ReadConfig
-
 	names, vals, errLine := associationList(lines)
 	if errLine != -1 {
 		panic(fmt.Sprintf(
@@ -435,11 +432,11 @@ func ReadFlags(args []string, vars *ConfigVars) error {
 	}
 
 	// Convert every variable in the associate list.
-
 	if errLine = convertAssoc(names, vals, vars); errLine != -1 {
 		j := 0
 		for ; j < len(vars.varNames); j++ {
-			if vars.varNames[j] == names[errLine] {
+			if strings.ToLower(vars.varNames[j]) ==
+				strings.ToLower(names[errLine]) {
 				break
 			}
 		}
@@ -502,7 +499,7 @@ func associationList(lines []string) ([]string, []string, int) {
 		if len(lines[i])-1 > eq {
 			val = lines[i][eq+1:]
 		}
-		names = append(names, strings.ToLower(strings.Trim(name, " ")))
+		names = append(names, strings.Trim(name, " "))
 		if len(names[len(names)-1]) == 0 {
 			return nil, nil, i
 		}
@@ -515,7 +512,8 @@ func checkValidNames(names []string, vars *ConfigVars) int {
 	for i := range names {
 		found := false
 		for j := range vars.varNames {
-			if vars.varNames[j] == names[i] {
+			if strings.ToLower(vars.varNames[j]) ==
+				strings.ToLower(names[i]) {
 				found = true
 				break
 			}
@@ -530,7 +528,7 @@ func checkValidNames(names []string, vars *ConfigVars) int {
 func checkDuplicateNames(names []string) (int, int) {
 	for i := range names {
 		for j := i + 1; j < len(names); j++ {
-			if names[i] == names[j] {
+			if strings.ToLower(names[i]) == strings.ToLower(names[j]) {
 				return i, j
 			}
 		}
@@ -542,7 +540,7 @@ func convertAssoc(names, vals []string, vars *ConfigVars) int {
 	for i := range names {
 		j := 0
 		for ; j < len(vars.varNames); j++ {
-			if vars.varNames[j] == names[i] {
+			if strings.ToLower(vars.varNames[j]) == strings.ToLower(names[i]) {
 				break
 			}
 		}

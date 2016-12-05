@@ -97,7 +97,7 @@ ProfileType = median-density
 }
 
 
-func (config *ProfConfig) ReadConfig(fname string) error {
+func (config *ProfConfig) ReadConfig(fname string, flags []string) error {
 
 	vars := parse.NewConfigVars("prof.config")
 
@@ -112,13 +112,25 @@ func (config *ProfConfig) ReadConfig(fname string) error {
 	vars.String(&pType, "ProfileType", "")
 
 	if fname == "" {
-		return nil
+		if len(flags) == 0 {
+			return nil
+		}
+
+		err := parse.ReadFlags(flags, vars)
+		if err != nil {
+			return err
+		}
+
+		return config.validate()		
 	}
-	
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
+	if err := parse.ReadFlags(flags, vars); err != nil {
+		return err
+	}
 
+	// Needs to be done here: can't be in the validate method.
 	switch pType {
 	case "":
 		return fmt.Errorf("The variable 'ProfileType' was not set.")
@@ -158,7 +170,7 @@ func (config *ProfConfig) validate() error {
 }
 
 func (config *ProfConfig) Run(
-	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	if logging.Mode != logging.Nil {
 		log.Println(`

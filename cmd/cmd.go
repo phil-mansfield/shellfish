@@ -29,15 +29,14 @@ var ModeNames map[string]Mode = map[string]Mode{
 type Mode interface {
 	// ReadConfig reads a mode-specific config file and stores its contents
 	// within the Mode.
-	ReadConfig(fname string) error
+	ReadConfig(fname string, flags []string) error
 	// ExampleConfig returns the text of an example config file of this mode.
 	ExampleConfig() string
-	// Run executes the mode. It takes a list of tokenized command line flags,
+	// Run executes the mode. It takes
 	// an initialized GlobalConfig struct, and a slice of lines representing the
 	// contents of stdin. It will return a slice of lines that should be
 	// written to stdout along with an error if one occurs.
-	Run(flags []string, gConfig *GlobalConfig,
-		e *env.Environment, stdin []string) ([]string, error)
+	Run(gConfig *GlobalConfig, e *env.Environment, stdin []string) ([]string, error)
 }
 
 // GlobalConfig is a config file used by every mode. It contains information on
@@ -72,7 +71,7 @@ type GlobalConfig struct {
 var _ Mode = &GlobalConfig{}
 
 // ReadConfig reads a config file and returns an error, if applicable.
-func (config *GlobalConfig) ReadConfig(fname string) error {
+func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 
 	vars := parse.NewConfigVars("config")
 	vars.String(&config.Version, "Version", version.SourceVersion)
@@ -514,7 +513,7 @@ Logging = nil`, version.SourceVersion)
 // Run is a dummy method which allows GlobalConfig to conform to the Mode
 // interface for testing purposes.
 func (config *GlobalConfig) Run(
-	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 	panic("GlobalConfig.Run() should never be executed.")
 }

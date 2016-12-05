@@ -47,9 +47,9 @@ file.
     }
 
 A careful read of the above example will show that the supplied config file
-does not consider the config file missing one or more files an error. This will
-be annoying in some cases, but is usually the desired behavior. You will need to
-explicitly check for variables that have not been set.
+does not consider the config file missing one or more variables an error. This
+will be annoying in some cases, but is usually the desired behavior. You will
+need to explicitly check for variables that have not been set.
 
 For additional examples, see the usage in config_test.go
 */

@@ -372,7 +372,7 @@ func ReadFlags(args []string, vars *ConfigVars) error {
 
 	isFlag := make([]bool, len(args))
 	for i := range args {
-		isFlag[i] = len(args[i]) > 0 && args[i][0] == '-'
+		isFlag[i] = len(args[i]) > 1 && args[i][:2] == "--"
 	}
 
 	if !isFlag[0] {

@@ -411,7 +411,7 @@ func TestValidFlags(t *testing.T) {
 		"--Nums", "1, 2, 3, 4, 5",
 		"--Float", "16",
 		"--Floats", "1", "2", "3", "4", "5",
-		"-Okay", "true",
+		"--Okay", "true",
 		"---Okays", "true, true", "false",
 	}
 

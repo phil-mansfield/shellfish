@@ -29,15 +29,23 @@ Values = X, Y, Z, R200m
 `
 }
 
-func (config *CoordConfig) ReadConfig(fname string) error {
+func (config *CoordConfig) ReadConfig(fname string, flags []string) error {
 	vars := parse.NewConfigVars("coord.config")
 	vars.Strings(&config.values, "Values", []string{"X", "Y", "Z", "R200m"})
 
 	if fname == "" {
-		return nil
+		if len(flags) == 0 {
+			return nil
+		}
+		err := parse.ReadFlags(flags, vars)
+		if err != nil {
+			return err
+		}
 	}
-
-	return parse.ReadConfig(fname, vars)
+	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
+	return parse.ReadFlags(flags, vars)
 }
 
 func (config *CoordConfig) validate(vars *halo.VarColumns) error {
@@ -53,7 +61,7 @@ func (config *CoordConfig) validate(vars *halo.VarColumns) error {
 }
 
 func (config *CoordConfig) Run(
-	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 
 	if logging.Mode != logging.Nil {

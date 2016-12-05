@@ -347,9 +347,9 @@ func main() {
 		}
 	}
 	
-	flags := getFlags(args)
-	config, ok := getConfig(args)
-	gConfigName, gConfig, err := getGlobalConfig(args)
+	flags := getFlags(args[2:])
+	config, ok := getConfig(args[2:])
+	gConfigName, gConfig, err := getGlobalConfig(args[:2])
 	if err != nil {
 		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 		fmt.Println("Shellfish terminating.")
@@ -357,13 +357,13 @@ func main() {
 	}
 	
 	if ok {
-		if err = mode.ReadConfig(config); err != nil {
+		if err = mode.ReadConfig(config, flags); err != nil {
 			log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 			fmt.Println("Shellfish terminating.")
 			os.Exit(1)
 		}
 	} else {
-		if err = mode.ReadConfig(""); err != nil {
+		if err = mode.ReadConfig("", flags); err != nil {
 			log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 			fmt.Println("Shellfish terminating.")
 			os.Exit(1)
@@ -391,7 +391,7 @@ func main() {
 		os.Exit(1)
 	}
 	
-	out, err := mode.Run(flags, gConfig, e, lines)
+	out, err := mode.Run(gConfig, e, lines)
 	if err != nil {
 		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 		fmt.Println("Shellfish terminating.")
@@ -421,78 +421,37 @@ func stdinLines() ([]string, error) {
 
 // getFlags reutrns the flag tokens from the command line arguments.
 func getFlags(args []string) []string {
-	return args[1 : len(args)-1-configNum(args)]
+	if len(args) == 0 || len(args[0]) == 0 || args[0][0] == '-' {
+		return args
+	} else {
+		return args[1:]
+	}
 }
 
 // getGlobalConfig returns the name of the base config file from the command
 // line arguments.
 func getGlobalConfig(args []string) (string, *cmd.GlobalConfig, error) {
 	name := os.Getenv("SHELLFISH_GLOBAL_CONFIG")
-	if name != "" {
-		if configNum(args) > 1 {
-			return "", nil, fmt.Errorf("$SHELLFISH_GLOBAL_CONFIG has been " +
-				"set, so you may only pass a single config file as a " +
-				"parameter.")
-		}
-
-		config := &cmd.GlobalConfig{}
-		err := config.ReadConfig(name)
-		if err != nil {
-			return "", nil, err
-		}
-		return name, config, nil
+	if name == "" {
+		return "", nil, fmt.Errorf("$SHELLFISH_GLOBAL_CONFIG has not been set.")
 	}
-
-	switch configNum(args) {
-	case 0:
-		return "", nil, fmt.Errorf("No config files provided in command " +
-			"line arguments.")
-	case 1:
-		name = args[len(args)-1]
-	case 2:
-		name = args[len(args)-2]
-	default:
-		return "", nil, fmt.Errorf("Passed too many config files as arguments.")
-	}
-
+	
 	config := &cmd.GlobalConfig{}
-	err := config.ReadConfig(name)
+	err := config.ReadConfig(name, []string{})
 	if err != nil {
 		return "", nil, err
 	}
+
 	return name, config, nil
 }
 
 // getConfig return the name of the mode-specific config file from the command
 // line arguments.
 func getConfig(args []string) (string, bool) {
-	if os.Getenv("SHELLFISH_GLOBAL_CONFIG") != "" && configNum(args) == 1 {
-		return args[len(args)-1], true
-	} else if os.Getenv("SHELLFISH_GLOBAL_CONFIG") == "" &&
-		configNum(args) == 2 {
-
-		return args[len(args)-1], true
-	}
-	return "", false
-}
-
-// configNum returns the number of configuration files at the end of the
-// argument list (up to 2).
-func configNum(args []string) int {
-	num := 0
-	for i := len(args) - 1; i >= 0; i-- {
-		if isConfig(args[i]) {
-			num++
-		} else {
-			break
-		}
-	}
-	return num
-}
-
-// isConfig returns true if the fiven string is a config file name.
-func isConfig(s string) bool {
-	return len(s) >= 7 && s[len(s)-7:] == ".config"
+	if len(args) == 0 || len(args[0]) == 0 || args[0][0] == '-' {
+		return "", false
+	} 
+	return args[0], true
 }
 
 // cehckMemoDir checks whether the given MemoDir corresponds to a GlobalConfig
@@ -509,10 +468,10 @@ func checkMemoDir(memoDir, configFile string) error {
 	}
 
 	config, memoConfig := &cmd.GlobalConfig{}, &cmd.GlobalConfig{}
-	if err := config.ReadConfig(configFile); err != nil {
+	if err := config.ReadConfig(configFile, []string{}); err != nil {
 		return err
 	}
-	if err := memoConfig.ReadConfig(memoConfigFile); err != nil {
+	if err := memoConfig.ReadConfig(memoConfigFile, []string{}); err != nil {
 		return err
 	}
 
@@ -556,12 +515,13 @@ func configEqual(m, c *cmd.GlobalConfig) bool {
 		c.HaloDir == m.HaloDir &&
 		c.HaloType == m.HaloType &&
 		c.TreeDir == m.TreeDir &&
-		c.MemoDir == m.MemoDir && // (this is impossible)
 		int64sEqual(c.BlockMins, m.BlockMins) &&
 		int64sEqual(c.BlockMaxes, m.BlockMaxes) &&
 		c.SnapMin == m.SnapMin &&
 		c.SnapMax == m.SnapMax &&
 		stringsEqual(c.SnapshotFormatMeanings, m.SnapshotFormatMeanings) &&
+		stringsEqual(c.HaloValueNames, m.HaloValueNames) &&
+		int64sEqual(c.HaloValueColumns, m.HaloValueColumns) &&
 		c.HaloPositionUnits == m.HaloPositionUnits &&
 		c.HaloMassUnits == m.HaloMassUnits &&
 		int64sEqual(c.HaloValueColumns, m.HaloValueColumns) &&

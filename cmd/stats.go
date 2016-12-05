@@ -95,7 +95,7 @@ Order = 3
 # ShellWidth = 0.05`
 }
 
-func (config *StatsConfig) ReadConfig(fname string) error {
+func (config *StatsConfig) ReadConfig(fname string, flags []string) error {
 	vars := parse.NewConfigVars("stats.config")
 
 	vars.Strings(&config.values, "Values", []string{})
@@ -106,9 +106,21 @@ func (config *StatsConfig) ReadConfig(fname string) error {
 	vars.Float(&config.shellWidth, "ShellWidth", 0)
 
 	if fname == "" {
-		return nil
+		if len(flags) == 0 {
+			return nil
+		}
+
+		err := parse.ReadFlags(flags, vars)
+		if err != nil {
+			return err
+		}
+		
+		return config.validate()		
 	}
 	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
+	if err := parse.ReadFlags(flags, vars); err != nil {
 		return err
 	}
 
@@ -146,7 +158,7 @@ func (config *StatsConfig) validate() error {
 }
 
 func (config *StatsConfig) Run(
-	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
 
 	if logging.Mode != logging.Nil {

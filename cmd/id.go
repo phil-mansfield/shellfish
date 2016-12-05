@@ -92,7 +92,7 @@ IDs = 10, 11, 12, 13, 14
 }
 
 // ReadConfig reads in an id.config file into config.
-func (config *IDConfig) ReadConfig(fname string) error {
+func (config *IDConfig) ReadConfig(fname string, flags []string) error {
 
 	vars := parse.NewConfigVars("id.config")
 	vars.String(&config.idType, "IDType", "m200m")
@@ -103,11 +103,21 @@ func (config *IDConfig) ReadConfig(fname string) error {
 	vars.Int(&config.snap, "Snap", -1)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "overlap")
 	vars.Float(&config.exclusionRadiusMult, "ExclusionRadiusMult", 1)
-	
+
 	if fname == "" {
-		return nil
+		if len(flags) == 0 {
+			return nil
+		}
+		err := parse.ReadFlags(flags, vars)
+		if err != nil {
+			return err
+		}
+		return config.validate()		
 	}
 	if err := parse.ReadConfig(fname, vars); err != nil {
+		return err
+	}
+	if err := parse.ReadFlags(flags, vars); err != nil {
 		return err
 	}
 	
@@ -167,8 +177,9 @@ func (config *IDConfig) validate() error {
 
 // Run executes the ID mode of shellfish tool.
 func (config *IDConfig) Run(
-	flags []string, gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {	
+
 	if logging.Mode != logging.Nil {
 		log.Println(`
 ##################

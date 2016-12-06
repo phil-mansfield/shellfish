@@ -42,6 +42,9 @@ will need the version control software [git](https://git-scm.com/) installed on 
 machine. Run the shell script `download.sh` (no need for root access). To test whether
 installation was successful, type `$ shellfish hello`.
 
+After you've downloaded shellfish for the first time, you can update it to the latest
+version at any time by running the shell script `update.sh`.
+
 ### How to Use Shellfish
 
 Shellfish is a set of unix-like command line tools which produce human-readable catalogs.

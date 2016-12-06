@@ -180,8 +180,9 @@ func (config *GlobalConfig) validate() error {
 		return fmt.Errorf("The 'HaloRadiusUnits' variable isn't set.")
 	default:
 		return fmt.Errorf("The 'HaloRadiusUnits variable is set to '%s', "+
-		"which I don't support. Only supported units are " +
-		"ckpc/h and cMpc/h", config.HaloPositionUnits)
+			"which I don't support. Only supported units are " +
+			"ckpc/h, cMpc/h, pkpc/h, pMpc/h, ckpc, cMpc, pkpc, and pMpc",
+			config.HaloPositionUnits)
 	}
 
 	config.HaloMassUnits = strings.Join(

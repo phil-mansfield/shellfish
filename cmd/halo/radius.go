@@ -111,10 +111,16 @@ func (r Radius) Mass(c *io.CosmologyHeader, rs, out []float64) {
 
 // UnitConversionFactor returns the multiplicative factor needed to convert
 // the given units into cMpc/h.
-func UnitConversionFactor(unitStr string) float64 {
+func UnitConversionFactor(unitStr string, cosmo *io.CosmologyHeader) float64 {
 	switch unitStr {
-	case "cMpc/h": return 1.0
+	case "cMpc/h": return 1
 	case "ckpc/h": return 1e-3
+	case "pMpc/h": return (1 + cosmo.Z)
+	case "pkpc/h": return 1e-3 * (1 + cosmo.Z)
+	case "cMpc": return cosmo.H100
+	case "ckpc": return 1e-3 * cosmo.H100
+	case "pMpc": return (1 + cosmo.Z) * cosmo.H100
+	case "pkpc": return 1e-3 * (1 + cosmo.Z) * cosmo.H100
 	default: panic(fmt.Sprintf("Unrecognized unit string '%s'", unitStr))
 	}
 }

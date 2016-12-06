@@ -72,7 +72,7 @@ func (vc *VarColumns) GetColumn(
 	
 	rad.Radius(cosmo, ms, rs)
 	// Convert from Mpc/h to the units of the halo catalog.
-	ucf := UnitConversionFactor(vc.RadiusUnits)
+	ucf := UnitConversionFactor(vc.RadiusUnits, cosmo)
 	for i := range rs {
 		rs[i] /= ucf
 	}

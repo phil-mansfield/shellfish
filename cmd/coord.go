@@ -173,12 +173,18 @@ func readHaloCoords(
 	ids, snaps []int, valNames []string, vars *halo.VarColumns,
 	buf io.VectorBuffer, e *env.Environment, gConfig *GlobalConfig,
 ) (cols [][]float64, err error) {
+	if len(snaps) == 0 { return nil, nil }
+
 	snapBins, idxBins := binBySnap(snaps, ids)
 
 	cols = make([][]float64, len(valNames))
 	for i := range cols {
 		cols[i] = make([]float64, len(ids))
 	}
+
+	hds, _, err := memo.ReadHeaders(snaps[0], buf, e)
+	if err != nil { return nil, err }
+	cosmo := &hds[0].Cosmo
 
 	for snap, _ := range snapBins {
 		if snap == -1 {
@@ -198,12 +204,16 @@ func readHaloCoords(
 		for i := range valNames {
 			switch valNames[i] {
 			case "X", "Y", "Z":
-				ucf := halo.UnitConversionFactor(gConfig.HaloPositionUnits)
+				ucf := halo.UnitConversionFactor(
+					gConfig.HaloPositionUnits, cosmo,
+				)
 				for j := range scols[i] {
 					scols[i][j] *= ucf
 				}
 			case "R200m", "R200c", "R500c", "Rs" :
-				ucf := halo.UnitConversionFactor(gConfig.HaloRadiusUnits)
+				ucf := halo.UnitConversionFactor(
+					gConfig.HaloRadiusUnits, cosmo,
+				)
 				for j := range scols[i] {
 					scols[i][j] *= ucf
 				}

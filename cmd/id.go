@@ -382,6 +382,8 @@ func findOverlapSubs(
 		return nil, err
 	}
 	hd := hds[0]
+	cosmo := &hd.Cosmo
+
 	for snap, group := range snapGroups {
 		rids, err := memo.ReadSortedRockstarIDs(
 			snap, -1, "M200m", vars, buf, e,
@@ -396,8 +398,8 @@ func findOverlapSubs(
 			return nil, err
 		}
 		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
-		rucf := halo.UnitConversionFactor(gConfig.HaloRadiusUnits)
-		pucf := halo.UnitConversionFactor(gConfig.HaloPositionUnits)
+		rucf := halo.UnitConversionFactor(gConfig.HaloRadiusUnits, cosmo)
+		pucf := halo.UnitConversionFactor(gConfig.HaloPositionUnits, cosmo)
 		for i := range rs {
 			rs[i] *= rucf // Rusev, crush!
 			xs[i] *= pucf
@@ -449,6 +451,7 @@ func readSubIDs(
 		return nil, nil, err
 	}
 	hd := hds[0]
+	cosmo := &hd.Cosmo
 
 	for snap, group := range snapGroups {
 		rids, err := memo.ReadSortedRockstarIDs(
@@ -461,8 +464,8 @@ func readSubIDs(
 			snap, []string{"X", "Y", "Z", "R200m"}, rids, vars, buf, e,
 		)
 		xs, ys, zs, rs := vals[0], vals[1], vals[2], vals[3]
-		rucf := halo.UnitConversionFactor(gConfig.HaloRadiusUnits)
-		pucf := halo.UnitConversionFactor(gConfig.HaloPositionUnits)
+		rucf := halo.UnitConversionFactor(gConfig.HaloRadiusUnits, cosmo)
+		pucf := halo.UnitConversionFactor(gConfig.HaloPositionUnits, cosmo)
 		for i := range rs {
 			rs[i] *= rucf
 			xs[i] *= pucf

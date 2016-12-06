@@ -160,7 +160,8 @@ func (config *GlobalConfig) validate() error {
 	)
 
 	switch config.HaloPositionUnits {
-	case "cMpc/h", "ckpc/h":
+	case "cMpc/h", "ckpc/h", "pMpc/h", "pkpc/h":
+	case "cMpc", "ckpc", "pMpc", "pkpc":
 	case "":
 		return fmt.Errorf("The 'HaloPositionUnits' variable isn't set.")
 	default:
@@ -421,7 +422,8 @@ HaloValueComments = "", "cMpc/h", "cMpc/h", "cMpc/h", "Msun/h"
 
 # HaloPositionUnits are the units which your halo catalog reports positions in.
 # Currently supported values are "cMpc/h" and "ckpc/h" (the "c" stands for
-# "comoving").
+# "comoving") and "pMpc/h" and "pkpc/h" (the "p" stands for "physical"). The
+# same units without the "/h" are also supported.
 HaloPositionUnits = cMpc/h
 # HaloRadiusUnits are the units which your halo catalog reports radii in.
 # Currently supported values are "cMpc/h" and "ckpc/h" (the "c" stands for

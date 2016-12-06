@@ -476,11 +476,16 @@ func checkMemoDir(memoDir, configFile string) error {
 	}
 
 	if !configEqual(config, memoConfig) {
-		return fmt.Errorf("The variables in the config file '%s' do not "+
-			"match the varables used when creating the MemoDir, '%s.' These "+
-			"variables can be compared by inspecting '%s' and '%s'",
-			configFile, memoDir, configFile, memoConfigFile,
-		)
+		return fmt.Errorf(`You've changed the variables in the config file %s in a way that would invlalidate the files Shellfish cached in %s (i.e. MemoDir) to speed up performance. Maybe you wanted this (e.g. there was a mistake in the old config file), but maybe you didn't.
+
+If you wanted to make the change and you're SURE there's nothing that you care about in MemoDir, type the command
+    $ rm -r %s
+and rerun shellfish. (Shellfish could do this for you automatically, but I don't want to accidentally delete something you care about.)
+
+If you want to check what the change is, or if you lost the old config file and want it back, you can find a copy in %s
+
+If you accidentally wrote down the wrong path in the MemoDir variable in %s, you should change it.
+` , configFile, memoDir, memoDir, memoConfigFile, configFile)
 	}
 	return nil
 }

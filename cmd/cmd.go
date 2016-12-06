@@ -139,10 +139,6 @@ func (config *GlobalConfig) validate() error {
 		return fmt.Errorf("You are attempting to run a config file from the " + 
 			"future: The 'Version' variable is set to %s, but the version of " +
 			"the source code is %s", config.Version, version.SourceVersion)
-	} else {
-		return fmt.Errorf("The 'Version' variable is set to %s, but the "+
-			"version of the source is %s",
-			config.Version, version.SourceVersion)
 	}
 
 	switch config.SnapshotType {

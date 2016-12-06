@@ -196,6 +196,7 @@ func (config *ShellConfig) Run(
 ## shellfish shell ##
 #####################`,
 		)
+		log.Println("RNG Seed is", randSeed)
 	}
 	var t time.Time
 	if logging.Mode == logging.Performance {
@@ -537,7 +538,7 @@ func createHalos(
 
 func normVecs(n int) [][3]float32 {
 	var vecs [][3]float32
-	gen := rand.NewTimeSeed(rand.Xorshift)
+	gen := rand.New(rand.Xorshift, randSeed)
 	switch n {
 	case 3:
 		vecs = [][3]float32{{0, 0, 1}, {0, 1, 0}, {1, 0, 0}}

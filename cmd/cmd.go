@@ -4,10 +4,10 @@ package cmd
 
 import (
 	"fmt"
-	//"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/logging"
@@ -521,3 +521,6 @@ func (config *GlobalConfig) Run(
 ) ([]string, error) {
 	panic("GlobalConfig.Run() should never be executed.")
 }
+
+// This needs to be global for debugging purposes.
+var randSeed = uint64(time.Now().UnixNano())

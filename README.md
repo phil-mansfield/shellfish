@@ -31,7 +31,7 @@ second is compiling Shellfish and its dependencies (which is completely painless
 
 If you are working on a computer that you own, download the latest version of the Go
 compiler from [here](https://golang.org/doc/install) and follow the instructions.
-If you are working on a cluster, you can also ask the cluster staff to install the
+If you are working on a cluster, It's probably easiest to ask the cluster staff to install the
 compiler for you. Regardless of how you install it, you will need to make a few changes
 to your `.profile` file, so make sure to read the section titled *Test your installation*
 and run the hello world program there (don't worry: you don't need to know the language to

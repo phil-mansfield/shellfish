@@ -19,7 +19,7 @@ cat my_halo_catalog.txt | shellfish shell | shellfish stats > my_splashback_cata
 While this works, it can be a bit annoying for five reasons: first, whatever halo catalogs
 you are using probably don't come in this column order naturally; second, Shellfish's
 [memory constraints](https://github.com/phil-mansfield/shellfish/blob/master/doc/resources.md)
-as of version 0.2.0 will force you to run it on no more than a few thousand halos at a time
+as of version 1.0.0 will force you to run it on no more than a few thousand halos at a time
 (an issue which is [currently being worked on for version 1.1.0](https://github.com/phil-mansfield/shellfish/issues/127));
 third, Shellfish's [convergence limits](https://github.com/phil-mansfield/shellfish/blob/master/doc/convergence.md);
 fourth, if you want to look at the accretion history of a halo, you'll need to read

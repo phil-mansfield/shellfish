@@ -131,7 +131,15 @@ func (config *GlobalConfig) validate() error {
 			err.Error())
 	}
 	smajor, sminor, spatch, _ := version.Parse(version.SourceVersion)
-	if major != smajor || minor != sminor || patch != spatch {
+	if (smajor == 0 || major == 0) && (major != smajor || minor != sminor || patch != spatch) {
+		return fmt.Errorf("The 'Version' variable is set to %s, but the "+
+			"version of the source is %s",
+			config.Version, version.SourceVersion)
+	} else if (smajor == 1 && major == 1) && (minor > sminor || patch > spatch) {
+		return fmt.Errorf("You are attempting to run a config file from the " + 
+			"future: The 'Version' variable is set to %s, but the version of " +
+			"the source code is %s", config.Version, version.SourceVersion)
+	} else {
 		return fmt.Errorf("The 'Version' variable is set to %s, but the "+
 			"version of the source is %s",
 			config.Version, version.SourceVersion)

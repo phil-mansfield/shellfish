@@ -47,15 +47,17 @@ halo positions that is exactly the format that the shell program needs.
 If you don't want to generate an ID catalog yourself, Shellfish can do it for you. The
 most useful way to do this is the following:
 ```bash
-shellfish id --IDType m200m --IDStart 500 --IDEnd 1000 |
+shellfish id --M200mMin 1e14 --M200mMax 2.5e15 --Snap 100 |
     shellfish coord |
     shellfish shell |
     shellfish stats > my_splashback_catalog.txt
 ```
-That first line will parse your halo catalog and extract the 500th-1000th most massive
-halos (using 0-indexing). It will also remove halos which are highly likely to be within
-the splashback shell of a larger halo (since shells haven't been calculated yet, this
-is done heuristically). The remaining lines pass those IDs through the rest of the pipeline.
+That first line will parse the 100th snapshot in your simulation, and extract
+all the halos with 1e14 M_sun/h < M200m < 2.5e15 M_sun/h. It will also remove halos
+which are highly likely to be within the splashback shell of a larger halo. (Since
+shells haven't been calculated yet, this is done heuristically. Support for identifying
+subhalos correctly is an open issue for Shellfish 
+version 1.1.0). The remaining lines pass those IDs through the rest of the pipeline.
 
 If you want to track every halo back in time, fill out the variables that start with 
 `Tree` in the file `$SHELLFISH_GLOBAL_CONFIG` points to.
@@ -72,11 +74,12 @@ an optional, program-specific configuration file. These config files fill the sa
 as command line flags. For example, the command 
 
 ```bash
-shellfish id --IDType m200m --IDStart 500 --IDEnd 1000 |
+shellfish id --IDStart 500 --IDEnd 1000 --Snap 100 |
     shellfish coord |
     shellfish shell |
     shellfish stats > my_splashback_catalog.txt
 ```
+(which selects the 500th - 1000th largest halos)
 
 could be written as
 
@@ -93,6 +96,7 @@ where `500_1000.id.config` is the file
 IDType = M200m
 IDStart = 500
 IDEnd = 1000
+Snap = 100
 ```
 
 You can find the full list of configuration variables for each program through
@@ -105,7 +109,7 @@ different values, the command line flags will win.
 ### Keeping subhalos in the output of ID
 
 ```
-shellfish id --IDType m200m --IDStart 500 --IDEnd 1000 --ExclusionStrategy none
+shellfish id --M200mMin 1e14 --M200mMax 2.5e15 --ExclusionStrategy none
 ```
 
 ### Extracting arbitraty coordinates with coord

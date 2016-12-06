@@ -37,10 +37,7 @@ func (config *CoordConfig) ReadConfig(fname string, flags []string) error {
 		if len(flags) == 0 {
 			return nil
 		}
-		err := parse.ReadFlags(flags, vars)
-		if err != nil {
-			return err
-		}
+		return parse.ReadFlags(flags, vars)
 	}
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err

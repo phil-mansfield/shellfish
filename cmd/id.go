@@ -109,8 +109,8 @@ func (config *IDConfig) ReadConfig(fname string, flags []string) error {
 	vars.Int(&config.snap, "Snap", -1)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "overlap")
 	vars.Float(&config.exclusionRadiusMult, "ExclusionRadiusMult", 1)
-	vars.Float(&config.m200mMax, "M200mStart", 0)
-	vars.Float(&config.m200mMin, "M200mEnd", 0)
+	vars.Float(&config.m200mMax, "M200mMax", 0)
+	vars.Float(&config.m200mMin, "M200mMin", 0)
 
 	if fname == "" {
 		if len(flags) == 0 {

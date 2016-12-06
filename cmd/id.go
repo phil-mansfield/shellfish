@@ -22,9 +22,10 @@ type IDConfig struct {
 	idType                     string
 	ids                        []int64
 	idStart, idEnd, snap, mult int64
+	m200mMax, m200mMin         float64
 
-	exclusionStrategy   string
-	exclusionRadiusMult float64
+	exclusionStrategy          string
+	exclusionRadiusMult        float64
 }
 
 var _ Mode = &IDConfig{}
@@ -60,6 +61,13 @@ IDs = 10, 11, 12, 13, 14
 # IDStart = 10
 # IDEnd = 15
 
+# Yet another alternative way to select IDs is to specify the starting and
+# ending mass range (units are M_sun/h). IDType, IDs, IDStart, and IDEnd will
+# be ignored if these variables are set.
+#
+# M200mMin = 1e12
+# M200mMax = 1e13
+
 # ExclusionStrategy determines how to exclude IDs from the given set. This is
 # useful because splashback shells are not particularly meaningful for
 # subhalos. It can be set to the following modes:
@@ -76,11 +84,9 @@ IDs = 10, 11, 12, 13, 14
 # ExclusionStrategy = overlap
 
 # ExclusionRadiusMult is a multiplier of R200m applied for the sake of
-# determining exclusions.
+# determining exclusions. ExclusionRadiusMult defaults to 0.8 if not set.
 #
-# ExclusionRadiusMult defaults to 1 if not set.
-#
-# ExclusionRadiusMult = 1
+# ExclusionRadiusMult = 0.8
 
 # Mult is the number of times a given ID should be repeated. This is most useful
 # if you want to estimate the scatter in shell measurements for halos with a
@@ -103,6 +109,8 @@ func (config *IDConfig) ReadConfig(fname string, flags []string) error {
 	vars.Int(&config.snap, "Snap", -1)
 	vars.String(&config.exclusionStrategy, "ExclusionStrategy", "overlap")
 	vars.Float(&config.exclusionRadiusMult, "ExclusionRadiusMult", 1)
+	vars.Float(&config.m200mMax, "M200mStart", 0)
+	vars.Float(&config.m200mMin, "M200mEnd", 0)
 
 	if fname == "" {
 		if len(flags) == 0 {
@@ -145,22 +153,6 @@ func (config *IDConfig) validate() error {
 			"which I don't recognize.", config.exclusionStrategy)
 	}
 
-	// TODO: Check the ranges of the IDs as well as IDStart and IDEnd
-	/*
-	if len(config.ids) == 0 {
-		switch {
-		case config.idStart == -1 && config.idEnd == -1:
-			return fmt.Errorf("'IDs' variable not set.")
-		case config.idStart == -1:
-			return fmt.Errorf("'IDStart variable not set.")
-		case config.idEnd == -1:
-			return fmt.Errorf("'IDEnd' variable not set.")
-		case config.idEnd < config.idStart:
-			return fmt.Errorf("'IDEnd' variable set to %d, but 'IDStart' "+
-				"variable set to %d.", config.idEnd, config.idStart)
-		}
-	} */
-
 	switch {
 	case config.snap == -1:
 		return fmt.Errorf("'Snap' variable not set.")
@@ -170,6 +162,13 @@ func (config *IDConfig) validate() error {
 
 	if config.mult <= 0 {
 		return fmt.Errorf("'Mult' variable set to %d", config.mult)
+	}
+
+	switch {
+	case config.m200mMax < 0:
+		return fmt.Errorf("M200mStart set to %g", config.m200mMax)
+	case config.m200mMax > config.m200mMin:
+		fmt.Errorf("M200mEnd smaller than M200mStart")
 	}
 
 	return nil
@@ -201,16 +200,29 @@ func (config *IDConfig) Run(
 	}
 	// Get IDs and snapshots
 
-	rawIds, err := getIDs(config.idStart, config.idEnd, config.ids, stdin)
-	if err != nil {
-		return nil, err
-	} else if len(rawIds) == 0 {
-		return nil, nil
-	}
 	vars := halo.NewVarColumns(
 		gConfig.HaloValueNames, gConfig.HaloValueColumns,
 		gConfig.HaloRadiusUnits,
 	)
+
+	if config.m200mMax > 0 {
+		getMassIDRange(gConfig, e, config, vars)
+	}
+
+	// This is kind of a hack to deal with the case where there are no IDs in
+	// the specified mass range.
+	var (
+		rawIds []int
+		err error
+	)
+	if config.idStart <= config.idEnd {
+		rawIds, err = getIDs(config.idStart, config.idEnd, config.ids, stdin)
+		if err != nil {
+			return nil, err
+		} else if len(rawIds) == 0 {
+			return nil, nil
+		}
+	}
 
 	var (
 		ids, snaps []int
@@ -314,6 +326,46 @@ func (config *IDConfig) Run(
 
 	return mLines, nil
 }
+
+// getMassRange updates config so that it points to an ID range that
+// corresponds to [M200mMin, M200mMax]
+func getMassIDRange(
+	gConfig *GlobalConfig, e *env.Environment, config *IDConfig,
+	vars *halo.VarColumns,
+) error {
+	config.idType = "m200m"
+	buf, err := getVectorBuffer(
+		e.ParticleCatalog(int(config.snap), 0),
+		gConfig.SnapshotType, gConfig.Endianness,
+	)
+
+	if err != nil { return err }
+
+	rids, err := memo.ReadSortedRockstarIDs(
+		int(config.snap), -1, "M200m", vars, buf, e,
+	)
+	if err != nil { return err }
+	_, vals, err := memo.ReadRockstar(
+		int(config.snap), []string{"M200m"}, rids, vars, buf, e,
+	)
+	if err != nil { return err }
+
+	ms := vals[0]
+	config.idStart, config.idEnd = -1, -1
+	for i := range ms {
+		if config.idStart == -1 && config.m200mMax >= ms[i] {
+			config.idStart = int64(i)
+		}
+		if config.m200mMin > ms[i] {
+			config.idEnd = int64(i-1)
+			return nil
+		}
+	}
+
+	config.idEnd = int64(len(ms) - 1)
+	return nil
+}
+
 
 func getIDs(idStart, idEnd int64, ids []int64, stdin []string) ([]int, error) {
 	if idStart != -1 {

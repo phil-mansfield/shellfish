@@ -25,8 +25,7 @@ func MemString() string {
 	ms := runtime.MemStats{}
 	runtime.ReadMemStats(&ms)
 	return fmt.Sprintf(
-		`Program Allocation: %d MB
-System Allocation: %d MB
-Integrated Allocation: %d MB`, ms.Alloc, ms.Sys, ms.TotalAlloc,
+		"Alloc - %d MB; Sys - %d MB Integrated - %d MB",
+		ms.Alloc >> 20, ms.Sys >> 20, ms.TotalAlloc >> 20,
 	)
 }

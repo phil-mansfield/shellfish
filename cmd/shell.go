@@ -186,10 +186,13 @@ func (config *ShellConfig) validate() error {
 	return nil
 }
 
+// I know, I know. This makes the benchmarking code _much_ cleaner, though.
+var tStart time.Time
+
 func (config *ShellConfig) Run(
 	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
-
+	log.Println(logging.Mode)
 	if logging.Mode != logging.Nil {
 		log.Println(`
 #####################
@@ -200,7 +203,7 @@ func (config *ShellConfig) Run(
 	}
 	var t time.Time
 	if logging.Mode == logging.Performance {
-		t = time.Now()
+		tStart = time.Now()
 	}
 
 	// Parse.
@@ -258,7 +261,7 @@ func (config *ShellConfig) Run(
 
 	if logging.Mode == logging.Performance {
 		log.Printf("Time: %s", time.Since(t).String())
-		log.Printf("Memory:\n%s", logging.MemString())
+		log.Printf("Memory: %s", logging.MemString())
 	}
 
 	return append([]string{cString}, lines...), nil
@@ -344,10 +347,23 @@ func loop(
 			return err
 		}
 
+		if logging.Mode == logging.Performance {
+			log.Printf("Snap %d, sphereLoop ended", snap)
+			log.Printf("Time: %s", time.Since(tStart).String())
+			log.Printf("Memory: %s", logging.MemString())
+		}
+		
 		// Analysis
 		if err = haloAnalysis(halos, idxs, c, ringBuf, out); err != nil {
 			return err
 		}
+
+		if logging.Mode == logging.Performance {
+			log.Printf("Snap %d, haloAnalysis ended", snap)
+			log.Printf("Time: %s", time.Since(tStart).String())
+			log.Printf("Memory: %s", logging.MemString())
+		}
+
 	}
 
 	return nil
@@ -372,6 +388,12 @@ func sphereLoop(
 			continue
 		}
 
+		if logging.Mode == logging.Performance {
+			log.Printf("Snap %d, HD %d", snap, i)
+			log.Printf("Time: %s", time.Since(tStart).String())
+			log.Printf("Memory: %s", logging.MemString())
+		}
+		
 		sphBuf.xs, sphBuf.ms, _, err = buf.Read(files[i])
 		if err != nil {
 			return err

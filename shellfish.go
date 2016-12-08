@@ -14,6 +14,7 @@ import (
 	"github.com/phil-mansfield/shellfish/cmd"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/version"
+	"github.com/phil-mansfield/shellfish/logging"
 )
 
 var helpStrings = map[string]string{
@@ -388,6 +389,18 @@ func main() {
 	if err != nil {
 		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 		fmt.Println("Shellfish terminating.")
+		os.Exit(1)
+	}
+
+	switch gConfig.Logging {
+	case "nil":
+		logging.Mode = logging.Nil
+	case "performance":
+		logging.Mode = logging.Performance
+	case "debug":
+		logging.Mode = logging.Debug
+	default:
+		log.Printf("Unrecognized logging mode, %s", gConfig.Logging)
 		os.Exit(1)
 	}
 	

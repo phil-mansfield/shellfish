@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/env"
-	"github.com/phil-mansfield/shellfish/logging"
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/version"
 )
@@ -109,15 +108,6 @@ func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 	}
 	config.HSnapMax = config.SnapMax
 	config.HSnapMin = config.SnapMin
-
-	switch config.Logging {
-	case "nil":
-		logging.Mode = logging.Nil
-	case "performance":
-		logging.Mode = logging.Performance
-	case "debug":
-		logging.Mode = logging.Debug
-	}
 
 	return config.validate()
 }

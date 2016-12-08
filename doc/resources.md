@@ -7,44 +7,39 @@ This includes collecting the headers of every block in a single place and
 and parsing halo catalogs 
 This can take some time depending on the underlying file format and simulation
 size. This will take a minute or three per snapshot for a billion particle
-simulation and will require a few GB.
+simulation and will require a few GB of RAM. It will generate files which are
+a small fraction of the size of your halo catalogs.
 
 This setup step will be performed every time you use a new global configuration file.
 
 ### Memory
 
-With default setting, Shellfish consumes about 13 MB per halo along with some
-hard-to-model overhead due to storing portions of the underlying particle snapshots
-as well as heap fragmentation. In practice you are safe assuming
-that when analyzing hundreds or thousands of halos, the overhead will not exceed twice
-the minimum (almost always much less than this). If you encounter cases where more than
-25 MB are being used per halo for a large number of halo,
+With default settings and an O(100)-sized halo catalog, Shellfish consumes about
+57 MB of RAM per halo with default parameters. The vast majority of this comes from
+maintaining ~100,000 line of sight profiles per halo, which can't be reduced without
+changing parameters in `shell.config`, although some of this comes from heap
+fragmentation and the overhead of loading in snpashots and causes the memory overhead to
+very slowly increase of time. This increase is largely unimportant unless you are trying
+to stay _exactly_ under your node's memory limit.
+If you encounter cases where
+significantly more than 57 MB are being used per halo for a large number of halos,
 [submit a bug report](https://github.com/phil-mansfield/shellfish/issues).
 
-This ~13-25 MB per halo limit is per-snapshot, meaning that tracking a thousand halos
-across a hundred snapshots will consume 13-25 GB, not multiple TB.
-
-In version 1.1.0, you will be able to specify a maximum memory limit for Shellfish,
+In version 1.1.0 of Shellfish, you will be able to specify a maximum memory limit for Shellfish,
 and it will do all its analysis without exceeding this limit, regardless of halo count.
-If you need to analyze a large number of halos now, you will need to manually split up
-the input catalogs.
+If you need to analyze a large number of halos in version 1.0.0, you will need to manually
+split up the input catalogs.
 
 ### CPU Time
 
 Rigorous benchmarks coming soon!
 
-(On my machine with the default `shell.config` parameters, single-threaded analysis
-takes about eight seconds for every 100,000 particles within the R200m radii of all
-the analyzed halos. If you find that you are getting significantly worse performance
-on your machine, [let me know](https://github.com/phil-mansfield/shellfish/issues).
-This means that Shellfish runs at about the same speed at Rockstar for the same
-number of particles.)
-
-**Note**: This is only true for isolated halos. Small halos which are close to clusters
-can take as long to analyze as the clusters themselves. The real figure of merit is how
-many particles are contained within 3*R200m, a value which is only loosely correlated
-with how many particles are contained within R200m. However, most halo catalogs do not
-contain this information.
+(On my machine with the default `shell.config` parameters, in one hour Shellfish can
+a colleciton of halos which together contain 7 million particles within their R200m
+spheres, regarless of their size. Parallelization is good, meaning that you can speed this
+up by a factor of 16 by running Shellfish on a node with 16 cores available.
+If you find that you are getting significantly worse performance
+on your machine, [let me know](https://github.com/phil-mansfield/shellfish/issues).)
 
 Shellfish does not currently support MPI. Are parallelism is thread-based and done
 on a single node. In fact, due to the way that caching works,

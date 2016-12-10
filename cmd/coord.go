@@ -179,14 +179,15 @@ func readHaloCoords(
 		cols[i] = make([]float64, len(ids))
 	}
 
-	hds, _, err := memo.ReadHeaders(snaps[0], buf, e)
-	if err != nil { return nil, err }
-	cosmo := &hds[0].Cosmo
-
 	for snap, _ := range snapBins {
 		if snap == -1 {
 			continue
 		}
+
+		hds, _, err := memo.ReadHeaders(snaps[0], buf, e)
+		if err != nil { return nil, err }
+		cosmo := &hds[0].Cosmo
+
 		snapIDs := snapBins[snap]
 		idxs := idxBins[snap]
 

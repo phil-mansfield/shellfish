@@ -25,7 +25,7 @@ type lGadget2Header struct {
 func (gh *lGadget2Header) postprocess(xs [][3]float32, out *Header) {
 	// Assumes the catalog has already been checked for corruption.
 
-	out.N = int64(gh.NPart[1] + gh.NPart[0]<<32)
+	out.N = int64(gh.NPart[1]) + int64(gh.NPart[0])<<32
 	out.TotalWidth = gh.BoxSize
 
 	out.Cosmo.Z = gh.Redshift
@@ -78,7 +78,7 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	_ = readInt32(f, order)
 	binary.Read(f, binary.LittleEndian, gh)
 	_ = readInt32(f, order)
-	count := int(gh.NPart[1] + gh.NPart[0]<<32)
+	count := int(int64(gh.NPart[1]) + int64(gh.NPart[0])<<32)
 	xsBuf = expandVectors(xsBuf[:0], count)
 	idsBuf = expandInts(idsBuf[:0], count)
 
@@ -184,7 +184,7 @@ func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
 		Z: buf.hd.Redshift, OmegaM: buf.hd.Omega0,
 		OmegaL: buf.hd.OmegaLambda, H100: buf.hd.HubbleParam,
 	}
-	totCount := int64(buf.hd.NPartTotal[1] + buf.hd.NPartTotal[0]<<32)
+	totCount := int64(buf.hd.NPartTotal[1]) + int64(buf.hd.NPartTotal[0])<<32
 	buf.mass = calcUniformMass(totCount, buf.hd.BoxSize, c)
 
 	return buf, nil

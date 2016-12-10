@@ -114,6 +114,9 @@ func (config *StatsConfig) ReadConfig(fname string, flags []string) error {
 		if err != nil {
 			return err
 		}
+
+		config.shellFilter = config.shellWidth != 0 &&
+			config.shellParticleFile != ""
 		
 		return config.validate()		
 	}
@@ -126,7 +129,7 @@ func (config *StatsConfig) ReadConfig(fname string, flags []string) error {
 
 	config.shellFilter = config.shellWidth != 0 &&
 		config.shellParticleFile != ""
-
+	
 	return config.validate()
 }
 
@@ -575,6 +578,7 @@ func writeShellParticles(
 	snaps []int, ids []int, particles [][]int64,
 	gConfig *GlobalConfig, config *StatsConfig,
 ) error {
+	
 	snaps64 := make([]int64, len(snaps))
 	for i := range snaps {
 		snaps64[i] = int64(snaps[i])

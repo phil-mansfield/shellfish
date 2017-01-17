@@ -394,7 +394,7 @@ func sphereLoop(
 			log.Printf("Memory: %s", logging.MemString())
 		}
 		
-		sphBuf.xs, sphBuf.ms, _, err = buf.Read(files[i])
+		sphBuf.xs, _, sphBuf.ms, _, err = buf.Read(files[i])
 		if err != nil {
 			return err
 		}

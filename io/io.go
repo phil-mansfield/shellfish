@@ -57,7 +57,7 @@ import (
 // Not threadsafe, obviously.
 type VectorBuffer interface {
 	// Positions in Mpc/h and masses in Msun/h.
-	Read(fname string) (xs [][3]float32, ms []float32, ids []int64, err error)
+	Read(fname string) (xs, vs [][3]float32, ms []float32, ids []int64, err error)
 	Close()
 	IsOpen() bool
 	ReadHeader(fname string, out *Header) error

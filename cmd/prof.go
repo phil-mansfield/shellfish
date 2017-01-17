@@ -321,7 +321,7 @@ func (config *ProfConfig) Run(
 				continue
 			}
 
-			xs, ms, _, err := buf.Read(files[i])
+			xs, _, ms, _, err := buf.Read(files[i])
 			if err != nil {
 				return nil, err
 			}

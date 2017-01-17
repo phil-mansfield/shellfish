@@ -279,7 +279,7 @@ func (config *StatsConfig) Run(
 				continue
 			}
 
-			xs, ms, pIDs, err := buf.Read(files[i])
+			xs, _, ms, pIDs, err := buf.Read(files[i])
 			
 			if err != nil {
 				return nil, err

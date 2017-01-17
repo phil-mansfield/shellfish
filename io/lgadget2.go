@@ -191,19 +191,18 @@ func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
 }
 
 func (buf *LGadget2Buffer) Read(fname string) (
-	[][3]float32, []float32, []int64, error,
+	xs, vs [][3]float32, ms []float32, ids []int64, err error,
 ) {
 	if buf.open {
 		panic("Buffer already open.")
 	}
 	buf.open = true
 
-	var err error
 	buf.xs, buf.ms, buf.ids, err = buf.readLGadget2Particles(
 		fname, buf.order, buf.xs, buf.ms, buf.ids,
 	)
 
-	return buf.xs, buf.ms, buf.ids, err
+	return buf.xs, nil, buf.ms, buf.ids, err
 }
 
 func (buf *LGadget2Buffer) Close() {
@@ -223,7 +222,7 @@ func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
 	if err != nil {
 		return err
 	}
-	xs, _, _, err := buf.Read(fname)
+	xs, _, _, _, err := buf.Read(fname)
 	if err != nil {
 		return err
 	}

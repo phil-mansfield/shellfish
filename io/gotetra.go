@@ -58,16 +58,16 @@ func (buf *GotetraBuffer) MinMass() float32 { return buf.mass }
 func (buf *GotetraBuffer) IsOpen() bool { return buf.open }
 
 func (buf *GotetraBuffer) Read(fname string) (
-	[][3]float32, []float32, []int64, error,
+	xs, vs [][3]float32, ms []float32, ids []int64, err error,
 ) {
 	if buf.open {
 		panic("Buffer already open.")
 	}
 	buf.open = true
 
-	err := readSheetPositionsAt(fname, buf.sheet)
+	err = readSheetPositionsAt(fname, buf.sheet)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	si := 0
@@ -84,7 +84,7 @@ func (buf *GotetraBuffer) Read(fname string) (
 		}
 	}
 
-	return buf.xs, buf.ms, buf.ids, nil
+	return buf.xs, nil, buf.ms, buf.ids, nil
 }
 
 func (buf *GotetraBuffer) Close() {

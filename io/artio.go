@@ -100,7 +100,7 @@ func parseARTIOFilename(fname string) (fileset string, block int, err error) {
 
 func (buf *ARTIOBuffer) Read(
 	filename string,
-) ([][3]float32, []float32, []int64, error) {
+) (xs, vs[][3]float32, ms []float32, ids []int64, err error) {
 	// Open the file.
 	if buf.open {
 		panic("Buffer already open.")
@@ -111,7 +111,7 @@ func (buf *ARTIOBuffer) Read(
 		buf.fileset, artio.OpenHeader, artio.NullContext,
 	)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	defer h.Close()
 
@@ -120,19 +120,19 @@ func (buf *ARTIOBuffer) Read(
 	// knowledge about ARTIO than me should figure this out.
 	err = h.OpenParticles()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Flag N_BODY particles.
 	flags, err := nBodyFlags(h, buf.fileset)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Get SFC range.
 	_, fIdx, err := parseARTIOFilename(filename)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	fileIdxs := h.GetLong(h.Key("particle_file_sfc_index"))
 	sfcStart, sfcEnd := fileIdxs[fIdx], fileIdxs[fIdx+1]-1
@@ -147,7 +147,7 @@ func (buf *ARTIOBuffer) Read(
 			buf.xsBufs[i] = expandVectors(buf.xsBufs[i][:0], int(sCounts[i]))
 			err = h.GetPositionsAt(i, sfcStart, sfcEnd, buf.xsBufs[i])
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, nil, nil, err
 			}
 
 			buf.msBufs[i] = expandScalars(buf.msBufs[i][:0], int(sCounts[i]))
@@ -174,7 +174,7 @@ func (buf *ARTIOBuffer) Read(
 		if emulateHubble {
 			h100 = 0.7
 		} else {
-			return nil, nil, nil, fmt.Errorf(
+			return nil, nil, nil, nil, fmt.Errorf(
 				"ARTIO header does not contain 'hubble' field.",
 			)
 		}
@@ -190,7 +190,7 @@ func (buf *ARTIOBuffer) Read(
 		buf.xsBuf[i][2] *= lengthUnit
 	}
 
-	return buf.xsBuf, buf.msBuf, buf.idsBuf, nil
+	return buf.xsBuf, nil, buf.msBuf, buf.idsBuf, nil
 }
 
 func nBodyFlags(h artio.Fileset, fname string) ([]bool, error) {
@@ -219,7 +219,7 @@ func (buf *ARTIOBuffer) IsOpen() bool {
 }
 
 func (buf *ARTIOBuffer) ReadHeader(fileNumStr string, out *Header) error {
-	xs, _, _, err := buf.Read(fileNumStr)
+	xs, _, _, _, err := buf.Read(fileNumStr)
 	defer buf.Close()
 
 	h, err := artio.FilesetOpen(

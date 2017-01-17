@@ -63,13 +63,13 @@ func readLGadget2Header(
 func (buf *LGadget2Buffer) readLGadget2Particles(
 	path string,
 	order binary.ByteOrder,
-	xsBuf [][3]float32,
+	xsBuf, vsBuf [][3]float32,
 	msBuf []float32,
 	idsBuf []int64,
-) (xs [][3]float32, ms []float32, ids []int64, err error) {
+) (xs, vs [][3]float32, ms []float32, ids []int64, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	defer f.Close()
 
@@ -80,13 +80,21 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	_ = readInt32(f, order)
 	count := int(int64(gh.NPart[1]) + int64(gh.NPart[0])<<32)
 	xsBuf = expandVectors(xsBuf[:0], count)
+	vsBuf = expandVectors(vsBuf[:0], count)
 	idsBuf = expandInts(idsBuf[:0], count)
 
 	_ = readInt32(f, order)
 	readVecAsByte(f, order, xsBuf)
+	_ = readInt32(f, order)
+	_ = readInt32(f, order)
+	readVecAsByte(f, order, vsBuf)
 
 	f.Seek(4*2+12*int64(len(xsBuf))+4*2, 1)
 	readInt64AsByte(f, order, idsBuf)
+
+	// Fix periodicity of particles and convert the units of our velocities.
+
+	rootA := float32(math.Sqrt(float64(gh.Time)))
 
 	tw := float32(gh.BoxSize)
 	for i := range xsBuf {
@@ -101,20 +109,26 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 				math.IsInf(float64(xsBuf[i][j]), 0) ||
 				xsBuf[i][j] < -tw || xsBuf[i][j] > 2*tw {
 
-				return nil, nil, nil, fmt.Errorf(
+				return nil, nil, nil, nil, fmt.Errorf(
 					"Corruption detected in the file %s. I can't analyze it.",
 					path,
 				)
 			}
+
+			for j := 0; j < 3; j++ {
+				vs[i][j] = vs[i][j] * rootA
+			}
 		}
 	}
+
+	panic("Velocities not yet implemented!!")
 
 	msBuf = expandScalars(msBuf, count)
 	for i := range msBuf {
 		msBuf[i] = buf.mass
 	}
 
-	return xsBuf, msBuf, idsBuf, nil
+	return xsBuf, vsBuf, msBuf, idsBuf, nil
 }
 
 func expandVectors(vecs [][3]float32, n int) [][3]float32 {
@@ -153,13 +167,13 @@ func expandInts(ints []int64, n int) []int64 {
 }
 
 type LGadget2Buffer struct {
-	open  bool
-	order binary.ByteOrder
-	hd    lGadget2Header
-	mass  float32
-	xs    [][3]float32
-	ms    []float32
-	ids   []int64
+	open   bool
+	order  binary.ByteOrder
+	hd     lGadget2Header
+	mass   float32
+	xs, vs [][3]float32
+	ms     []float32
+	ids    []int64
 }
 
 func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
@@ -198,8 +212,8 @@ func (buf *LGadget2Buffer) Read(fname string) (
 	}
 	buf.open = true
 
-	buf.xs, buf.ms, buf.ids, err = buf.readLGadget2Particles(
-		fname, buf.order, buf.xs, buf.ms, buf.ids,
+	buf.xs, buf.vs, buf.ms, buf.ids, err = buf.readLGadget2Particles(
+		fname, buf.order, buf.xs, buf.vs, buf.ms, buf.ids,
 	)
 
 	return buf.xs, nil, buf.ms, buf.ids, err

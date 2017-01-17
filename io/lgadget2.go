@@ -88,9 +88,9 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	_ = readInt32(f, order)
 	_ = readInt32(f, order)
 	readVecAsByte(f, order, vsBuf)
-
-	f.Seek(4*2+12*int64(len(xsBuf))+4*2, 1)
-	readInt64AsByte(f, order, idsBuf)
+	_ = readInt32(f, order)
+	_ = readInt32(f, order)
+	readInt64AsByte(f, order, ids)
 
 	// Fix periodicity of particles and convert the units of our velocities.
 

@@ -212,7 +212,7 @@ func (buf *LGadget2Buffer) Read(fname string) (
 		fname, buf.order, buf.xs, buf.vs, buf.ms, buf.ids,
 	)
 
-	return buf.xs, nil, buf.ms, buf.ids, err
+	return buf.xs, buf.vs, buf.ms, buf.ids, err
 }
 
 func (buf *LGadget2Buffer) Close() {

@@ -39,6 +39,7 @@ func Derivs(derivs []float64) SmoothOption {
 	return func(p *smoothParams) { p.derivs = derivs }
 }
 
+
 // Smooth returns a smoothed 1D series as well as the derivative of that series
 // using a Savitzky-Golay filter of the given size. It also takes optional
 // arguments which allow the smoothing to be done in-place.
@@ -75,7 +76,7 @@ func Smooth(
 	for i := range vals {
 		vals[i] = math.Exp(vals[i])
 	}
-
+	
 	return vals, derivs, true
 }
 

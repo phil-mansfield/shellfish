@@ -192,7 +192,6 @@ var tStart time.Time
 func (config *ShellConfig) Run(
 	gConfig *GlobalConfig, e *env.Environment, stdin []string,
 ) ([]string, error) {
-	log.Println(logging.Mode)
 	if logging.Mode != logging.Nil {
 		log.Println(`
 #####################

@@ -243,6 +243,7 @@ func readUnmemoizedHeaders(
 	snap int, buf io.VectorBuffer, e *env.Environment,
 ) ([]io.Header, []string, error) {
 	fmt.Println("Buffer:", buf)
+	fmt.Println("BlockNum:", e.Blocks())
 	files := make([]string, e.Blocks())
 	hds := make([]io.Header, e.Blocks())
 

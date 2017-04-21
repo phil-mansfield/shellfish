@@ -234,6 +234,9 @@ func (config *ShellConfig) Run(
 		e.ParticleCatalog(snaps[0], 0),
 		gConfig.SnapshotType, gConfig.Endianness,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	err = loop(ids, snaps, coords, config, buf, e, out, gConfig.Threads)
 	if err != nil {

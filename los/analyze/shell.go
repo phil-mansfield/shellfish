@@ -149,7 +149,7 @@ func (s Shell) Axes(samples int) (a, b, c float64, aVec [3]float64) {
 	})
 
 	eigen := &mat64.Eigen{}
-	ok := eigen.Factorize(mat, false)
+	ok := eigen.Factorize(mat, false, true)
 	if !ok {
 		panic("Could not factorize inertia tensor.")
 	}

@@ -99,6 +99,8 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	tw := float32(gh.BoxSize)
 	for i := range xsBuf {
 		for j := 0; j < 3; j++ {
+			vsBuf[i][j] = vsBuf[i][j] * rootA
+			
 			if xsBuf[i][j] < 0 {
 				xsBuf[i][j] += tw
 			} else if xsBuf[i][j] >= tw {
@@ -114,14 +116,8 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 					path,
 				)
 			}
-
-			for j := 0; j < 3; j++ {
-				vs[i][j] = vs[i][j] * rootA
-			}
 		}
 	}
-
-	panic("Velocities not yet implemented!!")
 
 	msBuf = expandScalars(msBuf, count)
 	for i := range msBuf {
@@ -216,7 +212,7 @@ func (buf *LGadget2Buffer) Read(fname string) (
 		fname, buf.order, buf.xs, buf.vs, buf.ms, buf.ids,
 	)
 
-	return buf.xs, nil, buf.ms, buf.ids, err
+	return buf.xs, buf.vs, buf.ms, buf.ids, err
 }
 
 func (buf *LGadget2Buffer) Close() {

@@ -14,6 +14,8 @@ Shellfish is currently in version 1.0.0. All future versions are garuanteed to b
 [Phil Mansfield](http://astro.uchicago.edu/people/philip-mansfield.php) at the
 University of Chicago. Shellfish is written in the programming langue [Go](https://golang.org/).
 
+[![DOI](https://zenodo.org/badge/55451007.svg)](https://zenodo.org/badge/latestdoi/55451007)
+
 ### Getting help
 
 If you run into problems that you cannot solve yourself, the best thing to do is to

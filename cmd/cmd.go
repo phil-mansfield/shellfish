@@ -65,6 +65,8 @@ type GlobalConfig struct {
 	Threads         int64
 
 	Logging string
+
+	GadgetNpartNum int64
 }
 
 var _ Mode = &GlobalConfig{}
@@ -102,6 +104,7 @@ func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 
 	vars.Int(&config.Threads, "Threads", -1)
 	vars.String(&config.Logging, "Logging", "nil")
+	vars.Int(&config.GadgetNpartNum, "GadgetNpartNum", 2)
 
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
@@ -276,6 +279,14 @@ func (config *GlobalConfig) validate() error {
 			len(config.HaloValueNames), len(config.HaloValueComments),
 		)
 	}
+
+	if config.GadgetNpartNum > 2 || config.GadgetNpartNum <= 0 {
+		return fmt.Errorf(
+			"GadgetNpartNum set to %d, but the only valid values are 1 and 2.",
+			config.GadgetNpartNum,
+		)
+	}
+
 	
 	return validateFormat(config)
 }
@@ -505,7 +516,18 @@ Threads = -1
 # nil - no logging is performed.
 # performance - runtime and memory consumption logging are written to stderr.
 # debugging - debugging information is written to stderr
-Logging = nil`, version.SourceVersion)
+Logging = nil
+
+# GadgetNpartNum is an optional variable which should only be set when using
+# Gadget files. If your Gadget files use two elements of Npart and Nall to
+# represent the number of dark matter particles in your simulation, set this
+# variable to 2. If every element corresponds to a different particle species,
+# set this variable to 1. GadgetNpartNum defaults to the most common value, 2.
+#
+# If you don't know what your Gadget file does, leave this alone: Shellfish will
+# fail and tell you to change this variable.
+# GadgetNpartNum = 2
+`, version.SourceVersion)
 }
 
 // Run is a dummy method which allows GlobalConfig to conform to the Mode

@@ -6,13 +6,13 @@ import (
 )
 
 func getVectorBuffer(
-	fname, typeString, endiannessString string,
+	fname, typeString, endiannessString string, npartNum int64,
 ) (io.VectorBuffer, error) {
 	switch typeString {
 	case "gotetra":
 		return io.NewGotetraBuffer(fname)
 	case "LGadget-2":
-		return io.NewLGadget2Buffer(fname, endiannessString)
+		return io.NewLGadget2Buffer(fname, endiannessString, npartNum)
 	case "ARTIO":
 		return io.NewARTIOBuffer(fname)
 	}

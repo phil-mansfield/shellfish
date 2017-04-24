@@ -22,10 +22,23 @@ type lGadget2Header struct {
 	Padding [88]byte
 }
 
-func (gh *lGadget2Header) postprocess(xs [][3]float32, out *Header) {
+func (gh *lGadget2Header) postprocess(
+	xs [][3]float32, npartNum int64, out *Header,
+) {
 	// Assumes the catalog has already been checked for corruption.
+	if npartNum == 2 {
+		if gh.NPart[0] > 100 * 1000 {
+			panic(
+				"Simulation contains too many particles. This is probably " +
+				"because GadgetNpartNum is set to 2 when it " +
+				"should be set to 1.",
+			)
+		}
+		out.N = int64(gh.NPart[1]) + int64(gh.NPart[0]) << 32
+	} else {
+		out.N = int64(gh.NPart[0])
+	}
 
-	out.N = int64(gh.NPart[1]) + int64(gh.NPart[0])<<32
 	out.TotalWidth = gh.BoxSize
 
 	out.Cosmo.Z = gh.Redshift
@@ -78,7 +91,21 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 	_ = readInt32(f, order)
 	binary.Read(f, binary.LittleEndian, gh)
 	_ = readInt32(f, order)
-	count := int(int64(gh.NPart[1]) + int64(gh.NPart[0])<<32)
+
+	var count int
+	if buf.npartNum == 2 {
+		if gh.NPart[0] > 100 * 1000 {
+			return nil, nil, nil, nil, fmt.Errorf(
+				"Simulation contains too many particles. This is probably " +
+				"because GadgetNpartNum is set to 2 when it " +
+				"should be set to 1.",
+			)
+		}
+		count = int(int64(gh.NPart[1]) + int64(gh.NPart[0]) << 32)
+	} else {
+		count = int(gh.NPart[0])
+	}
+
 	xsBuf = expandVectors(xsBuf[:0], count)
 	vsBuf = expandVectors(vsBuf[:0], count)
 	idsBuf = expandInts(idsBuf[:0], count)
@@ -163,16 +190,19 @@ func expandInts(ints []int64, n int) []int64 {
 }
 
 type LGadget2Buffer struct {
-	open   bool
-	order  binary.ByteOrder
-	hd     lGadget2Header
-	mass   float32
-	xs, vs [][3]float32
-	ms     []float32
-	ids    []int64
+	open     bool
+	order    binary.ByteOrder
+	hd       lGadget2Header
+	mass     float32
+	xs, vs   [][3]float32
+	ms       []float32
+	ids      []int64
+	npartNum int64
 }
 
-func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
+func NewLGadget2Buffer(
+	path, orderFlag string, npartNum int64,
+) (VectorBuffer, error) {
 	var order binary.ByteOrder = binary.LittleEndian
 	switch orderFlag {
 	case "LittleEndian":
@@ -194,8 +224,21 @@ func NewLGadget2Buffer(path, orderFlag string) (VectorBuffer, error) {
 		Z: buf.hd.Redshift, OmegaM: buf.hd.Omega0,
 		OmegaL: buf.hd.OmegaLambda, H100: buf.hd.HubbleParam,
 	}
-	totCount := int64(buf.hd.NPartTotal[1]) + int64(buf.hd.NPartTotal[0])<<32
+	var totCount int64
+	if buf.npartNum == 2 {
+		if buf.hd.NPartTotal[0] > 100 * 1000 {
+			return nil, fmt.Errorf(
+				"Simulation contains too many particles. This is probably " +
+				"because GadgetNpartNum is set to 2 when it " +
+				"should be set to 1.",
+			)
+		}
+		totCount = int64(buf.hd.NPartTotal[1])+int64(buf.hd.NPartTotal[0])<<32
+	} else {
+		totCount = int64(buf.hd.NPartTotal[0])
+	}
 	buf.mass = calcUniformMass(totCount, buf.hd.BoxSize, c)
+	buf.npartNum = npartNum
 
 	return buf, nil
 }
@@ -237,7 +280,7 @@ func (buf *LGadget2Buffer) ReadHeader(fname string, out *Header) error {
 		return err
 	}
 
-	buf.hd.postprocess(xs, out)
+	buf.hd.postprocess(xs, buf.npartNum, out)
 
 	return nil
 }

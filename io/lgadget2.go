@@ -34,11 +34,11 @@ func (gh *lGadget2Header) postprocess(
 				"should be set to 1.",
 			)
 		}
-		out.N = int64(gh.NPart[1]) + int64(gh.NPart[0]) << 32
+		out.N = int64(gh.NPart[1]) + int64(uint32(gh.NPart[0])) << 32
 	} else {
 		out.N = int64(gh.NPart[0])
 	}
-
+	
 	out.TotalWidth = gh.BoxSize
 
 	out.Cosmo.Z = gh.Redshift
@@ -101,7 +101,7 @@ func (buf *LGadget2Buffer) readLGadget2Particles(
 				"should be set to 1.",
 			)
 		}
-		count = int(int64(gh.NPart[1]) + int64(gh.NPart[0]) << 32)
+		count = int(int64(gh.NPart[1]) + int64(uint32(gh.NPart[0])) << 32)
 	} else {
 		count = int(gh.NPart[0])
 	}
@@ -203,6 +203,7 @@ type LGadget2Buffer struct {
 func NewLGadget2Buffer(
 	path, orderFlag string, npartNum int64,
 ) (VectorBuffer, error) {
+	
 	var order binary.ByteOrder = binary.LittleEndian
 	switch orderFlag {
 	case "LittleEndian":
@@ -224,6 +225,9 @@ func NewLGadget2Buffer(
 		Z: buf.hd.Redshift, OmegaM: buf.hd.Omega0,
 		OmegaL: buf.hd.OmegaLambda, H100: buf.hd.HubbleParam,
 	}
+	
+	buf.npartNum = npartNum
+	
 	var totCount int64
 	if buf.npartNum == 2 {
 		if buf.hd.NPartTotal[0] > 100 * 1000 {
@@ -233,12 +237,13 @@ func NewLGadget2Buffer(
 				"should be set to 1.",
 			)
 		}
-		totCount = int64(buf.hd.NPartTotal[1])+int64(buf.hd.NPartTotal[0])<<32
+		totCount = int64(buf.hd.NPartTotal[1]) + 
+			int64(uint32(buf.hd.NPartTotal[0]))<<32
 	} else {
 		totCount = int64(buf.hd.NPartTotal[0])
 	}
+	
 	buf.mass = calcUniformMass(totCount, buf.hd.BoxSize, c)
-	buf.npartNum = npartNum
 
 	return buf, nil
 }

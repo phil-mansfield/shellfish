@@ -242,11 +242,15 @@ func (f IntFinder) Find(rid int) (int, bool) {
 func readUnmemoizedHeaders(
 	snap int, buf io.VectorBuffer, e *env.Environment,
 ) ([]io.Header, []string, error) {
+	fmt.Println("Buffer:", buf)
+	fmt.Println("BlockNum:", e.Blocks())
 	files := make([]string, e.Blocks())
 	hds := make([]io.Header, e.Blocks())
 
 	for i := range files {
+		fmt.Println("Block:", i)
 		files[i] = e.ParticleCatalog(snap, i)
+		fmt.Println("File:", files[i])
 		err := buf.ReadHeader(files[i], &hds[i])
 		if err != nil {
 			return nil, nil, err

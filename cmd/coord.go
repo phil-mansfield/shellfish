@@ -94,6 +94,7 @@ func (config *CoordConfig) Run(
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(snaps[0], 0),
 		gConfig.SnapshotType, gConfig.Endianness,
+		gConfig.GadgetNpartNum,
 	)
 	if err != nil {
 		return nil, err

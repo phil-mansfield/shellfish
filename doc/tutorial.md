@@ -19,7 +19,7 @@ A detailed description of the resource requirements of Shellfish can be found
 
 ### Common Problems
 
-Some common issues and their solutions can be found [here]((https://github.com/phil-mansfield/shellfish/blob/master/doc/common_problems.md).
+Some common issues and their solutions can be found [here](https://github.com/phil-mansfield/shellfish/blob/master/doc/common_problems.md).
 
 ### Penna Coefficients
 

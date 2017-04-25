@@ -42,7 +42,10 @@ use Shellfish).
 Once you've done this, its time to download and install Shellfish's dependencies. You
 will need the version control software [git](https://git-scm.com/) installed on your
 machine. Run the shell script `download.sh` (no need for root access). To test whether
-installation was successful, type `$ shellfish hello`.
+installation was successful, type `$ shellfish hello`. If you get any errors during this process,
+it means that one of Shellfish's dependencies has changed its public API without warning
+(again): email me or [submit an issue](https://github.com/phil-mansfield/shellfish/issues),
+and I'll fix it.
 
 After you've downloaded shellfish for the first time, you can update it to the latest
 version at any time by running the shell script `update.sh`.
@@ -79,8 +82,3 @@ plase submit an Issue requesting support. Shellfish is written in a way that
 makes it easy to interact with unsupported halo catalogs and meger trees (as
 covered in [the tutorial](https://github.com/phil-mansfield/shellfish/blob/master/doc/tutorial.md)),
 but feel free to submit an issue requesting support as well.
-
-### Next Planned Release
-
-The next planned release is version 1.0.0, which will contain a finalized API and
-complete documentation.

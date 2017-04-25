@@ -152,49 +152,56 @@ func (config *GlobalConfig) validate() error {
 			"which I don't recognize.", config.HaloType)
 	}
 
-	config.HaloPositionUnits = strings.Join(
-		strings.Split(config.HaloPositionUnits, " "), "",
-	)
+	if config.HaloType == "nil" {
+		
+		config.HaloPositionUnits = strings.Join(
+			strings.Split(config.HaloPositionUnits, " "), "",
+		)
+		
+		switch config.HaloPositionUnits {
+		case "cMpc/h", "ckpc/h", "pMpc/h", "pkpc/h":
+		case "cMpc", "ckpc", "pMpc", "pkpc":
+		case "":
+			return fmt.Errorf("The 'HaloPositionUnits' variable isn't set.")
+		default:
+			return fmt.Errorf("The 'HaloPositionUnits variable is set to '%s',"+
+				" which I don't support. Only supported units are " +
+				"ckpc/h and cMpc/h", config.HaloPositionUnits)
+		}
+		
+		config.HaloRadiusUnits = strings.Join(
+			strings.Split(config.HaloRadiusUnits, " "), "",
+		)
 
-	switch config.HaloPositionUnits {
-	case "cMpc/h", "ckpc/h", "pMpc/h", "pkpc/h":
-	case "cMpc", "ckpc", "pMpc", "pkpc":
-	case "":
-		return fmt.Errorf("The 'HaloPositionUnits' variable isn't set.")
-	default:
-		return fmt.Errorf("The 'HaloPositionUnits variable is set to '%s', "+
-			"which I don't support. Only supported units are " +
-			"ckpc/h and cMpc/h", config.HaloPositionUnits)
+		switch config.HaloRadiusUnits {
+		case "cMpc/h", "ckpc/h":
+		case "":
+			return fmt.Errorf("The 'HaloRadiusUnits' variable isn't set.")
+		default:
+			return fmt.Errorf("The 'HaloRadiusUnits variable is set to '%s', "+
+				"which I don't support. Only supported units are " +
+				"ckpc/h, cMpc/h, pkpc/h, pMpc/h, ckpc, cMpc, pkpc, and pMpc",
+				config.HaloPositionUnits)
+		}
+
+		config.HaloMassUnits = strings.Join(
+			strings.Split(config.HaloMassUnits, " "), "",
+		)
+
+		switch config.HaloMassUnits {
+		case "Msun/h":
+		case "":
+			return fmt.Errorf("The 'HaloMassUnits' variable isn't set.")
+		default:
+			return fmt.Errorf("The 'HaloMassUnits variable is set to '%s', "+
+				"which I don't understand.", config.HaloPositionUnits)
+		}
+	} else {
+		config.HaloRadiusUnits = "cMpc/h"
+		config.HaloPositionUnits = "cMpc/h"
+		config.HaloMassUnits = "Msun/h"
 	}
-
-	config.HaloRadiusUnits = strings.Join(
-		strings.Split(config.HaloRadiusUnits, " "), "",
-	)
-
-	switch config.HaloRadiusUnits {
-	case "cMpc/h", "ckpc/h":
-	case "":
-		return fmt.Errorf("The 'HaloRadiusUnits' variable isn't set.")
-	default:
-		return fmt.Errorf("The 'HaloRadiusUnits variable is set to '%s', "+
-			"which I don't support. Only supported units are " +
-			"ckpc/h, cMpc/h, pkpc/h, pMpc/h, ckpc, cMpc, pkpc, and pMpc",
-			config.HaloPositionUnits)
-	}
-
-	config.HaloMassUnits = strings.Join(
-		strings.Split(config.HaloMassUnits, " "), "",
-	)
-
-	switch config.HaloMassUnits {
-	case "Msun/h":
-	case "":
-		return fmt.Errorf("The 'HaloMassUnits' variable isn't set.")
-	default:
-		return fmt.Errorf("The 'HaloMassUnits variable is set to '%s', "+
-			"which I don't understand.", config.HaloPositionUnits)
-	}
-
+	
 	switch config.TreeType {
 	case "consistent-trees", "nil":
 	case "":
@@ -204,18 +211,22 @@ func (config *GlobalConfig) validate() error {
 			"which I don't recognize.", config.TreeType)
 	}
 
-	if config.HaloDir == "" {
-		return fmt.Errorf("The 'HaloDir' variable isn't set.")
-	} else if err = validateDir(config.HaloDir); err != nil {
-		return fmt.Errorf("The 'HaloDir' variable is set to '%s', but %s",
-			config.HaloDir, err.Error())
+	if config.HaloType != "nil" {
+		if config.HaloDir == "" {
+			return fmt.Errorf("The 'HaloDir' variable isn't set.")
+		} else if err = validateDir(config.HaloDir); err != nil {
+			return fmt.Errorf("The 'HaloDir' variable is set to '%s', but %s",
+				config.HaloDir, err.Error())
+		}
 	}
 
-	if config.TreeDir == "" {
-		return fmt.Errorf("The 'TreeDir' variable isn't set.")
-	} else if err = validateDir(config.TreeDir); err != nil {
-		return fmt.Errorf("The 'TreeDir' variable is set to '%s', but %s",
-			config.TreeDir, err.Error())
+	if config.HaloType != "nil" {
+		if config.TreeDir == "" {
+			return fmt.Errorf("The 'TreeDir' variable isn't set.")
+		} else if err = validateDir(config.TreeDir); err != nil {
+			return fmt.Errorf("The 'TreeDir' variable is set to '%s', but %s",
+				config.TreeDir, err.Error())
+		}
 	}
 
 	if config.MemoDir == "" {

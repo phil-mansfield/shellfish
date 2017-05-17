@@ -152,7 +152,7 @@ func (config *GlobalConfig) validate() error {
 			"which I don't recognize.", config.HaloType)
 	}
 
-	if config.HaloType == "nil" {
+	if config.HaloType != "nil" {
 		
 		config.HaloPositionUnits = strings.Join(
 			strings.Split(config.HaloPositionUnits, " "), "",
@@ -174,7 +174,7 @@ func (config *GlobalConfig) validate() error {
 		)
 
 		switch config.HaloRadiusUnits {
-		case "cMpc/h", "ckpc/h":
+		case "cMpc/h","ckpc/h","pMpc/h","pkpc/h", "cMpc","ckpc","pMpc","pkpc":
 		case "":
 			return fmt.Errorf("The 'HaloRadiusUnits' variable isn't set.")
 		default:

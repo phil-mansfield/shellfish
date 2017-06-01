@@ -87,7 +87,7 @@ func ReadFilter(rd io.Reader) (FilterData, error) {
 	data.Snaps = make([]int64, haloNum)
 	data.IDs = make([]int64, haloNum)
 	data.Particles = make([][]int64, haloNum)
-
+	
 	for i := range info {
 		data.Snaps[i] = info[i].Snap
 		data.IDs[i] = info[i].ID

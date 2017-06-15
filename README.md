@@ -41,7 +41,8 @@ use Shellfish).
 
 Once you've done this, its time to download and install Shellfish's dependencies. You
 will need the version control software [git](https://git-scm.com/) installed on your
-machine. Run the shell script `download.sh` (no need for root access). To test whether
+machine. Clone this repo into the directory `$GOROOT/src/github.com/phil-mansfield/shellfish`.
+Run the shell script `download.sh` (no need for root access). To test whether
 installation was successful, type `$ shellfish hello`. If you get any errors during this process,
 it means that one of Shellfish's dependencies has changed its public API without warning
 (again): email me or [submit an issue](https://github.com/phil-mansfield/shellfish/issues),

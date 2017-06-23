@@ -177,7 +177,7 @@ func ParseCols(
 
 	intCols := make([][]int, len(intIdxs))
 	floatCols := make([][]float64, len(floatIdxs))
-
+	
 	for i := range fLines {
 		toks := tokenize(fLines[i])
 
@@ -193,7 +193,7 @@ func ParseCols(
 					return nil, nil, fmt.Errorf("Cannot parse column %d of "+
 						"line %d, '%s', to an int.", j, lineNums[i], toks[j])
 				}
-				intCols[colIdx] = append(intCols[j], n)
+				intCols[colIdx] = append(intCols[colIdx], n)
 			}
 
 			for colIdx, j := range floatIdxs {

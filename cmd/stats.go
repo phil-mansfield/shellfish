@@ -307,7 +307,6 @@ func (config *StatsConfig) Run(
 				}
 
 			}
-
 			buf.Close()
 		}
 	}
@@ -527,7 +526,7 @@ func appendShellParticlesChan(
 	hd *io.Header, xs [][3]float32, pIDs []int64, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64, shellWidth float64,
 	offset, workers int64, outChan chan []int64,
-) {
+) {	
 	buf := []int64{}
 
 	tw2 := float32(hd.TotalWidth) / 2
@@ -535,10 +534,11 @@ func appendShellParticlesChan(
 	order := findOrder(coeffs)
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
 	delta := float64(sphere.R) * shellWidth
+	if shellWidth < 0 { delta = 0 }
 	rLow -= delta
 	rHigh += delta
 	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
-
+		
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
@@ -572,6 +572,7 @@ func appendShellParticlesChan(
 			}
 		}
 	}
+	
 	outChan <- buf
 }
 

@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
-	"strings"
+	"bytes"
 
 	"github.com/phil-mansfield/shellfish/cmd"
 	"github.com/phil-mansfield/shellfish/cmd/env"
@@ -328,22 +328,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	var lines []string
+	var stdinData []byte
 	switch args[1] {
 	case "tree", "coord", "prof", "shell", "stats":
 		var err error
-		lines, err = stdinLines()
+		stdinData, err = ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, err.Error())
 			fmt.Println("Shellfish terminating.")
 			os.Exit(1)
 		}
 
-		if len(lines) == 0 {
+		if len(stdinData) == 0 {
 			return
-		} else if len(lines) == 1 && len(lines[0]) >= 9 &&
-			lines[0][:9] == "Shellfish" {
-			fmt.Println(lines[0])
+		}
+
+		lineEnd := bytes.IndexByte(stdinData, '\n')
+		if lineEnd == -1 { lineEnd = len(stdinData) }
+
+		 if lineEnd >= 9 && string(stdinData[:9]) == "Shellfish" {
+			fmt.Println(string(stdinData)[:lineEnd])
 			os.Exit(1)
 		}
 	}
@@ -404,7 +408,7 @@ func main() {
 		os.Exit(1)
 	}
 	
-	out, err := mode.Run(gConfig, e, lines)
+	out, err := mode.Run(gConfig, e, stdinData)
 	if err != nil {
 		log.Printf("Error running mode %s:\n%s\n", args[1], err.Error())
 		fmt.Println("Shellfish terminating.")
@@ -414,22 +418,6 @@ func main() {
 	for i := range out {
 		fmt.Println(out[i])
 	}
-}
-
-// stdinLines reads stdin and splits it into lines.
-func stdinLines() ([]string, error) {
-	bs, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"Error reading stdin: %s.", err.Error(),
-		)
-	}
-	text := string(bs)
-	lines := strings.Split(text, "\n")
-	if lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
-	return lines, nil
 }
 
 // getFlags reutrns the flag tokens from the command line arguments.

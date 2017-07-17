@@ -2,10 +2,9 @@ package halo
 
 import (
 	"encoding/binary"
-	go_io "io"
+	"io/ioutil"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
 	"github.com/phil-mansfield/shellfish/io"
@@ -275,18 +274,12 @@ func readTable(file string, colIdxs []int) ([][]float64, error) {
 	if err != nil {
 		return nil, err
 	}
-	info, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	bs := make([]byte, info.Size())
-	_, err = go_io.ReadFull(f, bs)
+
+	data, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
 
-	lines := strings.Split(string(bs), "\n")
-
-	_, floats, err := catalog.ParseCols(lines, nil, colIdxs)
+	_, floats, err := catalog.Parse(data, nil, colIdxs)
 	return floats, err
 }

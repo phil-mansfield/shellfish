@@ -35,7 +35,7 @@ type Mode interface {
 	// an initialized GlobalConfig struct, and a slice of lines representing the
 	// contents of stdin. It will return a slice of lines that should be
 	// written to stdout along with an error if one occurs.
-	Run(gConfig *GlobalConfig, e *env.Environment, stdin []string) ([]string, error)
+	Run(gConfig *GlobalConfig, e *env.Environment, stdin []byte) ([]string, error)
 }
 
 // GlobalConfig is a config file used by every mode. It contains information on
@@ -435,7 +435,7 @@ HaloValueColumns = 0, 2, 3, 4, 20
 # HaloValueComments can be used to include notes about, e.g. units in output
 # catalogs. These are not analyzed by Shellfish in any way, but will be
 # propagated to output catalogs when relevant.
-HaloValueComments = "", "cMpc/h", "cMpc/h", "cMpc/h", "Msun/h"
+HaloValueComments = "int", "cMpc/h", "cMpc/h", "cMpc/h", "Msun/h"
 
 # HaloPositionUnits are the units which your halo catalog reports positions in.
 # Currently supported values are "cMpc/h" and "ckpc/h" (the "c" stands for
@@ -544,7 +544,7 @@ Logging = nil
 // Run is a dummy method which allows GlobalConfig to conform to the Mode
 // interface for testing purposes.
 func (config *GlobalConfig) Run(
-	gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []byte,
 ) ([]string, error) {
 	panic("GlobalConfig.Run() should never be executed.")
 }

@@ -58,7 +58,7 @@ func (config *CoordConfig) validate(vars *halo.VarColumns) error {
 }
 
 func (config *CoordConfig) Run(
-	gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []byte,
 ) ([]string, error) {
 
 	if logging.Mode != logging.Nil {
@@ -73,7 +73,7 @@ func (config *CoordConfig) Run(
 		t = time.Now()
 	}
 
-	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
+	intCols, _, err := catalog.Parse(stdin, []int{0, 1}, []int{})
 	if err != nil {
 		return nil, err
 	}
@@ -100,18 +100,44 @@ func (config *CoordConfig) Run(
 		return nil, err
 	}
 
-	columns, err := readHaloCoords(
+	cols, err := readHaloCoords(
 		ids, snaps, config.values, vars, buf, e, gConfig,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	colOrder := make([]int, 2 + len(columns))
-	for i := range colOrder {
-		colOrder[i] = i
+	icols := [][]int{ids, snaps}
+	fcols := [][]float64{}
+	icolOrder := []int{}
+	fcolOrder := []int{}
+
+	intNum := 0
+	for _, valueName := range config.values {
+		j := findString(valueName, gConfig.HaloValueNames)
+		comment := gConfig.HaloValueComments[j]
+		if isIntType(comment) { intNum++ }
 	}
-	lines := catalog.FormatCols([][]int{ids, snaps}, columns, colOrder)
+
+	colOrder := append([]int{0, 1}, make([]int, len(cols))...)
+	for i, valueName := range config.values {
+		j := findString(valueName, gConfig.HaloValueNames)
+		comment := gConfig.HaloValueComments[j]
+
+		if isIntType(comment) {
+			fcol := cols[i]
+			icol := make([]int, len(fcol))
+			for i := range icol { icol[i] = int(fcol[i]) }
+			icols = append(icols, icol)
+			icolOrder = append(icolOrder, i + 2)
+		} else {
+			fcols = append(fcols, cols[i])
+			fcolOrder = append(fcolOrder, i + 2)
+		}
+	}
+
+	colOrder = append(icolOrder, fcolOrder...)
+	lines := catalog.FormatCols(icols, fcols, colOrder)
 
 	cString := makeCommentString(gConfig, config)
 
@@ -123,9 +149,11 @@ func (config *CoordConfig) Run(
 	return append([]string{cString}, lines...), nil
 }
 
+func isIntType(comment string) bool {
+	return comment == "int" || comment == "\"int\""
+}
+
 func makeCommentString(gConfig *GlobalConfig, config *CoordConfig) string {
-	//colNames := make([]string, 2 + len(config.values))
-	//colNames[0], colNames[1] = "ID", "Snap"
 	colNames := make([]string, len(config.values))
 	for i := 0; i < len(config.values); i++ {
 		switch config.values[i] {
@@ -138,7 +166,9 @@ func makeCommentString(gConfig *GlobalConfig, config *CoordConfig) string {
 		
 		j := findString(config.values[i], gConfig.HaloValueNames)
 		if gConfig.HaloValueComments[j] == "" ||
-			gConfig.HaloValueComments[j] == "\"\"" {
+			gConfig.HaloValueComments[j] == "\"\"" ||
+			isIntType(gConfig.HaloValueComments[j]) {
+
 			colNames[i] = config.values[i]
 		} else {
 			colNames[i] = fmt.Sprintf(

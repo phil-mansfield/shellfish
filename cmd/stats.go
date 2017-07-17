@@ -161,7 +161,7 @@ func (config *StatsConfig) validate() error {
 }
 
 func (config *StatsConfig) Run(
-	gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []byte,
 ) ([]string, error) {
 
 	if logging.Mode != logging.Nil {
@@ -181,7 +181,7 @@ func (config *StatsConfig) Run(
 	for i := range floatColIdxs {
 		floatColIdxs[i] = i + len(intColIdxs)
 	}
-	intCols, floatCols, err := catalog.ParseCols(
+	intCols, floatCols, err := catalog.Parse(
 		stdin, intColIdxs, floatColIdxs,
 	)
 

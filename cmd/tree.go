@@ -60,7 +60,7 @@ func (config *TreeConfig) ReadConfig(fname string, flags []string) error {
 func (config *TreeConfig) validate() error { return nil }
 
 func (config *TreeConfig) Run(
-	gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []byte,
 ) ([]string, error) {
 	if logging.Mode != logging.Nil {
 		log.Println(`
@@ -74,7 +74,7 @@ func (config *TreeConfig) Run(
 		t = time.Now()
 	}
 
-	intCols, _, err := catalog.ParseCols(stdin, []int{0, 1}, []int{})
+	intCols, _, err := catalog.Parse(stdin, []int{0, 1}, []int{})
 	if err != nil {
 		return nil, err
 	}

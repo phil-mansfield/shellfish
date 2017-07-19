@@ -61,6 +61,8 @@ func (config *CheckConfig) Run(
 	gConfig *GlobalConfig, e *env.Environment, stdin []byte,
 ) ([]string, error) {
 
+	fmt.Println(config)
+
 	failedTests := []string{}
 
 	buf, err := getVectorBuffer(

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/phil-mansfield/shellfish/io"
@@ -86,7 +87,7 @@ func (config *CheckConfig) Run(
 
 func checkAlmostEq(x, y float64) bool {
 	delta := y / 10
-	return x - y < delta && y - x < delta
+	return math.Abs(x - y) < delta
 }
 
 func headerChecks(

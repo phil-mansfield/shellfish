@@ -190,7 +190,7 @@ func (config *ShellConfig) validate() error {
 var tStart time.Time
 
 func (config *ShellConfig) Run(
-	gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []byte,
 ) ([]string, error) {
 	if logging.Mode != logging.Nil {
 		log.Println(`
@@ -206,7 +206,7 @@ func (config *ShellConfig) Run(
 	}
 
 	// Parse.
-	intCols, coords, err := catalog.ParseCols(
+	intCols, coords, err := catalog.Parse(
 		stdin, []int{0, 1}, []int{2, 3, 4, 5},
 	)
 	if err != nil {

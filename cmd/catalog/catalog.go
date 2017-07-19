@@ -2,7 +2,10 @@ package catalog
 
 import (
 	"fmt"
+	"os"
+	"io/ioutil"
 	"strconv"
+	"bytes"
 	"strings"
 )
 
@@ -134,89 +137,184 @@ func formatFloatCol(col []float64) []string {
 	return out
 }
 
-func Uncomment(lines []string) (out []string, lineNums []int) {
-	for i := range lines {
-		idx := strings.Index(lines[i], "#")
-		if idx >= 0 {
-			lines[i] = lines[i][:idx]
-		}
-	}
-
-	out = []string{}
-	lineNums = []int{}
-	for i := range lines {
-		trimmed := strings.Trim(lines[i], " \t")
-		if len(trimmed) > 0 {
-			out = append(out, trimmed)
-			lineNums = append(lineNums, i+1)
-		}
-	}
-	return out, lineNums
+// Parse parses the specified columns in a byte block.
+func Parse(data []byte, icolIdxs, fcolIdxs []int) (
+[][]int, [][]float64, error,
+) {
+	lines, nComm := split(data, '\n', '#')
+	lines = uncomment(lines, '#', nComm)
+	lines = trim(lines, ' ')
+	return parse(lines, ' ', icolIdxs, fcolIdxs)
 }
 
-func ParseCols(
-	lines []string, intIdxs, floatIdxs []int,
-) ([][]int, [][]float64, error) {
-	if len(intIdxs) == 0 && len(floatIdxs) == 0 {
-		return nil, nil, nil
+func ReadFile(fname string, icolIdxs, fcolIdxs []int) (
+[][]int, [][]float64, error,
+) {
+	f, err := os.Open(fname)
+	if err != nil { return nil, nil, err }
+	data, err := ioutil.ReadAll(f)
+	if err != nil { return nil, nil, err }
+	return Parse(data, icolIdxs, fcolIdxs)
+}
+
+func ReadStdin(fname string, icolIdxs, fcolIdxs []int) (
+[][]int, [][]float64, error,
+) {
+	data, err  := ioutil.ReadAll(os.Stdin)
+	if err != nil { return nil, nil, err }
+	return Parse(data, icolIdxs, fcolIdxs)
+}
+
+// split splits a byte splice at each separating flag. Faster than
+// bytes.Split() because slicing is used instead of allocations and because
+// only one separator is used.
+//
+// Some of the calculations associated with uncommenting are done here for a
+// slight performance boost.
+func split(data []byte, sep, comm byte) (lines [][]byte, nComm int) {
+	n, nComm := 0, 0
+	for _, c := range data {
+		if c == sep { n++ }
+		if c == comm { nComm++ }
 	}
 
-	fLines, lineNums := Uncomment(lines)
-	minWidth := -1
-	for _, x := range intIdxs {
-		if x > minWidth {
-			minWidth = x
+	tokens := make([][]byte, n+1)
+
+	idx := 0
+	for j := 0; j < n; j++ {
+		data = data[idx:]
+		idx = bytes.IndexByte(data, sep)
+		tokens[j] = data[:idx]
+		idx++
+	}
+	tokens[n] = data[idx:]
+
+	return tokens, nComm
+}
+
+// uncomment removes file comments  in the form of "data # comment". Optimized
+// for the common case where comments are rare and at the start of the file.
+func uncomment(lines [][]byte, comm byte, nComm int) [][]byte {
+	if nComm == 0 { return lines }
+
+	for i, line := range lines {
+		commentStart := bytes.IndexByte(line, comm)
+		if commentStart == -1 {
+			continue
+		}
+
+		lines[i] = line[:commentStart]
+
+		n := 1
+		for _, c := range line[commentStart+1:] {
+			if c == comm { n++ }
+		}
+
+		nComm -= n
+		if nComm == 0 { return lines }
+	}
+
+	return lines
+}
+
+// trim removes empty lines.
+func trim(lines [][]byte, sep byte) [][]byte {
+	j := 0
+
+	LineLoop:
+	for i, line := range lines {
+		for _, c := range line {
+			if c != sep {
+				lines[j] = lines[i]
+				j++
+				continue LineLoop
+			}
 		}
 	}
-	for _, x := range floatIdxs {
-		if x > minWidth {
-			minWidth = x
-		}
-	}
-	minWidth++
 
-	intCols := make([][]int, len(intIdxs))
-	floatCols := make([][]float64, len(floatIdxs))
-	
-	for i := range fLines {
-		toks := tokenize(fLines[i])
+	return lines[:j]
+}
 
-		if len(toks) < minWidth {
+func parse(lines [][]byte, sep byte, icolIdxs, fcolIdxs []int) (
+[][]int, [][]float64, error,
+) {
+	// Set up output and buffers
+
+	icols := make([][]int, len(icolIdxs))
+	fcols := make([][]float64, len(fcolIdxs))
+
+	for i := range icols { icols[i] = make([]int, len(lines)) }
+	for i := range fcols { fcols[i] = make([]float64, len(lines)) }
+
+	if len(lines) == 0 { return icols, fcols, nil }
+	buf := make([][]byte, len(bytes.Fields(lines[0])))
+
+
+	var err error
+	for i, line := range lines {
+
+		// Break line up into fields/words
+
+		words := fields(line, sep, buf)
+		if len(words) != len(buf) {
 			return nil, nil, fmt.Errorf(
-				"Line %d has %d columns, but I need %d columns.",
-				lineNums[i], len(toks), minWidth,
+				"Data (not file) line %d has %d columns, not %d.",
+				i+1, len(words), len(buf),
 			)
-		} else {
-			for colIdx, j := range intIdxs {
-				n, err := strconv.Atoi(toks[j])
-				if err != nil {
-					return nil, nil, fmt.Errorf("Cannot parse column %d of "+
-						"line %d, '%s', to an int.", j, lineNums[i], toks[j])
-				}
-				intCols[colIdx] = append(intCols[colIdx], n)
-			}
+		}
 
-			for colIdx, j := range floatIdxs {
-				x, err := strconv.ParseFloat(toks[j], 64)
-				if err != nil {
-					return nil, nil, fmt.Errorf("Cannot parse column %d of "+
-						"line %d, '%s', to a float.", j, lineNums[i], toks[j])
-				}
-				floatCols[colIdx] = append(floatCols[colIdx], x)
-			}
+		// Parse strings.
+
+		for j := range icolIdxs {
+			icols[j][i], err = strconv.Atoi(
+				string(words[icolIdxs[j]]),
+			)
+			if err != nil { return nil, nil, err }
+		}
+		for j := range fcolIdxs {
+			fcols[j][i], err = strconv.ParseFloat(
+				string(words[fcolIdxs[j]]), 64,
+			)
+			if err != nil { return nil, nil, err }
 		}
 	}
 
-	return intCols, floatCols, nil
+	return icols, fcols, nil
 }
 
-func tokenize(line string) []string {
-	toks := strings.Split(line, " ")
-	fToks := []string{}
-	for i := range toks {
-		if len(toks[i]) > 0 {
-			fToks = append(fToks, toks[i])
+// Optimized and buffered analog to the standard library's bytes.FieldsFunc()
+// function.
+func fields(data []byte, sep byte, buf [][]byte) [][]byte {
+	n := 0
+	inField := false
+	for _, c := range data {
+		wasInField := inField
+		inField = sep != c
+		if inField && !wasInField { n++ }
+	}
+
+	na := 0
+	fieldStart := -1
+
+	for i := 0; i < len(data) && na < n; i++ {
+		c := data[i]
+
+		if fieldStart < 0 && c != sep {
+			fieldStart = i
+			continue
+		}
+
+		if fieldStart >= 0 && c == sep {
+			buf[na] = data[fieldStart: i]
+			na++
+			fieldStart = -1
 		}
 	}
-	return fToks
+
+	if fieldStart >= 0 {
+		buf[na] = data[fieldStart: len(data)]
+		na++
+	}
+
+	return buf[0:na]
 }

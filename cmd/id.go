@@ -176,7 +176,7 @@ func (config *IDConfig) validate() error {
 
 // Run executes the ID mode of shellfish tool.
 func (config *IDConfig) Run(
-	gConfig *GlobalConfig, e *env.Environment, stdin []string,
+	gConfig *GlobalConfig, e *env.Environment, stdin []byte,
 ) ([]string, error) {	
 
 	if logging.Mode != logging.Nil {
@@ -370,7 +370,7 @@ func getMassIDRange(
 }
 
 
-func getIDs(idStart, idEnd int64, ids []int64, stdin []string) ([]int, error) {
+func getIDs(idStart, idEnd int64, ids []int64, stdin []byte) ([]int, error) {
 	if idStart != -1 {
 		out := make([]int, idEnd-idStart)
 		for i := range out {
@@ -384,7 +384,7 @@ func getIDs(idStart, idEnd int64, ids []int64, stdin []string) ([]int, error) {
 		}
 		return out, nil
 	} else {
-		intCols, _, err := catalog.ParseCols(stdin, []int{0}, []int{})
+		intCols, _, err := catalog.Parse(stdin, []int{0}, []int{})
 		if err != nil {
 			return nil, err
 		}

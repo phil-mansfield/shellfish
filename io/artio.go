@@ -299,3 +299,7 @@ func (buf *ARTIOBuffer) MinMass() float32 {
 	}
 	return minMass
 }
+
+func (buf *ARTIOBuffer) TotalParticles(fname string) (int, error) {
+	return -1, nil
+}

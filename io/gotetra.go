@@ -249,3 +249,7 @@ func readSheetPositionsAt(file string, xsBuf [][3]float32) error {
 	}
 	return nil
 }
+
+func (buf *GotetraBuffer) TotalParticles(fname string) (int, error) {
+	return -1, nil
+}

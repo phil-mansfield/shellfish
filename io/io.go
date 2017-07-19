@@ -63,6 +63,7 @@ type VectorBuffer interface {
 	ReadHeader(fname string, out *Header) error
 	// The minimum mass of all the particles in the simulation.
 	MinMass() float32
+	TotalParticles(fname string) (int, error)
 }
 
 // CosmologyHeader contains information describing the cosmological

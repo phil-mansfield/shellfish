@@ -41,7 +41,7 @@ func (config *CheckConfig) ReadConfig(fname string, flags []string) error {
 
 	vars.Float(&config.h0, "H0", -1)
 	vars.Float(&config.omegaM, "OmegaM", -1)
-	vars.Float(&config.omegaL, "OmegaM", -1)
+	vars.Float(&config.omegaL, "OmegaL", -1)
 	vars.Float(&config.boxWidth, "BoxWidth", -1)
 	vars.Floats(&config.particleMasses, "ParticleMasses", []float64{})
 	vars.Int(&config.particleCount, "ParticleCount", -1)

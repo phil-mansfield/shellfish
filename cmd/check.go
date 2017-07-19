@@ -174,6 +174,18 @@ func particleChecks(
 		}
 	}
 
+	if config.particleCount > 0 {
+		n, err := buf.TotalParticles(fname)
+		if err != nil { return failedTests, err }
+		if int64(n) != config.particleCount {
+			msg := fmt.Sprintf(
+				"ParticleCount value in check.config is %d, but read value " +
+				"is %d.", config.particleCount, n,
+			)
+			failedTests = append(failedTests, msg)
+		}
+	}
+
 	return failedTests, nil
 }
 

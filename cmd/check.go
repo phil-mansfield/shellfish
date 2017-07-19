@@ -129,7 +129,7 @@ func headerChecks(
 	if config.boxWidth > 0 && !checkAlmostEq(config.boxWidth, hd.TotalWidth) {
 		msg := fmt.Sprintf(
 			"BoxWidth value in check.config is %g, but read " +
-			"BoxWidth value is %g.",  config.omegaL, hd.Cosmo.OmegaL,
+			"BoxWidth value is %g.",  config.boxWidth, hd.TotalWidth,
 		)
 		failedTests = append(failedTests, msg)
 	}

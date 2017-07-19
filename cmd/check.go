@@ -81,6 +81,15 @@ func (config *CheckConfig) Run(
 	failedTests = haloChecks(hd, buf, config, failedTests)
 
 	if len(failedTests) > 0 {
+		if len(failedTests) == 1 {
+			fmt.Println("Sanity check failed:")
+		} else {
+			fmt.Println("Sanity checks failed:")
+		}
+
+		for _, test := range failedTests {
+			 fmt.Println(test)
+		}
 		os.Exit(1)
 	}
 

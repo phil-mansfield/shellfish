@@ -102,7 +102,7 @@ func checkAlmostEq(x, y float64) bool {
 func headerChecks(
 	hd io.Header, config *CheckConfig, failedTests []string,
 ) []string {
-	if config.h0 > 0 && checkAlmostEq(config.h0, hd.Cosmo.H100 * 100) {
+	if config.h0 > 0 && !checkAlmostEq(config.h0, hd.Cosmo.H100 * 100) {
 		msg := fmt.Sprintf(
 			"H0 value in check.config is %g, but read H0 value is %g.",
 			config.h0, hd.Cosmo.H100 * 100,
@@ -110,7 +110,7 @@ func headerChecks(
 		failedTests = append(failedTests, msg)
 	}
 
-	if config.omegaM > 0 && checkAlmostEq(config.omegaM, hd.Cosmo.OmegaM) {
+	if config.omegaM > 0 && !checkAlmostEq(config.omegaM, hd.Cosmo.OmegaM) {
 		msg := fmt.Sprintf(
 			"OmegaM value in check.config is %g, but read OmegaM value is %g.",
 			config.omegaM, hd.Cosmo.OmegaM,
@@ -118,7 +118,7 @@ func headerChecks(
 		failedTests = append(failedTests, msg)
 	}
 
-	if config.omegaL > 0 && checkAlmostEq(config.omegaL, hd.Cosmo.OmegaL) {
+	if config.omegaL > 0 && !checkAlmostEq(config.omegaL, hd.Cosmo.OmegaL) {
 		msg := fmt.Sprintf(
 			"OmegaL value in check.config is %g, but read OmegaL value is %g.",
 			config.omegaL, hd.Cosmo.OmegaL,
@@ -126,7 +126,7 @@ func headerChecks(
 		failedTests = append(failedTests, msg)
 	}
 
-	if config.boxWidth > 0 && checkAlmostEq(config.boxWidth, hd.TotalWidth) {
+	if config.boxWidth > 0 && !checkAlmostEq(config.boxWidth, hd.TotalWidth) {
 		msg := fmt.Sprintf(
 			"BoxWidth value in check.config is %g, but read " +
 			"BoxWidth value is %g.",  config.omegaL, hd.Cosmo.OmegaL,

@@ -196,7 +196,6 @@ func (config *StatsConfig) Run(
 	snapBins, coeffBins, idxBins := binCoeffsBySnap(snaps, ids, coeffs)
 
 	masses := make([]float64, len(ids))
-	particleCounts := make([]int, len(ids))
 
 	rads := make([]float64, len(ids))
 	rmins := make([]float64, len(ids))
@@ -288,44 +287,33 @@ func (config *StatsConfig) Run(
 			}
 
 			for j := range idxs {
-				mass := massContained(
+				masses[idxs[j]] += massContained(
 					&hds[i], xs, ms, snapCoeffs[j],
 					hBounds[j], rLows[j], rHighs[j],
 					gConfig.Threads,
 				)
-				masses[idxs[j]] += mass
 
-
-				// This isn't the correct way to handle this for
-				// performance, but massContained is already gross enough as
-				// it is.
-				shellParticles[idxs[j]] = appendShellParticles(
-					&hds[i], xs, pIDs, snapCoeffs[j],
-					hBounds[j], rLows[j], rHighs[j],
-					config.shellWidth,
-					gConfig.Threads,
-					shellParticles[idxs[j]],
-				)
+				if config.shellFilter {
+					// This isn't the correct way to handle this for
+					// performance, but massContained is already gross enough as
+					// it is.
+					shellParticles[idxs[j]] = appendShellParticles(
+						&hds[i], xs, pIDs, snapCoeffs[j],
+						hBounds[j], rLows[j], rHighs[j],
+						config.shellWidth,
+						gConfig.Threads,
+						shellParticles[idxs[j]],
+					)
+				}
 
 			}
 			buf.Close()
 		}
 	}
 
-	for i := range shellParticles {
-		particleCounts[i] = len(shellParticles[i])
+	if config.shellFilter {
+		writeShellParticles(snaps, ids, shellParticles, gConfig, config)
 	}
-
-	log.Println("Shell coefficients:")
-	for i := range coeffs {
-		log.Println(coeffs[i])
-	}
-
-	log.Printf("Particle Count: %d", particleCounts)
-	log.Printf("Mass: %g", masses)
-	log.Printf("Rsp: %g", rads)
-	log.Printf("Rmin: %g", rmins)
-	log.Printf("Rmax: %g", rmaxes)
 
 	axs := make([]float64, len(ids))
 	ays := make([]float64, len(ids))
@@ -333,8 +321,6 @@ func (config *StatsConfig) Run(
 	for i := range axs {
 		axs[i], ays[i], azs[i] = aVecs[i][0], aVecs[i][1], aVecs[i][2]
 	}
-
-
 
 	lines := catalog.FormatCols(
 		[][]int{ids, snaps},

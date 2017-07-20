@@ -18,6 +18,18 @@ import (
 )
 
 var helpStrings = map[string]string{
+	// check mode
+	"check": `Type "shellfish help" for basic information on invoking the id tool.
+
+The check tool does some basic sanity checks on the snapshot values read from
+disk. The goal of this mode is to rule out the possibility of non-compliant
+snapshot formats or I/O bugs in Shellfish.
+
+For a documented example of an check config file, type:
+
+     shellfish help check.config
+
+The check tool takes no input from stdin.`,
 // id mode
 	"id":    `Type "shellfish help" for basic information on invoking the id tool.
 
@@ -231,6 +243,7 @@ Column 9 to 11 - A: The x, y, and z components of the major axis of the
 	"prof.config":  cmd.ModeNames["prof"].ExampleConfig(),
 	"shell.config": cmd.ModeNames["shell"].ExampleConfig(),
 	"stats.config": cmd.ModeNames["stats"].ExampleConfig(),
+	"check.config": cmd.ModeNames["check"].ExampleConfig(),
 }
 
 var modeDescriptions = `The best way to learn how to use shellfish is the tutorial on its github page:
@@ -240,6 +253,7 @@ although the formatting will be less pretty.)
 
 The different tools in the Shellfish toolchain are:
 
+    shellfish check  [____.check.config] [flags]
     shellfish id     [____.id.config]    [flags]
     shellfish tree   [____.tree.config]  [flags]
     shellfish coord  [____.coord.config] [flags]
@@ -260,7 +274,7 @@ the same variable, the command line value will be used.
 
 For documented example config files, type any of:
 
-    shellfish help [ id.config | prof.config |shell.config |
+    shellfish help [ check.config | id.config | prof.config |shell.config |
                      stats.config | tree.config ]
 
 In addition to any arguments passed at the command line, before calling
@@ -280,7 +294,7 @@ shellfish as a series of piped commands. E.g:
 For more information on the input and output that a given tool expects, type
 any of:
 
-    shellfish help [ id | tree | coord | prof | shell | stats ]`
+    shellfish help [ check | id | tree | coord | prof | shell | stats ]`
 
 func main() {
 	args := os.Args
@@ -563,7 +577,7 @@ func initHalos(
 	mode string, gConfig *cmd.GlobalConfig, e *env.Environment,
 ) error {
 	switch mode {
-	case "shell", "stats", "prof":
+	case "shell", "stats", "prof", "check":
 		return nil
 	}
 

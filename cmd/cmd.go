@@ -21,6 +21,7 @@ var ModeNames map[string]Mode = map[string]Mode{
 	"prof": &ProfConfig{},
 	"shell": &ShellConfig{},
 	"stats": &StatsConfig{},
+	"check": &CheckConfig{},
 }
 
 // Mode represents the interface used by the main binary when interacting with

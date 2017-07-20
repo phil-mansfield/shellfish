@@ -9,6 +9,7 @@ import (
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/cmd/memo"
+	"github.com/phil-mansfield/shellfish/los/geom"
 )
 
 
@@ -17,6 +18,7 @@ type CheckConfig struct {
 	boxWidth float64
 	particleMasses []float64
 	particleCount int64
+	exampleHalo []float64
 }
 
 var _ Mode = &CheckConfig{}
@@ -24,14 +26,34 @@ var _ Mode = &CheckConfig{}
 func (config *CheckConfig) ExampleConfig() string {
 	return `[check.config]
 
-# All fields are optional. Report float values to at least two decimal places.
+# All fields are optional. Unless otherwise stated, checks are very rough and
+# only done to 10%, so  report float values to at least two decimal places.
 
-# H0 = 70.0
-# OmegaM = 0.27
-# OmegaL = 0.73
-# BoxWidth = 125.0
-# ParticleMasses = 1.7e7, 1.8e8, 1.1e9
+# H0 = 70
+# OmegaM = 0.30
+# OmegaL = 0.70
+
+# BoxWidth is in units of Mpc/h.
+# BoxWidth = 125
+
+# The total number of particles in the simulation box. This is checked exactly.
 # ParticleCount = 1073741824
+
+# ParticleMasses A list of all the valid DM particle masses (there may be more
+# than one if you are running an adaptive simulation).
+# ParticleMasses = 1.7e7, 1.8e8, 1.1e9
+
+# ExampleHalo is a the location and size of one halo from your catalog. It
+# is a list of six values:
+#    ExampleHalo[0] = snapshot number
+#    ExampleHalo[1 - 3] = (X, Y, Z) [Mpc/h]
+#    ExampleHalo[4] = Radius [Mpc/h]
+#    ExampleHalo[5] = Unbound mass contained within radius [Msun/h]
+# The radius used for elements 4 and 5 can correspond to any definition or
+# no definition at all, but be careful: most halo catalogs report *bound*,
+# not *unbound* masses.
+# Report position and radius to the highest accuracy that you know.
+# ExampleHalo = 100, 4.68299, 100.552, 80.9536, 2.68893, 1.446e+15
 `
 }
 
@@ -45,6 +67,7 @@ func (config *CheckConfig) ReadConfig(fname string, flags []string) error {
 	vars.Float(&config.boxWidth, "BoxWidth", -1)
 	vars.Floats(&config.particleMasses, "ParticleMasses", []float64{})
 	vars.Int(&config.particleCount, "ParticleCount", -1)
+	vars.Floats(&config.exampleHalo, "ExampleHalo", []float64{})
 
 	if fname == "" {
 		if len(flags) == 0 { return nil }
@@ -52,6 +75,13 @@ func (config *CheckConfig) ReadConfig(fname string, flags []string) error {
 	} else {
 		if err := parse.ReadConfig(fname, vars); err != nil { return err }
 		if err := parse.ReadFlags(flags, vars); err != nil { return err }
+	}
+
+	if len(config.exampleHalo) != 0 && len(config.exampleHalo) != 6 {
+		return fmt.Errorf(
+			"ExampleHalo field must have 6 entries, not %d",
+			len(config.exampleHalo),
+		)
 	}
 
 	return nil
@@ -76,7 +106,8 @@ func (config *CheckConfig) Run(
 	failedTests = headerChecks(hd, config, failedTests)
 	failedTests, err = particleChecks(buf, fname, config, failedTests)
 	if err != nil { return nil, err }
-	failedTests = haloChecks(hd, buf, config, failedTests)
+	failedTests, err = haloChecks(hd, buf, config, failedTests, e)
+	if err != nil { return nil, err }
 
 	if len(failedTests) > 0 {
 		if len(failedTests) == 1 {
@@ -192,6 +223,85 @@ func particleChecks(
 func haloChecks(
 	hd io.Header, buf io.VectorBuffer,
 	config *CheckConfig, failedTests []string,
-) []string {
-	return failedTests
+	e *env.Environment,
+) ([]string, error) {
+	if len(config.exampleHalo) == 0 { return failedTests, nil }
+
+	snap := int(config.exampleHalo[0])
+	hx,hy,hz:=config.exampleHalo[1],config.exampleHalo[2],config.exampleHalo[3]
+	hr, hm := config.exampleHalo[4], config.exampleHalo[5]
+
+	snapCoords := [][]float64{
+		[]float64{hx}, []float64{hy}, []float64{hz}, []float64{hr},
+	}
+	s := geom.Sphere{
+		C: [3]float32{float32(hx), float32(hy), float32(hz)},
+		R: float32(hr),
+	}
+
+	/* The following code is identical to the prof mainloop. */
+
+	hds, files, err := memo.ReadHeaders(snap, buf, e)
+	if err != nil {
+		return nil, err
+	}
+	hBounds, err := boundingSpheres(snapCoords, &hds[0], e)
+	if err != nil {
+		return nil, err
+	}
+	_, intrIdxs := binSphereIntersections(hds, hBounds)
+
+	haloMass := 0.0
+
+	for i := range hds {
+		if len(intrIdxs[i]) == 0 {
+			continue
+		}
+
+		xs, _, ms, _, err := buf.Read(files[i])
+		if err != nil {
+			return nil, err
+		}
+
+		haloMass += addMass(s, &hds[i], xs, ms)
+
+		buf.Close()
+	}
+
+	if !checkAlmostEq(hm, haloMass) {
+		msg := fmt.Sprintf(
+			"ExampleHalo mass in check.config is %g, but measured " +
+			"halo mass is %g.", hm, haloMass,
+		)
+		failedTests = append(failedTests, msg)
+	}
+
+
+	return failedTests, nil
+}
+
+func addMass(
+	s geom.Sphere, hd *io.Header, xs [][3]float32, ms []float32,
+) float64 {
+	rMax2 := s.R*s.R
+
+	x0, y0, z0 := s.C[0], s.C[1], s.C[2]
+	tw2 := float32(hd.TotalWidth) / 2
+
+	m := 0.0
+
+	for i, vec := range xs {
+		x, y, z := vec[0], vec[1], vec[2]
+		dx, dy, dz := x - x0, y - y0, z - z0
+		dx = wrap(dx, tw2)
+		dy = wrap(dy, tw2)
+		dz = wrap(dz, tw2)
+
+		r2 := dx*dx + dy*dy + dz*dz
+		if  r2 <= rMax2 {
+			m += float64(ms[i])
+		}
+	}
+
+	return m
 }

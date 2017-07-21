@@ -109,7 +109,7 @@ func (config *CoordConfig) Run(
 
 	icols := [][]int{ids, snaps}
 	fcols := [][]float64{}
-	icolOrder := []int{}
+	icolOrder := []int{0, 1}
 	fcolOrder := []int{}
 
 	intNum := 0
@@ -119,7 +119,6 @@ func (config *CoordConfig) Run(
 		if isIntType(comment) { intNum++ }
 	}
 
-	colOrder := append([]int{0, 1}, make([]int, len(cols))...)
 	for i, valueName := range config.values {
 		j := findString(valueName, gConfig.HaloValueNames)
 		comment := gConfig.HaloValueComments[j]
@@ -136,7 +135,7 @@ func (config *CoordConfig) Run(
 		}
 	}
 
-	colOrder = append(icolOrder, fcolOrder...)
+	colOrder := append(icolOrder, fcolOrder...)
 	lines := catalog.FormatCols(icols, fcols, colOrder)
 
 	cString := makeCommentString(gConfig, config)

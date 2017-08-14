@@ -144,7 +144,7 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	switch config.SnapshotType {
-	case "gotetra", "LGadget-2", "ARTIO":
+	case "gotetra", "LGadget-2", "Gadget-2", "ARTIO":
 	case "":
 		return fmt.Errorf("The 'SnapshotType variable isn't set.'")
 	default:
@@ -427,7 +427,7 @@ Version = %s
 # to fill out any of the Halo* variables in this config file and if TreeType
 # is nil, you don't need to fill out any of the Tree* variables.
 #
-# Supported SnapshotTypes: LGadget-2, ARTIO (experimental), gotetra
+# Supported SnapshotTypes: Gadget-2, LGadget-2, ARTIO (experimental), gotetra
 # Supported HaloTypes: Text, nil
 # Supported TreeTypes: consistent-trees, nil
 SnapshotType = LGadget-2

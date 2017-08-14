@@ -83,9 +83,9 @@ func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 	vars.String(&config.SnapshotFormat, "SnapshotFormat", "")
 	vars.String(&config.SnapshotType, "SnapshotType", "")
 	vars.String(&config.HaloDir, "HaloDir", "")
-	vars.String(&config.HaloType, "HaloType", "")
+	vars.String(&config.HaloType, "HaloType", "nil")
 	vars.String(&config.TreeDir, "TreeDir", "")
-	vars.String(&config.TreeType, "TreeType", "")
+	vars.String(&config.TreeType, "TreeType", "nil")
 	vars.String(&config.MemoDir, "MemoDir", "")
 
 	vars.Strings(&config.HaloValueNames, "HaloValueNames", []string{})

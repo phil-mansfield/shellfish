@@ -20,6 +20,7 @@ type (
 const (
 	Gotetra CatalogType = iota
 	LGadget2
+	Gadget2
 	ARTIO
 
 	Rockstar HaloType = iota

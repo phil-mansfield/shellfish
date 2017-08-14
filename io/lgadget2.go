@@ -211,7 +211,7 @@ func NewLGadget2Buffer(
 		}
 	}
 
-	buf := &LGadget2Buffer{order: order}
+	buf := &LGadget2Buffer{order: order, context: context}
 	err := readLGadget2Header(path, order, &buf.hd)
 	if err != nil {
 		return nil, err

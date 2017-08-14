@@ -230,9 +230,15 @@ func (config *ShellConfig) Run(
 		}
 	}
 
+	fmt.Println(snaps)
+	fmt.Println(e)
+	
+	log.Println("calling getVectorBuffer")
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(snaps[0], 0), gConfig,
 	)
+	log.Println("getVectorBuffer called")
+	
 	if err != nil {
 		return nil, err
 	}

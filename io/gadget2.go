@@ -85,10 +85,17 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 
 	// Figure out particle counts so we can size buffers correctly.
 
+	fmt.Println(gh.NPart)
+	fmt.Println(gh.Mass)
+	fmt.Println(gh.NumPartTotal)
+	
 	totalN := particleCount(gh)
 	dmN := dmCount(gh, &buf.context)
 	multiN := multiMassParticleCount(gh, &buf.context)
 
+	fmt.Println(totalN, dmN, multiN)
+	fmt.Println(buf.context)
+	
 	// Resize buffers
 
 	xsBuf = expandVectors(xsBuf[:0], totalN)
@@ -97,50 +104,21 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	msBuf = expandScalars(msBuf[:0], totalN)
 	multiMsBuf = expandScalars(multiMsBuf[:0], multiN)
 
-	// Read all particles into buffers. Because Gadget uses Fortran-style
-	// binary formatting, we can do consistency checks on our buffers.
+	// Read all particles into buffers.
 
-	// Positions
-	xSize := readInt32(f, order)
-	if int(xSize) != 12 * len(xsBuf) {
-		return nil, nil, nil, nil, nil, fmt.Errorf(
-			"Position block size is %d, but expected %d",
-			xSize, 12 * len(xsBuf),
-		)
-	}
+	_ = readInt32(f, order)
 	readVecAsByte(f, order, xsBuf)
 	_ = readInt32(f, order)
 
-	// Velocities
-	vSize := readInt32(f, order)
-	if int(vSize) != 4 * len(vsBuf) {
-		return nil, nil, nil, nil, nil, fmt.Errorf(
-			"Velocity block size is %d, but expected %d",
-			vSize, 12 * len(xsBuf),
-		)
-	}
+	_ = readInt32(f, order)
 	readVecAsByte(f, order, vsBuf)
 	_ = readInt32(f, order)
 
-	// IDs
-	idSize := readInt32(f, order)
-	if int(idSize) != 8 * len(idsBuf) {
-		return nil, nil, nil, nil, nil, fmt.Errorf(
-			"ID block size is %d, but expected %d",
-			idSize, 12 * len(xsBuf),
-		)
-	}
+	_ = readInt32(f, order)
 	readInt64AsByte(f, order, idsBuf)
 	_ = readInt32(f, order)
 
-	// Masses
-	mSize := readInt32(f, order)
-	if int(mSize) != 12 * len(xsBuf) {
-		return nil, nil, nil, nil, nil, fmt.Errorf(
-			"Mass block size is %d, but expected %d",
-			mSize, 12 * len(xsBuf),
-		)
-	}
+	_ = readInt32(f, order)
 	readFloat32AsByte(f, order, multiMsBuf)
 	_ = readInt32(f, order)
 
@@ -174,7 +152,7 @@ func isMultiMass(context *Context, i int) bool {
 }
 
 func isDM(context *Context, i int) bool {
-	for _, j := range context.GadgetDMSingleMassIndices {
+	for _, j := range context.GadgetDMTypeIndices {
 		if int(j) == i { return false }
 	}
 	return false
@@ -363,7 +341,7 @@ func NewGadget2Buffer(
 		}
 	}
 
-	buf := &Gadget2Buffer{order: order}
+	buf := &Gadget2Buffer{order: order, context: context}
 	err := readGadget2Header(path, order, &buf.hd)
 	if err != nil {
 		return nil, err

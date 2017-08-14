@@ -14,6 +14,8 @@ func getVectorBuffer(
 		GadgetDMSingleMassIndices: config.GadgetSingleMassIndices,
 	}
 
+	fmt.Println("in getVectorBuffer", context)
+	
 	switch config.SnapshotType {
 	case "gotetra":
 		return io.NewGotetraBuffer(fname)

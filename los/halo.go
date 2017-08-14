@@ -451,7 +451,8 @@ func wrapDist(x1, x2, width float64) float64 {
 }
 
 func inRange(x, r, low, width, tw float64) bool {
-	return wrapDist(x, low, tw) > -r && wrapDist(x, low+width, tw) < r
+	return (x + r > low && x - r < low + width) ||
+		(wrapDist(x, low, tw) > -r && wrapDist(x, low+width, tw) < r)
 }
 
 // SheetIntersect returns true if the given halo and sheet intersect one another

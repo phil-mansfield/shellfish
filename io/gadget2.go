@@ -29,6 +29,8 @@ type Gadget2Header gadget2Header
 func (gh *gadget2Header) postprocess(
 	xs [][3]float32, context *Context, out *Header,
 ) {
+	fmt.Println("posprocess X len:", len(xs))
+	
 	// Assumes the catalog has already been checked for corruption.
 	
 	out.TotalWidth = gh.BoxSize
@@ -140,7 +142,7 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	msBuf = msBuf[0: dmN]
 
 	err = fix(gh, &buf.context, path, xsBuf, vsBuf, msBuf)
-
+		
 	return xsBuf, vsBuf, multiMsBuf, msBuf, idsBuf, err
 }
 
@@ -153,7 +155,7 @@ func isMultiMass(context *Context, i int) bool {
 
 func isDM(context *Context, i int) bool {
 	for _, j := range context.GadgetDMTypeIndices {
-		if int(j) == i { return false }
+		if int(j) == i { return true }
 	}
 	return false
 }
@@ -391,6 +393,8 @@ func (buf *Gadget2Buffer) ReadHeader(fname string, out *Header) error {
 
 	buf.hd.postprocess(xs, &buf.context, out)
 
+	fmt.Printf("Origin: %.4g, Width: %.4g\n", out.Origin, out.Width)
+	
 	return nil
 }
 

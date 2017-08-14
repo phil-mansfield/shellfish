@@ -229,15 +229,10 @@ func (config *ShellConfig) Run(
 			out[i] = make([]float64, rowLength)
 		}
 	}
-
-	fmt.Println(snaps)
-	fmt.Println(e)
 	
-	log.Println("calling getVectorBuffer")
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(snaps[0], 0), gConfig,
 	)
-	log.Println("getVectorBuffer called")
 	
 	if err != nil {
 		return nil, err
@@ -389,6 +384,11 @@ func sphereLoop(
 	}
 	intrBins := binIntersections(hds, halos)
 
+	fmt.Println("Number of headers", len(hds))
+	fmt.Println(hds[0].Origin)
+	fmt.Println(hds[0].Width)
+	fmt.Println(hds[0].TotalWidth)
+	
 	for i := range hds {
 		runtime.GC()
 		if len(intrBins[i]) == 0 {
@@ -402,6 +402,8 @@ func sphereLoop(
 		}
 		
 		sphBuf.xs, _, sphBuf.ms, _, err = buf.Read(files[i])
+		fmt.Println("Read particles!!!")
+		
 		if err != nil {
 			return err
 		}

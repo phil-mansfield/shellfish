@@ -222,5 +222,12 @@ func boundingBox(
 		}
 	}
 
+	for j := 0; j < 3; j++ {
+		if width[j] > tw2 {
+			width[j] = tw
+			origin[j] = 0
+		}
+	}
+	
 	return origin, width
 }

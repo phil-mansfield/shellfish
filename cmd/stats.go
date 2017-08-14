@@ -215,9 +215,7 @@ func (config *StatsConfig) Run(
 	sort.Ints(sortedSnaps)
 
 	buf, err := getVectorBuffer(
-		e.ParticleCatalog(snaps[0], 0),
-		gConfig.SnapshotType, gConfig.Endianness,
-		gConfig.GadgetNpartNum,
+		e.ParticleCatalog(snaps[0], 0), gConfig,
 	)
 	if err != nil {
 		return nil, err

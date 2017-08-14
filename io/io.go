@@ -76,10 +76,16 @@ type CosmologyHeader struct {
 }
 
 type Header struct {
-	Cosmo         CosmologyHeader
-	N             int64
-	TotalWidth    float64
-	Origin, Width [3]float32
+	Cosmo            CosmologyHeader
+	N                int64
+	TotalWidth       float64
+	Origin, Width    [3]float32
+}
+
+type Context struct {
+	LGadgetNPartNum int64
+	GadgetDMTypeIndices []int64
+	GadgetDMSingleMassIndices []int64
 }
 
 func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {
@@ -134,6 +140,34 @@ func readInt64AsByte(rd io.Reader, end binary.ByteOrder, buf []int64) error {
 
 	hd.Len /= 8
 	hd.Cap /= 8
+
+	return nil
+}
+
+func readFloat32AsByte(rd io.Reader, end binary.ByteOrder, buf []float32) error {
+	bufLen := len(buf)
+
+	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))
+	hd.Len *= 4
+	hd.Cap *= 4
+
+	byteBuf := *(*[]byte)(unsafe.Pointer(&hd))
+	_, err := rd.Read(byteBuf)
+	if err != nil {
+		return err
+	}
+
+	if !IsSysOrder(end) {
+		for i := 0; i < bufLen; i++ {
+			for j := 0; j < 2; j++ {
+				idx1, idx2 := i*4+j, i*4+3-j
+				byteBuf[idx1], byteBuf[idx2] = byteBuf[idx2], byteBuf[idx1]
+			}
+		}
+	}
+
+	hd.Len /= 4
+	hd.Cap /= 4
 
 	return nil
 }

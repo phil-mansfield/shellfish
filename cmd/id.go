@@ -238,9 +238,7 @@ func (config *IDConfig) Run(
 
 		var err error
 		buf, err = getVectorBuffer(
-			e.ParticleCatalog(snaps[0], 0),
-			gConfig.SnapshotType, gConfig.Endianness,
-			gConfig.GadgetNpartNum,
+			e.ParticleCatalog(snaps[0], 0), gConfig,
 		)
 		if err != nil {
 			return nil, err
@@ -253,9 +251,7 @@ func (config *IDConfig) Run(
 
 		var err error
 		buf, err = getVectorBuffer(
-			e.ParticleCatalog(snaps[0], 0),
-			gConfig.SnapshotType, gConfig.Endianness,
-			gConfig.GadgetNpartNum,
+			e.ParticleCatalog(snaps[0], 0), gConfig,
 		)
 		if err != nil {
 			return nil, err
@@ -337,9 +333,7 @@ func getMassIDRange(
 ) error {
 	config.idType = "m200m"
 	buf, err := getVectorBuffer(
-		e.ParticleCatalog(int(config.snap), 0),
-		gConfig.SnapshotType, gConfig.Endianness,
-		gConfig.GadgetNpartNum,
+		e.ParticleCatalog(int(config.snap), 0), gConfig,
 	)
 
 	if err != nil { return err }

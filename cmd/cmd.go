@@ -45,29 +45,32 @@ type GlobalConfig struct {
 	env.ParticleInfo
 	env.HaloInfo
 
-	Version string
+	Version           string
 
-	SnapshotType string
-	HaloType     string
-	TreeType     string
+	SnapshotType      string
+	HaloType          string
+	TreeType          string
 
-	MemoDir string
+	MemoDir           string
 
-	HaloValueNames   []string
-	HaloValueColumns []int64
+	HaloValueNames    []string
+	HaloValueColumns  []int64
 	HaloValueComments []string
 
 	HaloPositionUnits string
 	HaloRadiusUnits   string
 	HaloMassUnits     string
 
-	Endianness      string
-	ValidateFormats bool
-	Threads         int64
+	Endianness        string
+	ValidateFormats   bool
+	Threads           int64
 
-	Logging string
+	Logging           string
 
-	GadgetNpartNum int64
+	GadgetDMTypeIndices []int64
+	GadgetSingleMassIndices []int64
+
+	LGadgetNpartNum   int64
 }
 
 var _ Mode = &GlobalConfig{}
@@ -105,7 +108,12 @@ func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 
 	vars.Int(&config.Threads, "Threads", -1)
 	vars.String(&config.Logging, "Logging", "nil")
-	vars.Int(&config.GadgetNpartNum, "GadgetNpartNum", 2)
+
+	vars.Ints(&config.GadgetDMTypeIndices,
+		"GadgetDMTypeIndices", []int64{1})
+	vars.Ints(&config.GadgetSingleMassIndices,
+		"GadgetSingleMassIndices", []int64{1})
+	vars.Int(&config.LGadgetNpartNum, "LGadgetNpartNum", 2)
 
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
@@ -292,10 +300,10 @@ func (config *GlobalConfig) validate() error {
 		)
 	}
 
-	if config.GadgetNpartNum > 2 || config.GadgetNpartNum <= 0 {
+	if config.LGadgetNpartNum > 2 || config.LGadgetNpartNum <= 0 {
 		return fmt.Errorf(
 			"GadgetNpartNum set to %d, but the only valid values are 1 and 2.",
-			config.GadgetNpartNum,
+			config.LGadgetNpartNum,
 		)
 	}
 
@@ -530,15 +538,26 @@ Threads = -1
 # debugging - debugging information is written to stderr
 Logging = nil
 
-# GadgetNpartNum is an optional variable which should only be set when using
-# Gadget files. If your Gadget files use two elements of Npart and Nall to
+# GadgetDMTypeIndices indicates which particle types correspond to dark matter
+# particles. For a typical uniform mass DM-only simulation, this will be 1. For
+# simulations with particles of multiple masses, more than one index may be
+# used.
+# GadgetDMTypeIndices = 1
+
+# GadgetSingleMassIndices indicates which particle types don't have entries in
+# the MASS/Masses block and instead use the the Massarr/MassTable entry in the
+# header. Include particle non-DM particle types.
+# GadgetSingleMassIndices = 0, 1, 2, 3, 4, 5
+
+# LGadgetNpartNum is an optional variable which should only be set when using
+# LGadget files. If your LGadget files use two elements of Npart and Nall to
 # represent the number of dark matter particles in your simulation, set this
 # variable to 2. If every element corresponds to a different particle species,
 # set this variable to 1. GadgetNpartNum defaults to the most common value, 2.
 #
 # If you don't know what your Gadget file does, leave this alone: Shellfish will
 # fail and tell you to change this variable.
-# GadgetNpartNum = 2
+# LGadgetNpartNum = 2
 `, version.SourceVersion)
 }
 

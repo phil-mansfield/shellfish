@@ -69,6 +69,8 @@ type GlobalConfig struct {
 
 	GadgetDMTypeIndices []int64
 	GadgetSingleMassIndices []int64
+	GadgetPositionUnits float64
+	GadgetMassUnits float64
 
 	LGadgetNpartNum   int64
 }
@@ -113,6 +115,9 @@ func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 		"GadgetDMTypeIndices", []int64{1})
 	vars.Ints(&config.GadgetSingleMassIndices,
 		"GadgetSingleMassIndices", []int64{1})
+	vars.Float(&config.GadgetPositionUnits, "GadgetPositionUnits", 1.0)
+	vars.Float(&config.GadgetMassUnits, "GadgetMassUnits", 1.0)
+
 	vars.Int(&config.LGadgetNpartNum, "LGadgetNpartNum", 2)
 
 	if err := parse.ReadConfig(fname, vars); err != nil {
@@ -515,15 +520,6 @@ MemoDir = path/to/memo/dir/
 # machine.)
 Endianness = SystemOrder
 
-# ValidateFormats checks the the specified halo files and snapshot catalogs all
-# exist at startup before running any other code. Otherwise, these will be
-# checked only immediately before a particular file is opened. In general,
-# it's best to set this to false for short jobs because checking every file
-# is a lot of system calls and can take minutes. That said, it's generally a
-# good idea to check at least once after making the config file that you aren't
-# accidentally specifying nonexistent files.
-ValidateFormats = false
-
 # Threads is the number of threads that should be run simultaneously. If Threads
 # is set to a non-positive value (as it is by default), it will automatically
 # be set equal to the number of available cores on the current node. All threads
@@ -541,21 +537,36 @@ Logging = nil
 # GadgetDMTypeIndices indicates which particle types correspond to dark matter
 # particles. For a typical uniform mass DM-only simulation, this will be 1. For
 # simulations with particles of multiple masses, more than one index may be
-# used.
+# used. This only needs to be set if SnapshßotType = Gadget-2.
 # GadgetDMTypeIndices = 1
 
 # GadgetSingleMassIndices indicates which particle types don't have entries in
 # the MASS/Masses block and instead use the the Massarr/MassTable entry in the
-# header. Include particle non-DM particle types.
+# header. Include particle non-DM particle types. This only needs to be set if
+# SnapshotType = Gadget-2.
 # GadgetSingleMassIndices = 0, 1, 2, 3, 4, 5
+
+# GadgetPositionUnits indicates how positions are stored within your Gadget
+# snapshot. Set this variable so the following equation is true:
+# (1 Mpc/h) * GadgetPositionUnits = (Your position units).
+# This variable only needs to be set if SnapshotType = Gadget-2 and your
+# units are not Mpc/h.
+# GadgetPositionUnits = 1.0
+
+# GadgetMassUnits indicates how positions are stored within your Gadget
+# snapshot. Set this variable so the following equation is true:
+# (1 Msun/h) * GadgetMassUnits = (Your mass units).
+# This variable only needs to be set if SnapshotType = Gadget-2 and your
+# units are not Msun/h.
+# GadgetMassUnits = 1.0
 
 # LGadgetNpartNum is an optional variable which should only be set when using
 # LGadget files. If your LGadget files use two elements of Npart and Nall to
 # represent the number of dark matter particles in your simulation, set this
 # variable to 2. If every element corresponds to a different particle species,
-# set this variable to 1. GadgetNpartNum defaults to the most common value, 2.
+# set this variable to 1. LGadgetNpartNum defaults to the most common value, 2.
 #
-# If you don't know what your Gadget file does, leave this alone: Shellfish will
+# If you don't know what your LGadget file does, leave this alone: Shellfish will
 # fail and tell you to change this variable.
 # LGadgetNpartNum = 2
 `, version.SourceVersion)

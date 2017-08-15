@@ -31,7 +31,7 @@ func (gh *gadget2Header) postprocess(
 ) {	
 	// Assumes the catalog has already been checked for corruption.
 	
-	out.TotalWidth = gh.BoxSize
+	out.TotalWidth = gh.BoxSize / context.GadgetPositionUnits
 
 	out.N = 0
 	for _, i := range context.GadgetDMTypeIndices {
@@ -315,7 +315,10 @@ func fix(
 					path,
 				)
 			}
+
+			xs[i][j] /= float32(context.GadgetPositionUnits)
 		}
+		ms[i] /= float32(context.GadgetMassUnits)
 	}
 
 	return nil

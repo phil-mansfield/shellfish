@@ -86,6 +86,8 @@ type Context struct {
 	LGadgetNPartNum int64
 	GadgetDMTypeIndices []int64
 	GadgetDMSingleMassIndices []int64
+	GadgetMassUnits float64
+	GadgetPositionUnits float64
 }
 
 func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {

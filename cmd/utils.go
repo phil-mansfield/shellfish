@@ -12,6 +12,8 @@ func getVectorBuffer(
 		LGadgetNPartNum: config.LGadgetNpartNum,
 		GadgetDMTypeIndices: config.GadgetDMTypeIndices,
 		GadgetDMSingleMassIndices: config.GadgetSingleMassIndices,
+		GadgetMassUnits: config.GadgetMassUnits,
+		GadgetPositionUnits: config.GadgetPositionUnits,
 	}
 	
 	switch config.SnapshotType {

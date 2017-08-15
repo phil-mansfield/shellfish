@@ -261,11 +261,16 @@ func (config *StatsConfig) Run(
 			return nil, err
 		}
 		hBounds, err := boundingSpheres(snapCoords, &hds[0], e)
+
+		fmt.Println(hBounds)
+		
 		if err != nil {
 			return nil, err
 		}
 		intrBins, _ := binSphereIntersections(hds, hBounds)
 
+		fmt.Println(hds)
+		
 		rLows := make([]float64, len(snapCoeffs))
 		rHighs := make([]float64, len(snapCoeffs))
 		for i := range snapCoeffs {
@@ -347,7 +352,7 @@ func (config *StatsConfig) Run(
 	return append([]string{cString}, lines...), nil
 }
 
-func wrapDist(x1, x2, width float32) float32 {
+func wrapDist(x1, x2, width float64) float64 {
 	dist := x1 - x2
 	if dist > width/2 {
 		return dist - width
@@ -356,19 +361,6 @@ func wrapDist(x1, x2, width float32) float32 {
 	} else {
 		return dist
 	}
-}
-
-func inRange(x, r, low, width, tw float32) bool {
-	return wrapDist(x, low, tw) > -r && wrapDist(x, low+width, tw) < r
-}
-
-// SheetIntersect returns true if the given halo and sheet intersect one another
-// and false otherwise.
-func sheetIntersect(s geom.Sphere, hd *io.Header) bool {
-	tw := float32(hd.TotalWidth)
-	return inRange(s.C[0], s.R, hd.Origin[0], hd.Width[0], tw) &&
-		inRange(s.C[1], s.R, hd.Origin[1], hd.Width[1], tw) &&
-		inRange(s.C[2], s.R, hd.Origin[2], hd.Width[2], tw)
 }
 
 func binCoeffsBySnap(
@@ -654,6 +646,21 @@ func int64sEq(xs, ys []int64) bool {
 	return true
 }
 
+func inRange(x, r, low, width, tw float64) bool {
+	return (x + r > low && x - r < low + width) ||
+		(wrapDist(x, low, tw) > -r && wrapDist(x, low+width, tw) < r)
+}
+
+// This is a duplicate of the method in the los.Halo struct.
+func sphereSheetIntersect(s geom.Sphere, hd *io.Header) bool {
+	return inRange(float64(s.C[0]), float64(s.R), float64(hd.Origin[0]),
+		float64(hd.Width[0]), hd.TotalWidth) &&
+			inRange(float64(s.C[1]), float64(s.R), float64(hd.Origin[1]),
+			float64(hd.Width[1]), hd.TotalWidth) &&
+				inRange(float64(s.C[2]), float64(s.R), float64(hd.Origin[2]),
+				float64(hd.Width[2]), hd.TotalWidth)
+}
+
 func binSphereIntersections(
 	hds []io.Header, spheres []geom.Sphere,
 ) ([][]geom.Sphere, [][]int) {
@@ -661,7 +668,7 @@ func binSphereIntersections(
 	idxs := make([][]int, len(hds))
 	for i := range hds {
 		for si := range spheres {
-			if sheetIntersect(spheres[si], &hds[i]) {
+			if sphereSheetIntersect(spheres[si], &hds[i]) {
 				bins[i] = append(bins[i], spheres[si])
 				idxs[i] = append(idxs[i], si)
 			}

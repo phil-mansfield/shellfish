@@ -402,7 +402,9 @@ func sphereLoop(
 		}
 		
 		sphBuf.xs, _, sphBuf.ms, _, err = buf.Read(files[i])
-		fmt.Println("Read particles!!!")
+		fmt.Printf("Read particles!!! (%d)\n", len(sphBuf.xs))
+		fmt.Printf("%.4g\n", sphBuf.xs[:5])
+		fmt.Printf("%.4g\n", sphBuf.ms[:5])
 		
 		if err != nil {
 			return err
@@ -447,6 +449,9 @@ func loadSphereVecs(
 	h.Transform(xs, hd.TotalWidth)
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
 	h.Intersect(xs, rad, intr)
+
+	fmt.Println(intr[:10])
+	
 	numIntr := 0
 	for i := range intr {
 		if intr[i] {
@@ -491,7 +496,7 @@ func chanLoadSphereVec(
 
 	rhoM := cosmo.RhoAverage(hd.Cosmo.H100*100,
 		hd.Cosmo.OmegaM, hd.Cosmo.OmegaL, hd.Cosmo.Z)
-
+	
 	sf := c.subsampleFactor
 	skip := workers * int(sf*sf*sf)
 	for i := offset * int(sf*sf*sf); i < int(hd.N); i += skip {

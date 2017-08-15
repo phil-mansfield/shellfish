@@ -384,11 +384,6 @@ func sphereLoop(
 	}
 	intrBins := binIntersections(hds, halos)
 
-	fmt.Println("Number of headers", len(hds))
-	fmt.Println(hds[0].Origin)
-	fmt.Println(hds[0].Width)
-	fmt.Println(hds[0].TotalWidth)
-	
 	for i := range hds {
 		runtime.GC()
 		if len(intrBins[i]) == 0 {
@@ -402,9 +397,6 @@ func sphereLoop(
 		}
 		
 		sphBuf.xs, _, sphBuf.ms, _, err = buf.Read(files[i])
-		fmt.Printf("Read particles!!! (%d)\n", len(sphBuf.xs))
-		fmt.Printf("%.4g\n", sphBuf.xs[:5])
-		fmt.Printf("%.4g\n", sphBuf.ms[:5])
 		
 		if err != nil {
 			return err
@@ -449,8 +441,6 @@ func loadSphereVecs(
 	h.Transform(xs, hd.TotalWidth)
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
 	h.Intersect(xs, rad, intr)
-
-	fmt.Println(intr[:10])
 	
 	numIntr := 0
 	for i := range intr {

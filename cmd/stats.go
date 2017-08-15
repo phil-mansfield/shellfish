@@ -261,15 +261,12 @@ func (config *StatsConfig) Run(
 			return nil, err
 		}
 		hBounds, err := boundingSpheres(snapCoords, &hds[0], e)
-
-		fmt.Println(hBounds)
 		
 		if err != nil {
 			return nil, err
 		}
 		intrBins, _ := binSphereIntersections(hds, hBounds)
 
-		fmt.Println(hds)
 		
 		rLows := make([]float64, len(snapCoeffs))
 		rHighs := make([]float64, len(snapCoeffs))
@@ -494,6 +491,7 @@ func massContainedChan(
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
 	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
 
+	
 	sum := 0.0
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
@@ -509,6 +507,7 @@ func massContainedChan(
 			sum += float64(ms[i])
 		}
 	}
+
 	out <- sum
 }
 

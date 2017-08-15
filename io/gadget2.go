@@ -1,12 +1,10 @@
 package io
 
 import (
-	"encoding/binary"
 	"fmt"
+	"encoding/binary"
 	"math"
 	"os"
-
-	"unsafe"
 )
 
 // gadgetHeader is the formatting for meta-information used by Gadget 2.
@@ -81,14 +79,9 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 
 	gh := &gadget2Header{}
 
-	fmt.Printf("Header bytes: %d\n", unsafe.Sizeof(*gh))
-	fmt.Printf("LGadget Header bytes: %d\n", unsafe.Sizeof(lGadget2Header{}))
-	
-	size1 := readInt32(f, order)
+	_ = readInt32(f, order)
 	binary.Read(f, order, gh)
-	size2 := readInt32(f, order)
-
-	fmt.Printf("Size1 = %d, Size2 = %d\n", size1, size2)
+	_ = readInt32(f, order)
 	
 	// Figure out particle counts so we can size buffers correctly.
 
@@ -122,20 +115,6 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	readFloat32AsByte(f, order, multiMsBuf)
 	_ = readInt32(f, order)
 
-
-	fmt.Printf("Position:\n")
-	fmt.Printf("  [0]  = %.4g\n  [1]  = %.4g\n  [2]  = %.4g\n  [-1] = %.4g\n",
-		xsBuf[0], xsBuf[1], xsBuf[2], xsBuf[len(xsBuf) - 1])
-	fmt.Printf("Velocity:\n")
-	fmt.Printf("  [0]  = %.4g\n  [1]  = %.4g\n  [2]  = %.4g\n  [-1] = %.4g\n",
-		vsBuf[0], vsBuf[1], vsBuf[2], vsBuf[len(vsBuf) - 1])
-	fmt.Printf("ID:\n")
-	fmt.Printf("  [0]  = %016x\n  [1]  = %016x\n  [2]  = %016x\n  [-1] = %016x\n",
-		idsBuf[0], idsBuf[1], idsBuf[2], idsBuf[len(idsBuf) - 1])
-	fmt.Printf("Mass:\n")
-	fmt.Printf("  [0]  = %.4g\n  [1]  = %.4g\n  [2]  = %.4g\n  [-1] = %.4g\n",
-		multiMsBuf[0], multiMsBuf[1], multiMsBuf[2],
-		multiMsBuf[len(multiMsBuf) - 1])
 	
 	// Expand uniform mass types
 

@@ -50,7 +50,6 @@ import (
 	"encoding/binary"
 	"io"
 	"reflect"
-	"fmt"
 	
 	"unsafe"
 )
@@ -147,7 +146,6 @@ func readInt64AsByte(rd io.Reader, end binary.ByteOrder, buf []int64) error {
 
 func readFloat32AsByte(rd io.Reader, end binary.ByteOrder, buf []float32) error {
 	bufLen := len(buf)
-
 	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))
 	hd.Len *= 4
 	hd.Cap *= 4
@@ -194,8 +192,6 @@ func boundingBox(
 	origin = xs[0]
 	width = [3]float32{0, 0, 0}
 	tw, tw2 := float32(totalWidth), float32(totalWidth)/2
-
-	fmt.Println()
 	
 	max, min := origin, origin
 

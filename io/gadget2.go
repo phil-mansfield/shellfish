@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+
+	"unsafe"
 )
 
 // gadgetHeader is the formatting for meta-information used by Gadget 2.
@@ -21,16 +23,14 @@ type gadget2Header struct {
 	NumPartTotalHW             [6]uint32
 	FlagEntropyICs             int32
 
-	Padding [56]byte
+	Padding [60]byte
 }
 
 type Gadget2Header gadget2Header
 
 func (gh *gadget2Header) postprocess(
 	xs [][3]float32, context *Context, out *Header,
-) {
-	fmt.Println("posprocess X len:", len(xs))
-	
+) {	
 	// Assumes the catalog has already been checked for corruption.
 	
 	out.TotalWidth = gh.BoxSize
@@ -81,22 +81,20 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 
 	gh := &gadget2Header{}
 
-	_ = readInt32(f, order)
+	fmt.Printf("Header bytes: %d\n", unsafe.Sizeof(*gh))
+	fmt.Printf("LGadget Header bytes: %d\n", unsafe.Sizeof(lGadget2Header{}))
+	
+	size1 := readInt32(f, order)
 	binary.Read(f, order, gh)
-	_ = readInt32(f, order)
+	size2 := readInt32(f, order)
 
+	fmt.Printf("Size1 = %d, Size2 = %d\n", size1, size2)
+	
 	// Figure out particle counts so we can size buffers correctly.
 
-	fmt.Println(gh.NPart)
-	fmt.Println(gh.Mass)
-	fmt.Println(gh.NumPartTotal)
-	
 	totalN := particleCount(gh)
 	dmN := dmCount(gh, &buf.context)
 	multiN := multiMassParticleCount(gh, &buf.context)
-
-	fmt.Println(totalN, dmN, multiN)
-	fmt.Println(buf.context)
 	
 	// Resize buffers
 
@@ -124,6 +122,21 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	readFloat32AsByte(f, order, multiMsBuf)
 	_ = readInt32(f, order)
 
+
+	fmt.Printf("Position:\n")
+	fmt.Printf("  [0]  = %.4g\n  [1]  = %.4g\n  [2]  = %.4g\n  [-1] = %.4g\n",
+		xsBuf[0], xsBuf[1], xsBuf[2], xsBuf[len(xsBuf) - 1])
+	fmt.Printf("Velocity:\n")
+	fmt.Printf("  [0]  = %.4g\n  [1]  = %.4g\n  [2]  = %.4g\n  [-1] = %.4g\n",
+		vsBuf[0], vsBuf[1], vsBuf[2], vsBuf[len(vsBuf) - 1])
+	fmt.Printf("ID:\n")
+	fmt.Printf("  [0]  = %016x\n  [1]  = %016x\n  [2]  = %016x\n  [-1] = %016x\n",
+		idsBuf[0], idsBuf[1], idsBuf[2], idsBuf[len(idsBuf) - 1])
+	fmt.Printf("Mass:\n")
+	fmt.Printf("  [0]  = %.4g\n  [1]  = %.4g\n  [2]  = %.4g\n  [-1] = %.4g\n",
+		multiMsBuf[0], multiMsBuf[1], multiMsBuf[2],
+		multiMsBuf[len(multiMsBuf) - 1])
+	
 	// Expand uniform mass types
 
 	unpackMass(gh, &buf.context, multiMsBuf, msBuf)
@@ -228,6 +241,18 @@ func packVec(gh *gadget2Header, context *Context, buf [][3]float32) {
 		offsets[i + 1] = offsets[i] + int(gh.NPart[i])
 	}
 
+	for i := 0; i < 6; i++ {
+		if isDM(context, i) {
+			for j := 0; j < 3; j++ {
+				min, max := float32(1e6), float32(-1e6)
+				for k := dmOffsets[i]; k < dmOffsets[i + 1]; k++ {
+					if buf[k][j] < min { min = buf[k][j] }
+					if buf[k][j] > max { max = buf[k][j] }
+				}
+			}
+		}
+	}
+	
 	for i := 0; i < 6; i++ {
 		if isDM(context, i) {
 			copy(
@@ -392,8 +417,6 @@ func (buf *Gadget2Buffer) ReadHeader(fname string, out *Header) error {
 	}
 
 	buf.hd.postprocess(xs, &buf.context, out)
-
-	fmt.Printf("Origin: %.4g, Width: %.4g\n", out.Origin, out.Width)
 	
 	return nil
 }

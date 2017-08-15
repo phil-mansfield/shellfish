@@ -44,7 +44,7 @@ func (gh *gadget2Header) postprocess(
 	out.Cosmo.OmegaL = gh.OmegaLambda
 	out.Cosmo.H100 = gh.HubbleParam
 
-	out.Origin, out.Width = boundingBox(xs, gh.BoxSize)
+	out.Origin, out.Width = boundingBox(xs, out.TotalWidth)
 }
 
 func readGadget2Header(
@@ -132,9 +132,9 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	vsBuf = vsBuf[0: dmN]
 	idsBuf = idsBuf[0: dmN]
 	msBuf = msBuf[0: dmN]
-
+	
 	err = fix(gh, &buf.context, path, xsBuf, vsBuf, msBuf)
-		
+	
 	return xsBuf, vsBuf, multiMsBuf, msBuf, idsBuf, err
 }
 

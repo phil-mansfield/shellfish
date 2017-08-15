@@ -383,7 +383,7 @@ func sphereLoop(
 		return err
 	}
 	intrBins := binIntersections(hds, halos)
-
+	
 	for i := range hds {
 		runtime.GC()
 		if len(intrBins[i]) == 0 {

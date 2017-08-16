@@ -50,7 +50,7 @@ import (
 	"encoding/binary"
 	"io"
 	"reflect"
-
+	
 	"unsafe"
 )
 
@@ -76,10 +76,18 @@ type CosmologyHeader struct {
 }
 
 type Header struct {
-	Cosmo         CosmologyHeader
-	N             int64
-	TotalWidth    float64
-	Origin, Width [3]float32
+	Cosmo            CosmologyHeader
+	N                int64
+	TotalWidth       float64
+	Origin, Width    [3]float32
+}
+
+type Context struct {
+	LGadgetNPartNum int64
+	GadgetDMTypeIndices []int64
+	GadgetDMSingleMassIndices []int64
+	GadgetMassUnits float64
+	GadgetPositionUnits float64
 }
 
 func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {
@@ -138,6 +146,33 @@ func readInt64AsByte(rd io.Reader, end binary.ByteOrder, buf []int64) error {
 	return nil
 }
 
+func readFloat32AsByte(rd io.Reader, end binary.ByteOrder, buf []float32) error {
+	bufLen := len(buf)
+	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))
+	hd.Len *= 4
+	hd.Cap *= 4
+
+	byteBuf := *(*[]byte)(unsafe.Pointer(&hd))
+	_, err := rd.Read(byteBuf)
+	if err != nil {
+		return err
+	}
+
+	if !IsSysOrder(end) {
+		for i := 0; i < bufLen; i++ {
+			for j := 0; j < 2; j++ {
+				idx1, idx2 := i*4+j, i*4+3-j
+				byteBuf[idx1], byteBuf[idx2] = byteBuf[idx2], byteBuf[idx1]
+			}
+		}
+	}
+
+	hd.Len /= 4
+	hd.Cap /= 4
+
+	return nil
+}
+
 func IsSysOrder(end binary.ByteOrder) bool {
 	buf32 := []int32{1}
 
@@ -159,16 +194,18 @@ func boundingBox(
 	origin = xs[0]
 	width = [3]float32{0, 0, 0}
 	tw, tw2 := float32(totalWidth), float32(totalWidth)/2
-
+	
 	max, min := origin, origin
 
 	for i := range xs {
 		for j := 0; j < 3; j++ {
 			x, x0, w := xs[i][j], origin[j], width[j]
 
+			if x > x0 && x < x0 + w { continue }
+						
 			if x-x0 > tw2 {
 				x -= tw
-			} else if x0-x > tw2 {
+			} else if x-x0 < -tw2 {
 				x += tw
 			}
 
@@ -183,5 +220,12 @@ func boundingBox(
 		}
 	}
 
+	for j := 0; j < 3; j++ {
+		if width[j] > tw2 {
+			width[j] = tw
+			origin[j] = 0
+		}
+	}
+	
 	return origin, width
 }

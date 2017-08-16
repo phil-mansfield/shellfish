@@ -229,12 +229,11 @@ func (config *ShellConfig) Run(
 			out[i] = make([]float64, rowLength)
 		}
 	}
-
+	
 	buf, err := getVectorBuffer(
-		e.ParticleCatalog(snaps[0], 0),
-		gConfig.SnapshotType, gConfig.Endianness,
-		gConfig.GadgetNpartNum,
+		e.ParticleCatalog(snaps[0], 0), gConfig,
 	)
+	
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +383,7 @@ func sphereLoop(
 		return err
 	}
 	intrBins := binIntersections(hds, halos)
-
+	
 	for i := range hds {
 		runtime.GC()
 		if len(intrBins[i]) == 0 {
@@ -398,6 +397,7 @@ func sphereLoop(
 		}
 		
 		sphBuf.xs, _, sphBuf.ms, _, err = buf.Read(files[i])
+		
 		if err != nil {
 			return err
 		}
@@ -441,6 +441,7 @@ func loadSphereVecs(
 	h.Transform(xs, hd.TotalWidth)
 	rad := h.RMax() * c.rKernelMult / c.rMaxMult
 	h.Intersect(xs, rad, intr)
+	
 	numIntr := 0
 	for i := range intr {
 		if intr[i] {
@@ -485,7 +486,7 @@ func chanLoadSphereVec(
 
 	rhoM := cosmo.RhoAverage(hd.Cosmo.H100*100,
 		hd.Cosmo.OmegaM, hd.Cosmo.OmegaL, hd.Cosmo.Z)
-
+	
 	sf := c.subsampleFactor
 	skip := workers * int(sf*sf*sf)
 	for i := offset * int(sf*sf*sf); i < int(hd.N); i += skip {

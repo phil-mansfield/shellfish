@@ -606,6 +606,8 @@ func initCatalogs(gConfig *cmd.GlobalConfig, e *env.Environment) error {
 		return e.InitGotetra(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	case "LGadget-2":
 		return e.InitLGadget2(&gConfig.ParticleInfo, gConfig.ValidateFormats)
+	case "Gadget-2":
+		return e.InitGadget2(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	case "ARTIO":
 		return e.InitARTIO(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	}

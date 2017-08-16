@@ -94,9 +94,7 @@ func (config *CheckConfig) Run(
 	failedTests := []string{}
 
 	buf, err := getVectorBuffer(
-		e.ParticleCatalog(int(gConfig.HSnapMax), 0),
-		gConfig.SnapshotType, gConfig.Endianness,
-		gConfig.GadgetNpartNum,
+		e.ParticleCatalog(int(gConfig.HSnapMax), 0), gConfig,
 	)
 
 	hds, fnames, err := memo.ReadHeaders(int(gConfig.HSnapMax), buf, e)

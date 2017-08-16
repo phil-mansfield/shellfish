@@ -325,8 +325,8 @@ func (config *StatsConfig) Run(
 	lines := catalog.FormatCols(
 		[][]int{ids, snaps},
 		[][]float64{masses, rads, vols, sas,
-			as, bs, cs, axs, ays, azs},
-		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+			as, bs, cs, axs, ays, azs, rmins, rmaxes},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13},
 	)
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot"},
@@ -336,9 +336,10 @@ func (config *StatsConfig) Run(
 			"Intermediate Axis [cMpc/h]",
 			"Minor Axis [cMpc/h]",
 			"Ax", "Ay", "Az",
+			"RMin [Mpc/h]", "RMax [Mpc/h]",
 		},
-		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-		[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13},
+		[]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	)
 
 	if logging.Mode == logging.Performance {

@@ -542,7 +542,7 @@ Logging = nil
 
 # GadgetSingleMassIndices indicates which particle types don't have entries in
 # the MASS/Masses block and instead use the the Massarr/MassTable entry in the
-# header. Include particle non-DM particle types. This only needs to be set if
+# header. Include non-DM particle types. This only needs to be set if
 # SnapshotType = Gadget-2.
 # GadgetSingleMassIndices = 0, 1, 2, 3, 4, 5
 

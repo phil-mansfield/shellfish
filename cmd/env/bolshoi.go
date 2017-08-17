@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func (cat *Catalogs) InitGadget2(info *ParticleInfo, validate bool) error {
-	cat.CatalogType = Gadget2
+func (cat *Catalogs) InitBolshoi(info *ParticleInfo, validate bool) error {
+	cat.CatalogType = Bolshoi
 	cat.snapMin = int(info.SnapMin)
 
 	cols := make([][]interface{}, len(info.SnapshotFormatMeanings))
@@ -36,5 +36,4 @@ func (cat *Catalogs) InitGadget2(info *ParticleInfo, validate bool) error {
 
 	return nil
 }
-
 

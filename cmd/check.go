@@ -106,8 +106,6 @@ func (config *CheckConfig) Run(
 	if err != nil { return nil, err }
 	failedTests, err = haloChecks(hd, buf, config, failedTests, e)
 	if err != nil { return nil, err }
-
-	return nil, nil
 	
 	if len(failedTests) > 0 {
 		if len(failedTests) == 1 {
@@ -203,6 +201,8 @@ func particleChecks(
 
 			failedTests = append(failedTests, msg)
 		}
+
+		buf.Close()
 	}
 
 	if config.particleCount > 0 {

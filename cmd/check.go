@@ -33,14 +33,14 @@ func (config *CheckConfig) ExampleConfig() string {
 # OmegaM = 0.30
 # OmegaL = 0.70
 
-# BoxWidth is in units of Mpc/h.
+# BoxWidth is in units of Mpc/h (not your code units).
 # BoxWidth = 125
 
 # The total number of particles in the simulation box. This is checked exactly.
 # ParticleCount = 1073741824
 
-# ParticleMasses A list of all the valid DM particle masses (there may be more
-# than one if you are running an adaptive simulation).
+# ParticleMasses A list of all the valid DM particle masses in Msun/h (not your
+# code units).
 # ParticleMasses = 1.7e7, 1.8e8, 1.1e9
 
 # ExampleHalo is a the location and size of one halo from your catalog. It

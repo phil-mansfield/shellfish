@@ -550,15 +550,17 @@ Logging = nil
 # GadgetPositionUnits indicates how positions are stored within your Gadget
 # snapshot. Set this variable so the following equation is true:
 # (1 Mpc/h) * GadgetPositionUnits = (Your position units).
-# This variable only needs to be set if SnapshotType = Gadget-2 and your
-# units are not Mpc/h.
+# (i.e. if your position units are smaller than 1 Mpc/h, this variable should
+# be less than one). This variable only needs to be set if
+# SnapshotType = Gadget-2 and your units are not 1 Mpc/h.
 # GadgetPositionUnits = 1.0
 
 # GadgetMassUnits indicates how positions are stored within your Gadget
 # snapshot. Set this variable so the following equation is true:
 # (1 Msun/h) * GadgetMassUnits = (Your mass units).
-# This variable only needs to be set if SnapshotType = Gadget-2 and your
-# units are not Msun/h.
+# (i.e. if your mass units are smaller than 1 Msun/h, this variable should be
+# less than one). This variable only needs to be set if SnapshotType = Gadget-
+# and your units are not 1 Msun/h.
 # GadgetMassUnits = 1.0
 
 # LGadgetNpartNum is an optional variable which should only be set when using

@@ -494,7 +494,7 @@ func checkMemoDir(memoDir, configFile string) error {
 		return fmt.Errorf(`You've changed the variables in the config file %s in a way that would invlalidate the files Shellfish cached in %s (i.e. MemoDir) to speed up performance. Maybe you wanted this (e.g. there was a mistake in the old config file), but maybe you didn't.
 
 If you wanted to make the change and you're SURE there's nothing that you care about in MemoDir, type the command
-    $ rm -r %s
+    $ rm -r %s/*
 and rerun shellfish. (Shellfish could do this for you automatically, but I don't want to accidentally delete something you care about.)
 
 If you want to check what the change is, or if you lost the old config file and want it back, you can find a copy in %s
@@ -610,6 +610,8 @@ func initCatalogs(gConfig *cmd.GlobalConfig, e *env.Environment) error {
 		return e.InitGadget2(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	case "ARTIO":
 		return e.InitARTIO(&gConfig.ParticleInfo, gConfig.ValidateFormats)
+	case "Bolshoi":
+		return e.InitBolshoi(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	}
 	panic("Impossible.")
 }

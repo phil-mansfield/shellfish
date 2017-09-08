@@ -43,9 +43,20 @@ type bolshoiParticle struct {
 }
 
 func NewBolshoiBuffer(
-	path string, order binary.ByteOrder, context Context,
+	path string, orderFlag string, context Context,
 ) (VectorBuffer, error) {
 
+	var order binary.ByteOrder = binary.LittleEndian
+	switch orderFlag {
+	case "LittleEndian":
+	case "BigEndian":
+		order = binary.BigEndian
+	case "SystemOrder":
+		if !IsSysOrder(order) {
+			order = binary.BigEndian
+		}
+	}
+	
 	f, err := os.Open(path)
 	if err != nil { return nil, err }
 	defer f.Close()
@@ -78,12 +89,11 @@ func (bol *BolshoiBuffer) Read(fname string) (
 	fortranRead(f, bol.order, &bh2)
 	fortranRead(f, bol.order, &boundary)
 	fortranRead(f, bol.order, &nPart)
-
+	
 	bol.pBuf = expandBolshoiParticles(bol.pBuf[:0], int(nPart))
 	
 	for nRead := int32(0); nRead < nPart; {
 		fortranRead(f, bol.order, &m)
-		//fortranRead(f, bol.order, bol.pBuf[nRead: nRead+m])
 		_ = readInt32(f, bol.order)
 		readBolshoiParticleAsByte(f, bol.order, bol.pBuf[nRead: nRead+m])
 		_ = readInt32(f, bol.order)
@@ -95,7 +105,7 @@ func (bol *BolshoiBuffer) Read(fname string) (
 	if err != nil { return nil, nil, nil, nil, err }
 	
 	bol.pBuf = filterBolshoiParticles(bol.pBuf, hd)
-	xs, vs, ms, ids = postprocessBolshoi(bol.pBuf, hd, bol)
+	xs, vs, ms, ids = postprocessBolshoi(bol.pBuf, hd, &bh1, bol)
 	
 	return xs, vs, ms, ids, nil
 }
@@ -131,7 +141,9 @@ func bolshoiInRange(p bolshoiParticle, hd *Header) bool {
 		p.X[2] <= hd.Origin[2] + hd.Width[2]
 }
 
-func postprocessBolshoi(p []bolshoiParticle, hd *Header, buf *BolshoiBuffer) (
+func postprocessBolshoi(
+	p []bolshoiParticle, hd *Header, bh1 *bolshoiHeader1, buf *BolshoiBuffer,
+) (
 	x, v [][3]float32, m []float32, id []int64,
 ) {
 	buf.xsBuf = expandVectors(buf.xsBuf[:0], len(p))
@@ -141,8 +153,13 @@ func postprocessBolshoi(p []bolshoiParticle, hd *Header, buf *BolshoiBuffer) (
 
 	scale := float32(1/(1 + hd.Cosmo.Z))
 	mp := buf.MinMass()
+
+	unitConversion := bh1.BoxWidth / float32(bh1.NGridCells)
 	
 	for i, pp := range p {
+		pp.X[0] = (pp.X[0] - 1) * unitConversion
+		pp.X[1] = (pp.X[1] - 1) * unitConversion
+		pp.X[2] = (pp.X[2] - 1) * unitConversion
 		buf.xsBuf[i] = pp.X
 		buf.vsBuf[i] = [3]float32{pp.V[0]*scale, pp.V[1]*scale, pp.V[2]*scale }
 		buf.idsBuf[i] = pp.ID
@@ -185,7 +202,7 @@ func (bol *BolshoiBuffer) ReadHeader(fname string, out *Header) error {
 	fortranRead(f, bol.order, &bh2)
 	fortranRead(f, bol.order, &boundary)
 	fortranRead(f, bol.order, &nPart)
-	
+
 	cosmo := CosmologyHeader{
 		OmegaM: float64(bh1.OmegaM),
 		OmegaL: float64(bh1.OmegaL),

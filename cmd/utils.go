@@ -26,7 +26,7 @@ func getVectorBuffer(
 	case "ARTIO":
 		return io.NewARTIOBuffer(fname)
 	case "Bolshoi":
-		return io.NewBolshoiBuffer(fname, context)
+		return io.NewBolshoiBuffer(fname, config.Endianness, context)
 	}
 	// Impossible, but worth doing anyway.
 	return nil, fmt.Errorf(

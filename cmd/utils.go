@@ -25,6 +25,8 @@ func getVectorBuffer(
 		return io.NewGadget2Buffer(fname, config.Endianness, context)
 	case "ARTIO":
 		return io.NewARTIOBuffer(fname)
+	case "Bolshoi":
+		return io.NewBolshoiBuffer(fname, config.Endianness, context)
 	}
 	// Impossible, but worth doing anyway.
 	return nil, fmt.Errorf(

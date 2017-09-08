@@ -90,6 +90,44 @@ type Context struct {
 	GadgetPositionUnits float64
 }
 
+func reorder(buf []byte, size, words int) {
+	for word := 0; word < words; word++ {
+		for i := 0; i < size/2; i++ {
+			i1, i2 := word*size + i, (word + 1)*size - (i + 1)
+			buf[i1], buf[i2] = buf[i2], buf[i1]
+		}
+	}
+}
+
+func readBolshoiParticleAsByte(
+	rd io.Reader, end binary.ByteOrder, buf []bolshoiParticle,
+) error {
+	bufLen := len(buf)
+	
+	hd := *(*reflect.SliceHeader)(unsafe.Pointer(&buf))
+	hd.Len *= int(unsafe.Sizeof(bolshoiParticle{}))
+	hd.Cap *= int(unsafe.Sizeof(bolshoiParticle{}))
+
+	byteBuf := *(*[]byte)(unsafe.Pointer(&hd))
+	_, err := rd.Read(byteBuf)
+	if err != nil {
+		return err
+	}
+
+	if !IsSysOrder(end) {
+		for i := 0; i < bufLen; i++ {
+			offset := i * 32
+			reorder(byteBuf[offset: offset+24], 4, 6)
+			reorder(byteBuf[offset+24: offset+24+8], 8, 1)
+		}
+	}
+
+	hd.Len /= int(unsafe.Sizeof(bolshoiParticle{}))
+	hd.Cap /= int(unsafe.Sizeof(bolshoiParticle{}))
+
+	return nil
+}
+
 func readVecAsByte(rd io.Reader, end binary.ByteOrder, buf [][3]float32) error {
 	bufLen := len(buf)
 

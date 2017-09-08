@@ -22,6 +22,7 @@ const (
 	LGadget2
 	Gadget2
 	ARTIO
+	Bolshoi
 
 	Rockstar HaloType = iota
 	NilHalo

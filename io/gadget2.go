@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"encoding/binary"
 	"math"
+	"log"
 	"os"
 )
 
@@ -82,7 +83,9 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	_ = readInt32(f, order)
 	binary.Read(f, order, gh)
 	_ = readInt32(f, order)
-	
+
+	log.Printf("NPart from header: %d", gh.NPart)
+
 	// Figure out particle counts so we can size buffers correctly.
 
 	totalN := particleCount(gh)

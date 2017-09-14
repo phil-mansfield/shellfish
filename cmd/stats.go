@@ -347,6 +347,11 @@ func (config *StatsConfig) Run(
 		log.Printf("Memory:\n%s", logging.MemString())
 	}
 
+	log.Printf("Mass in shell: %.6g", massContainedMass)
+	log.Printf("Particle count in shell: %d", massContainedCount)
+	log.Printf("Average particle mass: %.6g",
+		massContainedMass/float64(massContainedCount))
+
 	return append([]string{cString}, lines...), nil
 }
 
@@ -418,11 +423,15 @@ func rangeSp(coeffs []float64, c *StatsConfig) (rmin, rmax float64) {
 	return shell.RadialRange(int(c.monteCarloSamples))
 }
 
+var (
+	massContainedCount = 0
+	massContainedMass = 0.0
+)
+
 func massContained(
 	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64, threads int64,
 ) float64 {
-
 	cpu := runtime.NumCPU()
 	if threads > 0 {
 		cpu = int(threads)
@@ -506,6 +515,8 @@ func massContainedChan(
 		if r2 < low2 || (r2 < high2 &&
 			shell.Contains(float64(x), float64(y), float64(z))) {
 			sum += float64(ms[i])
+			massContainedCount++
+			massContainedMass += float64(ms[i])
 		}
 	}
 

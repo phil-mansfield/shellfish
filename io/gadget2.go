@@ -14,7 +14,7 @@ type gadget2Header struct {
 	Mass                       [6]float64
 	Time, Redshift             float64
 	FlagSfr, FlagFeedback      int32
-	NumPartTotal                 [6]uint32
+	NumPartTotal               [6]uint32
 	FlagCooling, NumFiles      int32
 	BoxSize, Omega0            float64
 	OmegaLambda, HubbleParam   float64
@@ -84,14 +84,19 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	binary.Read(f, order, gh)
 	_ = readInt32(f, order)
 
-	log.Printf("NPart from header: %d", gh.NPart)
+	log.Printf("NPart: %d", gh.NPart)
+	log.Printf("GadgetDMSingleMassIndices: %d",
+		buf.context.GadgetDMSingleMassIndices)
+	log.Printf("GadgetDMTypeIndices: %d", buf.context.GadgetDMTypeIndices)
 
 	// Figure out particle counts so we can size buffers correctly.
 
 	totalN := particleCount(gh)
 	dmN := dmCount(gh, &buf.context)
 	multiN := multiMassParticleCount(gh, &buf.context)
-	
+
+	log.Printf("totalN: %d, dmN: %d, multiN: %d", totalN, dmN, multiN)
+
 	// Resize buffers
 
 	xsBuf = expandVectors(xsBuf[:0], totalN)
@@ -117,11 +122,16 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	_ = readInt32(f, order)
 	readFloat32AsByte(f, order, multiMsBuf)
 	_ = readInt32(f, order)
-
 	
 	// Expand uniform mass types
 
+	log.Printf("Prepacked mass samples: (%d, %d)",
+		msBuf[0], msBuf[18500000])
+
 	unpackMass(gh, &buf.context, multiMsBuf, msBuf)
+
+	log.Printf("Unpacked mass samples: (%d, %d)",
+		msBuf[0], msBuf[18500000])
 
 	// Remove non-DM particle types
 
@@ -130,6 +140,9 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	packInt64(gh, &buf.context, idsBuf)
 	packFloat32(gh, &buf.context, msBuf)
 
+	log.Printf("Packed mass samples: (%d, %d)",
+		msBuf[0], msBuf[18500000])
+
 	// Resize
 	xsBuf = xsBuf[0: dmN]
 	vsBuf = vsBuf[0: dmN]
@@ -137,7 +150,9 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	msBuf = msBuf[0: dmN]
 	
 	err = fix(gh, &buf.context, path, xsBuf, vsBuf, msBuf)
-	
+
+	log.Printf("Buffer length: %d", msBuf)
+
 	return xsBuf, vsBuf, multiMsBuf, msBuf, idsBuf, err
 }
 

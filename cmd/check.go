@@ -108,8 +108,6 @@ func (config *CheckConfig) Run(
 	failedTests, err = haloChecks(hd, buf, config, failedTests, e)
 	if err != nil { return nil, err }
 
-	log.Printf("Checked particle masses: %.4g", config.particleMasses)
-
 	log.Printf("Mass in sphere: %.6g", massContainedMass)
 	log.Printf("Particle count in sphere: %d", massContainedCount)
 	log.Printf("Average particle mass in sphere: %.6g",

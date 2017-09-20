@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"log"
 
 	"github.com/phil-mansfield/shellfish/io"
 	"github.com/phil-mansfield/shellfish/parse"
@@ -97,6 +96,7 @@ func (config *CheckConfig) Run(
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(int(gConfig.HSnapMax), 0), gConfig,
 	)
+	if err != nil { panic(err.Error()) }
 
 	hds, fnames, err := memo.ReadHeaders(int(gConfig.HSnapMax), buf, e)
 	if err != nil { return nil, err }
@@ -107,16 +107,6 @@ func (config *CheckConfig) Run(
 	if err != nil { return nil, err }
 	failedTests, err = haloChecks(hd, buf, config, failedTests, e)
 	if err != nil { return nil, err }
-
-	log.Printf("Mass in sphere: %.6g", massContainedMass)
-	log.Printf("Particle count in sphere: %d", massContainedCount)
-	log.Printf("Average particle mass in sphere: %.6g",
-		massContainedMass/float64(massContainedCount))
-
-	log.Printf("Total mass considered by kernel: %.6g", totalMass)
-	log.Printf("Particle count considered by kernel: %d", totalCount)
-	log.Printf("Average particle mass in kernel: %.6g",
-		totalMass/float64(totalCount))
 
 	if len(failedTests) > 0 {
 		if len(failedTests) == 1 {
@@ -311,13 +301,7 @@ func addMass(
 		r2 := dx*dx + dy*dy + dz*dz
 		if  r2 <= rMax2 {
 			m += float64(ms[i])
-			massContainedCount++
-			massContainedMass += float64(ms[i])
 		}
-
-		totalMass += float64(ms[i])
-		totalCount++
-
 	}
 	
 	return m

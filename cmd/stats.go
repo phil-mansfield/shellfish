@@ -347,21 +347,6 @@ func (config *StatsConfig) Run(
 		log.Printf("Memory:\n%s", logging.MemString())
 	}
 
-	log.Printf("Mass in shell: %.6g", massContainedMass)
-	log.Printf("Particle count in shell: %d", massContainedCount)
-	log.Printf("Average particle mass in shell: %.6g",
-		massContainedMass/float64(massContainedCount))
-
-	log.Printf("Mass in R200m: %.6g", r200Mass)
-	log.Printf("Particle count in R200m: %d", r200Count)
-	log.Printf("Average particle mass in R200m: %.6g",
-		r200Mass/float64(r200Count))
-
-	log.Printf("Total mass considered by kernel: %.6g", totalMass)
-	log.Printf("Particle count considered by kernel: %d", totalCount)
-	log.Printf("Average particle mass in kernel: %.6g",
-		totalMass/float64(totalCount))
-
 	return append([]string{cString}, lines...), nil
 }
 
@@ -432,17 +417,6 @@ func rangeSp(coeffs []float64, c *StatsConfig) (rmin, rmax float64) {
 	shell := analyze.PennaFunc(coeffs, order, order, 2)
 	return shell.RadialRange(int(c.monteCarloSamples))
 }
-
-var (
-	massContainedCount = 0
-	massContainedMass = 0.0
-
-	totalCount = 0
-	totalMass = 0.0
-
-	r200Count = 0
-	r200Mass = 0.0
-)
 
 func massContained(
 	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
@@ -519,6 +493,7 @@ func massContainedChan(
 
 	
 	sum := 0.0
+	
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		x, y, z = x - sphere.C[0], y - sphere.C[1], z - sphere.C[2]
@@ -526,22 +501,12 @@ func massContainedChan(
 		y = wrap(y, tw2)
 		z = wrap(z, tw2)
 
-		r2 := x * x + y * y + z * z
+		r2 := x*x + y*y + z*z
 
 		if r2 < low2 || (r2 < high2 &&
 		shell.Contains(float64(x), float64(y), float64(z))) {
 			sum += float64(ms[i])
-			massContainedCount++
-			massContainedMass += float64(ms[i])
 		}
-
-		if r2 < 0.18613*0.18613 {
-			r200Mass += float64(ms[i])
-			r200Count++
-		}
-
-		totalMass += float64(ms[i])
-		totalCount++
 	}
 
 	out <- sum

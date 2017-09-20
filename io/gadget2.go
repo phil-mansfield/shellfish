@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"encoding/binary"
 	"math"
-	"log"
 	"os"
 )
 
@@ -69,7 +68,7 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	multiMsBuf, msBuf []float32,
 	idsBuf []int64,
 ) (xs, vs [][3]float32, multiMs, ms []float32, ids []int64, err error) {
-
+	
 	// Open the buffer and read the raw gadget header.
 
 	f, err := os.Open(path)
@@ -84,19 +83,12 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	binary.Read(f, order, gh)
 	_ = readInt32(f, order)
 
-	log.Printf("NPart: %d", gh.NPart)
-	log.Printf("GadgetDMSingleMassIndices: %d",
-		buf.context.GadgetDMSingleMassIndices)
-	log.Printf("GadgetDMTypeIndices: %d", buf.context.GadgetDMTypeIndices)
-
 	// Figure out particle counts so we can size buffers correctly.
 
 	totalN := particleCount(gh)
 	dmN := dmCount(gh, &buf.context)
 	multiN := multiMassParticleCount(gh, &buf.context)
-
-	log.Printf("totalN: %d, dmN: %d, multiN: %d", totalN, dmN, multiN)
-
+	
 	// Resize buffers
 
 	xsBuf = expandVectors(xsBuf[:0], totalN)
@@ -106,7 +98,6 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	multiMsBuf = expandScalars(multiMsBuf[:0], multiN)
 
 	// Read all particles into buffers.
-
 	_ = readInt32(f, order)
 	readVecAsByte(f, order, xsBuf)
 	_ = readInt32(f, order)
@@ -115,8 +106,18 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	readVecAsByte(f, order, vsBuf)
 	_ = readInt32(f, order)
 
-	_ = readInt32(f, order)
-	readInt64AsByte(f, order, idsBuf)
+	/* IDs may sometimes be 32-bit. */
+	size := readInt32(f, order)
+	switch int(size) / len(idsBuf) {
+	case 8:
+		readInt64AsByte(f, order, idsBuf)
+	case 4:
+		i32Buf := make([]int32, len(idsBuf))
+		readInt32AsByte(f, order, i32Buf)
+		for i := range i32Buf {
+			idsBuf[i] = int64(i32Buf[i])
+		}
+	}
 	_ = readInt32(f, order)
 
 	_ = readInt32(f, order)
@@ -124,24 +125,13 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	_ = readInt32(f, order)
 	
 	// Expand uniform mass types
-
-	log.Printf("Prepacked mass samples: (%d, %d)",
-		msBuf[0], msBuf[18500000])
-
 	unpackMass(gh, &buf.context, multiMsBuf, msBuf)
-
-	log.Printf("Unpacked mass samples: (%d, %d)",
-		msBuf[0], msBuf[18500000])
-
+	
 	// Remove non-DM particle types
-
 	packVec(gh, &buf.context, xsBuf)
 	packVec(gh, &buf.context, vsBuf)
 	packInt64(gh, &buf.context, idsBuf)
 	packFloat32(gh, &buf.context, msBuf)
-
-	log.Printf("Packed mass samples: (%d, %d)",
-		msBuf[0], msBuf[18500000])
 
 	// Resize
 	xsBuf = xsBuf[0: dmN]
@@ -150,9 +140,7 @@ func (buf *Gadget2Buffer) readGadget2Particles(
 	msBuf = msBuf[0: dmN]
 	
 	err = fix(gh, &buf.context, path, xsBuf, vsBuf, msBuf)
-
-	log.Printf("Buffer length: %d", msBuf)
-
+	
 	return xsBuf, vsBuf, multiMsBuf, msBuf, idsBuf, err
 }
 
@@ -179,7 +167,9 @@ func particleCount(gh *gadget2Header) int {
 func dmCount(gh *gadget2Header, context *Context) int {
 	n := 0
 	for i := range gh.NPart {
-		if isDM(context, i) { n += int(gh.NPart[i]) }
+		if isDM(context, i) {
+			n += int(gh.NPart[i])
+		}
 	}
 	return n
 }
@@ -237,24 +227,12 @@ func packVec(gh *gadget2Header, context *Context, buf [][3]float32) {
 
 		offsets[i + 1] = offsets[i] + int(gh.NPart[i])
 	}
-
-	for i := 0; i < 6; i++ {
-		if isDM(context, i) {
-			for j := 0; j < 3; j++ {
-				min, max := float32(1e6), float32(-1e6)
-				for k := dmOffsets[i]; k < dmOffsets[i + 1]; k++ {
-					if buf[k][j] < min { min = buf[k][j] }
-					if buf[k][j] > max { max = buf[k][j] }
-				}
-			}
-		}
-	}
 	
 	for i := 0; i < 6; i++ {
 		if isDM(context, i) {
 			copy(
-				buf[offsets[i]: offsets[i + 1]],
 				buf[dmOffsets[i]: dmOffsets[i+1]],
+				buf[offsets[i]: offsets[i + 1]],
 			)
 		}
 	}
@@ -276,8 +254,8 @@ func packInt64(gh *gadget2Header, context *Context, buf []int64) {
 	for i := 0; i < 6; i++ {
 		if isDM(context, i) {
 			copy(
-				buf[offsets[i]: offsets[i + 1]],
 				buf[dmOffsets[i]: dmOffsets[i+1]],
+				buf[offsets[i]: offsets[i + 1]],
 			)
 		}
 	}
@@ -295,12 +273,12 @@ func packFloat32(gh *gadget2Header, context *Context, buf []float32) {
 
 		offsets[i + 1] = offsets[i] + int(gh.NPart[i])
 	}
-
+	
 	for i := 0; i < 6; i++ {
 		if isDM(context, i) {
 			copy(
-				buf[offsets[i]: offsets[i + 1]],
 				buf[dmOffsets[i]: dmOffsets[i+1]],
+				buf[offsets[i]: offsets[i+1]],
 			)
 		}
 	}

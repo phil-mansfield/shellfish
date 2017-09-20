@@ -96,6 +96,7 @@ func (config *CheckConfig) Run(
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(int(gConfig.HSnapMax), 0), gConfig,
 	)
+	if err != nil { panic(err.Error()) }
 
 	hds, fnames, err := memo.ReadHeaders(int(gConfig.HSnapMax), buf, e)
 	if err != nil { return nil, err }
@@ -106,7 +107,7 @@ func (config *CheckConfig) Run(
 	if err != nil { return nil, err }
 	failedTests, err = haloChecks(hd, buf, config, failedTests, e)
 	if err != nil { return nil, err }
-	
+
 	if len(failedTests) > 0 {
 		if len(failedTests) == 1 {
 			fmt.Println("Sanity check failed:")
@@ -290,18 +291,13 @@ func addMass(
 
 	m := 0.0
 	
-	min, max := float32(1e6), float32(-1e6)
-	
 	for i, vec := range xs {
 		x, y, z := vec[0], vec[1], vec[2]
 		dx, dy, dz := x - x0, y - y0, z - z0
 		dx = wrap(dx, tw2)
 		dy = wrap(dy, tw2)
 		dz = wrap(dz, tw2)
-		
-		if x > max { max = x }
-		if x < min { min = x }
-		
+
 		r2 := dx*dx + dy*dy + dz*dz
 		if  r2 <= rMax2 {
 			m += float64(ms[i])

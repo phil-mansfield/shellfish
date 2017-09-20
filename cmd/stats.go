@@ -422,7 +422,6 @@ func massContained(
 	hd *io.Header, xs [][3]float32, ms []float32, coeffs []float64,
 	sphere geom.Sphere, rLow, rHigh float64, threads int64,
 ) float64 {
-
 	cpu := runtime.NumCPU()
 	if threads > 0 {
 		cpu = int(threads)
@@ -494,9 +493,10 @@ func massContainedChan(
 
 	
 	sum := 0.0
+	
 	for i := offset; i < hd.N; i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
-		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
+		x, y, z = x - sphere.C[0], y - sphere.C[1], z - sphere.C[2]
 		x = wrap(x, tw2)
 		y = wrap(y, tw2)
 		z = wrap(z, tw2)
@@ -504,7 +504,7 @@ func massContainedChan(
 		r2 := x*x + y*y + z*z
 
 		if r2 < low2 || (r2 < high2 &&
-			shell.Contains(float64(x), float64(y), float64(z))) {
+		shell.Contains(float64(x), float64(y), float64(z))) {
 			sum += float64(ms[i])
 		}
 	}

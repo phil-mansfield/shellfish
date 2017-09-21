@@ -73,6 +73,12 @@ type GlobalConfig struct {
 	GadgetMassUnits float64
 
 	LGadgetNpartNum   int64
+
+	NilSnapOmegaM float64
+	NilSnapOmegaL float64
+	NilSnapH100 float64
+	NilSnapScaleFactors []float64
+	NilSnapTotalWidth float64
 }
 
 var _ Mode = &GlobalConfig{}
@@ -120,6 +126,12 @@ func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 
 	vars.Int(&config.LGadgetNpartNum, "LGadgetNpartNum", 2)
 
+	vars.Float(&config.NilSnapOmegaM, "NilSnapOmegaM", -1)
+	vars.Float(&config.NilSnapOmegaL, "NilSnapOmegaL", -1)
+	vars.Float(&config.NilSnapH100, "NilSnapH100", -1)
+	vars.Floats(&config.NilSnapScaleFactors, "NilSnapScaleFactors", []float64{})
+	vars.Float(&config.NilSnapTotalWidth, "NilSnapTotalWidth", -1)
+
 	if err := parse.ReadConfig(fname, vars); err != nil {
 		return err
 	}
@@ -149,7 +161,7 @@ func (config *GlobalConfig) validate() error {
 	}
 
 	switch config.SnapshotType {
-	case "gotetra", "LGadget-2", "Gadget-2", "ARTIO", "Bolshoi":
+	case "gotetra", "LGadget-2", "Gadget-2", "ARTIO", "Bolshoi", "nil":
 	case "":
 		return fmt.Errorf("The 'SnapshotType variable isn't set.'")
 	default:
@@ -283,6 +295,33 @@ func (config *GlobalConfig) validate() error {
 			)
 		}
 	}
+
+	if config.SnapshotType == "nil" {
+		switch {
+		case config.NilSnapOmegaM == -1:
+			return fmt.Errorf(
+				"'NilSnapOmegaM' not set even though SnapshotType == 'nil'",
+			)
+		case config.NilSnapOmegaL == -1:
+			fmt.Println()
+		case config.NilSnapH100 == -1:
+			return fmt.Errorf(
+				"'NilSnapOmegaM' not set even though SnapshotType == 'nil'",
+			)
+			fmt.Println()
+		case config.NilSnapTotalWidth == -1:
+			return fmt.Errorf(
+				"'NilSnapOmegaM' not set even though SnapshotType == 'nil'",
+			)
+			fmt.Println()
+		case len(config.NilSnapScaleFactors) == 0:
+			return fmt.Errorf(
+				"'NilSnapOmegaM' not set even though SnapshotType == 'nil'",
+			)
+			fmt.Println()
+		}
+	}
+
 
 	switch config.Endianness {
 	case "":
@@ -535,6 +574,16 @@ Threads = -1
 # debugging - debugging information is written to stderr
 Logging = nil
 
+###############################
+## Format-specific variables ##
+###############################
+# If SnapshotType is set to Gadget-2, LGadget-2, or nil, extra information
+# will need to be provided to read your files.
+
+###############################
+## Gadget-specific variables ##
+###############################
+
 # GadgetDMTypeIndices indicates which particle types correspond to dark matter
 # particles. For a typical uniform mass DM-only simulation, this will be 1. For
 # simulations with particles of multiple masses, more than one index may be
@@ -563,6 +612,10 @@ Logging = nil
 # and your units are not 1 Msun/h.
 # GadgetMassUnits = 1.0
 
+################################
+## LGadget-specific variables ##
+################################
+
 # LGadgetNpartNum is an optional variable which should only be set when using
 # LGadget files. If your LGadget files use two elements of Npart and Nall to
 # represent the number of dark matter particles in your simulation, set this
@@ -572,6 +625,21 @@ Logging = nil
 # If you don't know what your LGadget file does, leave this alone: Shellfish will
 # fail and tell you to change this variable.
 # LGadgetNpartNum = 2
+
+##########################################
+## nil (SnapshotType)-specifc variables ##
+##########################################
+# You will need to provide basic cosmological information which is normally
+# contained in snapshot headers. The example values are for the Bolshoi halo
+# catalogs.
+
+# NilSnapOmegaM = 0.27
+# NilSnapOmegaL = 0.73
+# NilSnapH100 = 0.7
+# In ascending order:
+# NilSnapScaleFactors = [0.06635, 0.07835, 0.09635, 0.10235, 0.10835, 0.11435, 0.12035, 0.13235, 0.13835, 0.14435, 0.15035, 0.15635, 0.16235, 0.16835, 0.17435, 0.18035, 0.18635, 0.19235, 0.19835, 0.20235, 0.20435, 0.21035, 0.21635, 0.22235, 0.22835, 0.23435, 0.24635, 0.25235, 0.25835, 0.26435, 0.27035, 0.27635, 0.28235, 0.28835, 0.29435, 0.30635, 0.31235, 0.31835, 0.32435, 0.33035, 0.33635, 0.34235, 0.34835, 0.35435, 0.36035, 0.36635, 0.37235, 0.37835, 0.38435, 0.39035, 0.39635, 0.40235, 0.40835, 0.41435, 0.42035, 0.42635, 0.43235, 0.43835, 0.44435, 0.45035, 0.45635, 0.46235, 0.46835, 0.47435, 0.48035, 0.48635, 0.49835, 0.50435, 0.51035, 0.51635, 0.52235, 0.52835, 0.53235, 0.53835, 0.54435, 0.55035, 0.55635, 0.56235, 0.56835, 0.57435, 0.58035, 0.58635, 0.59235, 0.59835, 0.60435, 0.61035, 0.61635, 0.62235, 0.62835, 0.63435, 0.64035, 0.64635, 0.65235, 0.65835, 0.66435, 0.67035, 0.67635, 0.68235, 0.68835, 0.69435, 0.70035, 0.70635, 0.71235, 0.71835, 0.72435, 0.73035, 0.73635, 0.74235, 0.74835, 0.75435, 0.76035, 0.76635, 0.77235, 0.77835, 0.78435, 0.79035, 0.79635, 0.80235, 0.80835, 0.81135, 0.81435, 0.81735, 0.82035, 0.82335, 0.82635, 0.82935, 0.83235, 0.83535, 0.83835, 0.84135, 0.84435, 0.84735, 0.85035, 0.85335, 0.85635, 0.85935, 0.86235, 0.86535, 0.86835, 0.87135, 0.87435, 0.87735, 0.88035, 0.88335, 0.88635, 0.88935, 0.89235, 0.89535, 0.89835, 0.90135, 0.90435, 0.90735, 0.91035, 0.91335, 0.91635, 0.91935, 0.92235, 0.92535, 0.92835, 0.93135, 0.93435, 0.93735, 0.94335, 0.94635, 0.94935, 0.95235, 0.95835, 0.96135, 0.96435, 0.96735, 0.97035, 0.97335, 0.97635, 0.97935, 0.98235, 0.98535, 0.98835, 0.99135, 0.99435, 0.99735, 1.00035]
+# Measured in Mpc/h:
+# NilSnapTotalWidth = 250
 `, version.SourceVersion)
 }
 

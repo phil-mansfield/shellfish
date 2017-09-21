@@ -394,7 +394,16 @@ func main() {
 		fmt.Println("Shellfish terminating.")
 		os.Exit(1)
 	}
-	
+
+	switch args[1] {
+	case "shell", "stats", "prof", "check":
+		if gConfig.SnapshotType == "nil" {
+			log.Printf("Cannot run mode %s with SnapshotType = nil", args[1])
+			fmt.Println("Shellfish terminating")
+			os.Exit(1)
+		}
+	}
+
 	e := &env.Environment{MemoDir: gConfig.MemoDir}
 	err = initCatalogs(gConfig, e)
 	if err != nil {
@@ -612,6 +621,8 @@ func initCatalogs(gConfig *cmd.GlobalConfig, e *env.Environment) error {
 		return e.InitARTIO(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	case "Bolshoi":
 		return e.InitBolshoi(&gConfig.ParticleInfo, gConfig.ValidateFormats)
+	case "nil":
+		return e.InitNil(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	}
 	panic("Impossible.")
 }

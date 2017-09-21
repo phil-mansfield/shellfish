@@ -14,6 +14,10 @@ func getVectorBuffer(
 		GadgetDMSingleMassIndices: config.GadgetSingleMassIndices,
 		GadgetMassUnits: config.GadgetMassUnits,
 		GadgetPositionUnits: config.GadgetPositionUnits,
+		NilOmegaM: config.NilSnapOmegaM,
+		NilOmegaL: config.NilSnapOmegaL,
+		NilH100: config.NilSnapH100,
+		NilScaleFactors: config.NilSnapScaleFactors,
 	}
 	
 	switch config.SnapshotType {
@@ -27,7 +31,10 @@ func getVectorBuffer(
 		return io.NewARTIOBuffer(fname)
 	case "Bolshoi":
 		return io.NewBolshoiBuffer(fname, config.Endianness, context)
+	case "nil":
+		return io.NewNilBuffer(context)
 	}
+
 	// Impossible, but worth doing anyway.
 	return nil, fmt.Errorf(
 		"SnapshotType '%s' not recognized.", config.SnapshotType,

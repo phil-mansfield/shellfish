@@ -84,10 +84,17 @@ type Header struct {
 
 type Context struct {
 	LGadgetNPartNum int64
+
 	GadgetDMTypeIndices []int64
 	GadgetDMSingleMassIndices []int64
 	GadgetMassUnits float64
 	GadgetPositionUnits float64
+
+	NilTotalWidth float64
+	NilOmegaM float64
+	NilOmegaL float64
+	NilH100 float64
+	NilScaleFactors []float64
 }
 
 func reorder(buf []byte, size, words int) {

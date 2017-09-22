@@ -23,6 +23,7 @@ const (
 	Gadget2
 	ARTIO
 	Bolshoi
+	Nil
 
 	Rockstar HaloType = iota
 	NilHalo
@@ -180,8 +181,8 @@ func (h *Halos) InitNilHalo(dir string, snapMin, snapMax int64) error {
 //////////////////////////////////
 
 // interleave is a bit hard to explain. It will be easier to understand
-// what it's supposed to do by reading the source than it would be to read prose
-// trying to explain it precisely.
+// what it's supposed to do by reading the source than it would be to read
+// English text trying to explain it precisely.
 func interleave(cols [][]interface{}, snapAligned []bool) [][][]interface{} {
 	// Check that all snap-aligned columns are same length.
 	snaps, nonSnaps := -1, 1

@@ -109,17 +109,27 @@ func (config *CoordConfig) Run(
 	fcols := [][]float64{}
 	icolOrder := []int{0, 1}
 	fcolOrder := []int{}
-
+	
 	intNum := 0
 	for _, valueName := range config.values {
-		j := findString(valueName, gConfig.HaloValueNames)
-		comment := gConfig.HaloValueComments[j]
-		if isIntType(comment) { intNum++ }
+		switch valueName {
+		case "R200m", "R200c", "R500c", "R2500c":
+		default:
+			j := findString(valueName, gConfig.HaloValueNames)
+			comment := gConfig.HaloValueComments[j]
+			if isIntType(comment) { intNum++ }
+		}
 	}
 
 	for i, valueName := range config.values {
-		j := findString(valueName, gConfig.HaloValueNames)
-		comment := gConfig.HaloValueComments[j]
+		var comment string
+		switch valueName {
+		case "R200m", "R200c", "R500c", "R2500c":
+			comment = "Mpc/h"
+		default:
+			j := findString(valueName, gConfig.HaloValueNames)
+			comment = gConfig.HaloValueComments[j]
+		}
 
 		if isIntType(comment) {
 			fcol := cols[i]

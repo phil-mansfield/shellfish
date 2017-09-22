@@ -18,6 +18,7 @@ func getVectorBuffer(
 		NilOmegaL: config.NilSnapOmegaL,
 		NilH100: config.NilSnapH100,
 		NilScaleFactors: config.NilSnapScaleFactors,
+		NilTotalWidth: config.NilSnapTotalWidth,
 	}
 	
 	switch config.SnapshotType {

@@ -27,7 +27,6 @@ func (buf *NilBuffer) Close() {
 func (buf *NilBuffer) IsOpen() bool { return false }
 
 func (buf *NilBuffer) ReadHeader(fname string, out *Header) error {
-
 	idx, err := strconv.Atoi(fname)
 	if err != nil { err.Error() }
 
@@ -37,7 +36,7 @@ func (buf *NilBuffer) ReadHeader(fname string, out *Header) error {
 		H100: buf.context.NilH100,
 		Z: 1/buf.context.NilScaleFactors[idx] - 1,
 	}
-
+	
 	*out = Header{
 		Cosmo: cosmo,
 		N: -1,
@@ -49,7 +48,7 @@ func (buf *NilBuffer) ReadHeader(fname string, out *Header) error {
 			float32(buf.context.NilTotalWidth),
 		},
 	}
-
+	
 	return nil
 }
 

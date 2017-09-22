@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"log"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
@@ -455,7 +455,7 @@ func findOverlapSubs(
 			ys[i] *= pucf
 			zs[i] *= pucf
 		}
-
+		
 		g := halo.NewGrid(finderCells, hd.TotalWidth, len(xs))
 		g.Insert(xs, ys, zs)
 		sf := halo.NewSubhaloFinder(g)
@@ -494,7 +494,7 @@ func readSubIDs(
 		groupIdxs[snap] = append(groupIdxs[snap], i)
 	}
 	
-		// Load each snapshot.
+	// Load each snapshot.
 	hds, _, err := memo.ReadHeaders(snaps[0], buf, e)
 	if err != nil {
 		return nil, nil, err

@@ -489,7 +489,7 @@ func chanLoadSphereVec(
 	
 	sf := c.subsampleFactor
 	skip := workers * int(sf*sf*sf)
-	for i := offset * int(sf*sf*sf); i < int(hd.N); i += skip {
+	for i := offset * int(sf*sf*sf); i < len(xs); i += skip {
 		if intr[i] {
 			h.Insert(xs[i], rad, (float64(ms[i])*float64(sf*sf*sf)/
 				sphVol)/rhoM)

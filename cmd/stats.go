@@ -494,7 +494,7 @@ func massContainedChan(
 	
 	sum := 0.0
 	
-	for i := offset; i < hd.N; i += workers {
+	for i := offset; i < int64(len(xs)); i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		x, y, z = x - sphere.C[0], y - sphere.C[1], z - sphere.C[2]
 		x = wrap(x, tw2)
@@ -529,7 +529,7 @@ func appendShellParticlesChan(
 	rHigh += delta
 	low2, high2 := float32(rLow*rLow), float32(rHigh*rHigh)
 		
-	for i := offset; i < hd.N; i += workers {
+	for i := offset; i < int64(len(xs)); i += workers {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		x, y, z = x-sphere.C[0], y-sphere.C[1], z-sphere.C[2]
 		x = wrap(x, tw2)

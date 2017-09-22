@@ -111,7 +111,7 @@ func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 	vars.Ints(&config.BlockMaxes, "BlockMaxes", []int64{})
 	vars.Int(&config.SnapMin, "SnapMin", -1)
 	vars.Int(&config.SnapMax, "SnapMax", -1)
-	vars.String(&config.Endianness, "Endianness", "")
+	vars.String(&config.Endianness, "Endianness", "SystemOrder")
 	vars.Bool(&config.ValidateFormats, "ValidateFormats", false)
 
 	vars.Int(&config.Threads, "Threads", -1)
@@ -272,6 +272,7 @@ func (config *GlobalConfig) validate() error {
 				"len(HaloValueNames) = %d.", len(config.HaloValueColumns),
 				len(config.HaloValueNames))
 		}
+		
 		switch {
 		case !inStringSlice("ID", config.HaloValueNames):
 			return fmt.Errorf(

@@ -104,7 +104,7 @@ func (bol *BolshoiBuffer) Read(fname string) (
 	err = bol.ReadHeader(fname, hd)
 	if err != nil { return nil, nil, nil, nil, err }
 	
-	bol.pBuf = filterBolshoiParticles(bol.pBuf, hd)
+	bol.pBuf = filterBolshoiParticles(bol.pBuf, &bh1, hd)
 	xs, vs, ms, ids = postprocessBolshoi(bol.pBuf, hd, &bh1, bol)
 	
 	return xs, vs, ms, ids, nil
@@ -121,9 +121,15 @@ func expandBolshoiParticles(p []bolshoiParticle, n int) []bolshoiParticle {
 	}
 }
 
-func filterBolshoiParticles(p []bolshoiParticle, hd *Header) []bolshoiParticle {
+func filterBolshoiParticles(
+	p []bolshoiParticle, bh1 *bolshoiHeader1, hd *Header,
+) []bolshoiParticle {
+	unitConversion := bh1.BoxWidth / float32(bh1.NGridCells)	
 	j := 0
 	for _, pp := range p {
+		pp.X[0] = (pp.X[0] - 1) * unitConversion
+		pp.X[1] = (pp.X[1] - 1) * unitConversion
+		pp.X[2] = (pp.X[2] - 1) * unitConversion
 		if bolshoiInRange(pp, hd) {
 			p[j] = pp
 			j++
@@ -153,13 +159,8 @@ func postprocessBolshoi(
 
 	scale := float32(1/(1 + hd.Cosmo.Z))
 	mp := buf.MinMass()
-
-	unitConversion := bh1.BoxWidth / float32(bh1.NGridCells)
 	
 	for i, pp := range p {
-		pp.X[0] = (pp.X[0] - 1) * unitConversion
-		pp.X[1] = (pp.X[1] - 1) * unitConversion
-		pp.X[2] = (pp.X[2] - 1) * unitConversion
 		buf.xsBuf[i] = pp.X
 		buf.vsBuf[i] = [3]float32{pp.V[0]*scale, pp.V[1]*scale, pp.V[2]*scale }
 		buf.idsBuf[i] = pp.ID

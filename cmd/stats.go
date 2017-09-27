@@ -214,6 +214,11 @@ func (config *StatsConfig) Run(
 	}
 	sort.Ints(sortedSnaps)
 
+	if logging.Mode == logging.Performance {
+		log.Println("Finished initial allocations")
+		log.Println(logging.MemString())
+	}
+	
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(snaps[0], 0), gConfig,
 	)
@@ -221,6 +226,11 @@ func (config *StatsConfig) Run(
 		return nil, err
 	}
 
+	if logging.Mode == logging.Performance {
+		log.Println("Initialized VectorBuffer")
+		log.Println(logging.MemString())
+	}
+	
 	for _, snap := range sortedSnaps {
 		if snap == -1 {
 			continue
@@ -256,6 +266,11 @@ func (config *StatsConfig) Run(
 			rmins[idxs[j]], rmaxes[idxs[j]] = rangeSp(snapCoeffs[j], config)
 		}
 
+		if logging.Mode == logging.Performance {
+			log.Println("Shell calculations.")
+			log.Println(logging.MemString())
+		}
+		
 		hds, files, err := memo.ReadHeaders(snap, buf, e)
 		if err != nil {
 			return nil, err
@@ -281,6 +296,11 @@ func (config *StatsConfig) Run(
 			}
 
 			xs, _, ms, pIDs, err := buf.Read(files[i])
+
+			if logging.Mode == logging.Performance {
+				log.Printf("Read segment %d.", i)
+				log.Println(logging.MemString())
+			}
 			
 			if err != nil {
 				return nil, err

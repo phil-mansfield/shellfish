@@ -448,7 +448,7 @@ func loadSphereVecs(
 			numIntr++
 		}
 	}
-
+	
 	h.Split(sphWorkers)
 
 	for i := range sphWorkers {
@@ -506,9 +506,10 @@ func haloAnalysis(
 	// Calculate Penna coefficients.
 	for i := range halos {
 		runtime.GC()
-
+		
 		if logging.Mode == logging.Debug {
-			log.Printf("Halo %3d", i)
+			log.Printf("Halo %3d: %.4f %.4f", i,
+				halos[i].Origin(), halos[i].RMax())
 		}
 
 		if c.percentileProfile {

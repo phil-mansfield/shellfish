@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	
 	"github.com/phil-mansfield/shellfish/cmd/env"
 	"github.com/phil-mansfield/shellfish/parse"
 	"github.com/phil-mansfield/shellfish/version"
@@ -137,7 +137,7 @@ func (config *GlobalConfig) ReadConfig(fname string, flags []string) error {
 	}
 	config.HSnapMax = config.SnapMax
 	config.HSnapMin = config.SnapMin
-
+	
 	return config.validate()
 }
 
@@ -276,7 +276,7 @@ func (config *GlobalConfig) validate() error {
 		switch {
 		case !inStringSlice("ID", config.HaloValueNames):
 			return fmt.Errorf(
-				"'HaloValueNames' does not contain the 'X' name.",
+				"'HaloValueNames' does not contain the 'ID' name.",
 			)
 		case !inStringSlice("X", config.HaloValueNames):
 			return fmt.Errorf(

@@ -3,10 +3,12 @@ package catalog
 import (
 	"fmt"
 	"os"
+	"io"
 	"io/ioutil"
 	"strconv"
 	"bytes"
 	"strings"
+	"runtime"
 )
 
 func CommentString(
@@ -151,8 +153,14 @@ func ReadFile(fname string, icolIdxs, fcolIdxs []int) (
 [][]int, [][]float64, error,
 ) {
 	f, err := os.Open(fname)
+	defer f.Close()
 	if err != nil { return nil, nil, err }
-	data, err := ioutil.ReadAll(f)
+	info, err := f.Stat()
+	if err != nil { return nil, nil, err }
+	
+	data := make([]byte, int(info.Size()))
+	io.ReadAtLeast(f, data, len(data))
+
 	if err != nil { return nil, nil, err }
 	return Parse(data, icolIdxs, fcolIdxs)
 }
@@ -317,4 +325,13 @@ func fields(data []byte, sep byte, buf [][]byte) [][]byte {
 	}
 
 	return buf[0:na]
+}
+
+func MemString() string {
+	ms := runtime.MemStats{}
+	runtime.ReadMemStats(&ms)
+	return fmt.Sprintf(
+		"Alloc - %d MB; Sys - %d MB Integrated - %d MB",
+		ms.Alloc >> 20, ms.Sys >> 20, ms.TotalAlloc >> 20,
+	)
 }

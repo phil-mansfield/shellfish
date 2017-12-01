@@ -23,10 +23,9 @@ func (b *Bounds) SphereBounds(pos [3]float64, r, cw, width float64) {
 		min, max := pos[i]-r, pos[i]+r
 		if min < 0 {
 			min += width
-		}
-		if min > max {
 			max += width
 		}
+		
 		minCell, maxCell := int(min/cw), int(max/cw)
 		b.Origin[i] = minCell
 		b.Span[i] = maxCell - minCell + 1
@@ -88,15 +87,13 @@ func (sf *SubhaloFinder) FindSubhalos(
 	}
 	cMax := cumulativeMax(rs)
 
-	vol := 0.0
 	for ih, rh := range rs {
 		sf.startSubhalos(ih)
 		maxSR := cMax[ih]
 
 		pos[0], pos[1], pos[2] = xs[ih], ys[ih], zs[ih]
 		b.SphereBounds(pos, rh+maxSR, sf.g.cw, sf.g.Width)
-		vol += float64(b.Span[0] * b.Span[1] * b.Span[2])
-
+		
 		for dz := 0; dz < b.Span[2]; dz++ {
 			z := b.Origin[2] + dz
 			if z >= c {
@@ -114,11 +111,12 @@ func (sf *SubhaloFinder) FindSubhalos(
 					if x >= c {
 						x -= c
 					}
-
+					
 					idx := zOff + yOff + x
 
 					buf = sf.g.ReadIndexes(idx, buf)
-					sf.markSubhalos(ih, buf, xs, ys, zs, rs)
+					
+					sf.markSubhalos(ih, buf, xs, ys, zs, rs, sf.g.Width)
 				}
 			}
 		}
@@ -236,7 +234,7 @@ func (sf *SubhaloFinder) startSubhalos(i int) {
 }
 
 func (sf *SubhaloFinder) markSubhalos(
-	ih int, idxs []int, xs, ys, zs, rs []float64,
+	ih int, idxs []int, xs, ys, zs, rs []float64, L float64,
 ) {
 	hx, hy, hz, hr := xs[ih], ys[ih], zs[ih], rs[ih]
 	for _, j := range idxs {
@@ -244,8 +242,16 @@ func (sf *SubhaloFinder) markSubhalos(
 			continue
 		}
 		sx, sy, sz, sr := xs[j], ys[j], zs[j], rs[j]
-		dx, dy, dz, dr := hx-sx, hy-sy, hz-sz, hr+sr
-		if dr*dr >= dx*dx+dy*dy+dz*dz {
+		dx, dy, dz, dr := hx-sx, hy-sy, hz-sz, hr
+
+		if dx > +L/2 { dx -= L }
+		if dx < -L/2 { dx += L }
+		if dy > +L/2 { dy -= L }
+		if dy < -L/2 { dy += L }
+		if dz > +L/2 { dz -= L }
+		if dz < -L/2 { dz += L }
+		
+		if dr*dr >= dx*dx + dy*dy + dz*dz {
 			sf.subhalos = append(sf.subhalos, j)
 		}
 	}

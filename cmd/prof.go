@@ -98,7 +98,6 @@ ProfileType = median-density
 
 
 func (config *ProfConfig) ReadConfig(fname string, flags []string) error {
-
 	vars := parse.NewConfigVars("prof.config")
 
 	vars.Int(&config.bins, "Bins", 150)
@@ -120,16 +119,15 @@ func (config *ProfConfig) ReadConfig(fname string, flags []string) error {
 		if err != nil {
 			return err
 		}
-
-		return config.validate()		
+	} else {
+		if err := parse.ReadConfig(fname, vars); err != nil {
+			return err
+		}
+		if err := parse.ReadFlags(flags, vars); err != nil {
+			return err
+		}
 	}
-	if err := parse.ReadConfig(fname, vars); err != nil {
-		return err
-	}
-	if err := parse.ReadFlags(flags, vars); err != nil {
-		return err
-	}
-
+	
 	// Needs to be done here: can't be in the validate method.
 	switch pType {
 	case "":
@@ -147,7 +145,7 @@ func (config *ProfConfig) ReadConfig(fname string, flags []string) error {
 	default:
 		return fmt.Errorf("The varaiable 'ProfileType' was set to '%s'.", pType)
 	}
-
+	
 	return config.validate()
 }
 
@@ -280,7 +278,7 @@ func (config *ProfConfig) Run(
 		sortedSnaps = append(sortedSnaps, snap)
 	}
 	sort.Ints(sortedSnaps)
-
+	
 	buf, err := getVectorBuffer(
 		e.ParticleCatalog(snaps[0], 0), gConfig,
 	)
@@ -329,7 +327,7 @@ func (config *ProfConfig) Run(
 			for _, j := range intrIdxs[i] {
 				rhos := rhoSets[idxs[j]]
 				s := hBounds[j]
-
+				
 				if config.pType == medianDensityProfile ||
 					config.pType == medianErrorProfile {
 					medRhos := medRhoSets[idxs[j]]

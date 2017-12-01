@@ -2,7 +2,6 @@ package halo
 
 import (
 	"encoding/binary"
-	"io/ioutil"
 	"os"
 	"sort"
 
@@ -270,16 +269,6 @@ func binaryColGetter(file string, colIdxs []int) ([][]float64, error) {
 func readTable(file string, colIdxs []int) ([][]float64, error) {
 	// TODO: Heavily optimize this.
 
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	_, floats, err := catalog.Parse(data, nil, colIdxs)
+	_, floats, err := catalog.ReadFile(file, nil, colIdxs)
 	return floats, err
 }

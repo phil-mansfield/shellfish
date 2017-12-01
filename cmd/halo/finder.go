@@ -243,7 +243,8 @@ func (sf *SubhaloFinder) markSubhalos(
 		}
 		sx, sy, sz, sr := xs[j], ys[j], zs[j], rs[j]
 		dx, dy, dz, dr := hx-sx, hy-sy, hz-sz, hr
-
+		_ = sr
+		
 		if dx > +L/2 { dx -= L }
 		if dx < -L/2 { dx += L }
 		if dy > +L/2 { dy -= L }

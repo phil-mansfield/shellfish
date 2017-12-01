@@ -150,7 +150,7 @@ func Parse(data []byte, icolIdxs, fcolIdxs []int) (
 }
 
 func ReadFile(fname string, icolIdxs, fcolIdxs []int) (
-[][]int, [][]float64, error,
+	[][]int, [][]float64, error,
 ) {
 	f, err := os.Open(fname)
 	defer f.Close()
@@ -160,17 +160,32 @@ func ReadFile(fname string, icolIdxs, fcolIdxs []int) (
 	
 	data := make([]byte, int(info.Size()))
 	io.ReadAtLeast(f, data, len(data))
-
 	if err != nil { return nil, nil, err }
-	return Parse(data, icolIdxs, fcolIdxs)
+
+	icols, fcols, err := Parse(data, icolIdxs, fcolIdxs)
+	if err != nil {
+		return nil, nil, fmt.Errorf(
+			"Error parsing catalog from %s: %s", fname, err.Error(),
+		)
+	}
+
+	return icols, fcols, nil
 }
 
 func ReadStdin(fname string, icolIdxs, fcolIdxs []int) (
-[][]int, [][]float64, error,
+	[][]int, [][]float64, error,
 ) {
 	data, err  := ioutil.ReadAll(os.Stdin)
 	if err != nil { return nil, nil, err }
-	return Parse(data, icolIdxs, fcolIdxs)
+
+	icols, fcols, err := Parse(data, icolIdxs, fcolIdxs)
+	if err != nil {
+		return nil, nil, fmt.Errorf(
+			"Error parsing catalog from stdin: %s", err.Error(),
+		)
+	}
+
+	return icols, fcols, nil
 }
 
 // split splits a byte splice at each separating flag. Faster than
@@ -244,7 +259,7 @@ func trim(lines [][]byte, sep byte) [][]byte {
 }
 
 func parse(lines [][]byte, sep byte, icolIdxs, fcolIdxs []int) (
-[][]int, [][]float64, error,
+	[][]int, [][]float64, error,
 ) {
 	// Set up output and buffers
 
@@ -257,6 +272,26 @@ func parse(lines [][]byte, sep byte, icolIdxs, fcolIdxs []int) (
 	if len(lines) == 0 { return icols, fcols, nil }
 	buf := make([][]byte, len(bytes.Fields(lines[0])))
 
+	maxCol := -1
+	for _, i := range icolIdxs {
+		if i > maxCol { maxCol = i }
+	}
+	for _, i := range fcolIdxs {
+		if i > maxCol { maxCol = i }
+	}
+
+	if maxCol >= len(buf) {
+		if len(buf) == 1 {
+			return nil, nil, fmt.Errorf(
+				"Data has 1 column, but column %d was requested.", maxCol,
+			)
+		} else {
+			return nil, nil, fmt.Errorf(
+				"Data has %d columns, but column %d was requested.",
+				len(buf), maxCol,
+			)
+		}
+	}
 
 	var err error
 	for i, line := range lines {
@@ -266,7 +301,7 @@ func parse(lines [][]byte, sep byte, icolIdxs, fcolIdxs []int) (
 		words := fields(line, sep, buf)
 		if len(words) != len(buf) {
 			return nil, nil, fmt.Errorf(
-				"Data (not file) line %d has %d columns, not %d.",
+				"Data on line %d has %d columns, not %d.",
 				i+1, len(words), len(buf),
 			)
 		}

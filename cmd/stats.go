@@ -26,6 +26,8 @@ type StatsConfig struct {
 	exclusionStrategy string
 	order             int64
 
+	skipMass          bool
+	
 	shellFilter       bool
 	shellParticleFile string
 	shellWidth        float64
@@ -60,6 +62,13 @@ ExclusionStrategy = none
 # Order is the order of the Penna shell constructed around the halos. It must be
 # the same value used by the shell.config file. By default both are set to 3.
 Order = 3
+
+# SkipMass indicates whether splashback masses should be calculated. This is the
+# most expensive part of calculating the stats catalog by several order of
+# magnitude.
+#
+# ShellParticle files will also not be writen.
+# SkipMass = false
 
 # ShellParticleFile and ShellWidth allow Shellfish to output a file containing
 # the IDs of particles which are close to the edge of the halo.
@@ -104,7 +113,9 @@ func (config *StatsConfig) ReadConfig(fname string, flags []string) error {
 	vars.Int(&config.order, "Order", 3)
 	vars.String(&config.shellParticleFile, "ShellParticleFile", "")
 	vars.Float(&config.shellWidth, "ShellWidth", 0)
+	vars.Bool(&config.skipMass, "SkipMass", false)
 
+	
 	if fname == "" {
 		if len(flags) == 0 {
 			return nil
@@ -291,9 +302,8 @@ func (config *StatsConfig) Run(
 		}
 
 		for i := range hds {
-			if len(intrBins[i]) == 0 {
-				continue
-			}
+			if config.skipMass { break }
+			if len(intrBins[i]) == 0 { continue }
 
 			xs, _, ms, pIDs, err := buf.Read(files[i])
 
@@ -331,7 +341,7 @@ func (config *StatsConfig) Run(
 		}
 	}
 
-	if config.shellFilter {
+	if config.shellFilter && !config.skipMass {
 		writeShellParticles(snaps, ids, shellParticles, gConfig, config)
 	}
 

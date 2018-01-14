@@ -23,6 +23,7 @@ const (
 	Gadget2
 	ARTIO
 	Bolshoi
+	BolshoiP
 	Nil
 
 	Rockstar HaloType = iota

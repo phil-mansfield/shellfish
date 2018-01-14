@@ -63,7 +63,7 @@ func NewBolshoiBuffer(
 
 	buf := &BolshoiBuffer{ order: order }
 	comment := [45]byte{}
-	
+
 	fortranRead(f, order, &comment)
 	fortranRead(f, order, &buf.bh1)
 	fortranRead(f, order, &buf.bh2)
@@ -176,10 +176,15 @@ func (bol *BolshoiBuffer) IsOpen() bool { return false }
 
 func fortranRead(rd io.Reader, order binary.ByteOrder, buf interface{}) {
 	size1 := readInt32(rd, order)
+	if binary.Size(buf) != int(size1) {
+		panic(fmt.Sprintf("Buffer size is %d, but Fortran header is %d.",
+			binary.Size(buf), size1))
+	}
+	
 	err := binary.Read(rd, order, buf)
 	if err != nil { panic(err.Error()) }
 	size2 := readInt32(rd, order)
-
+	
 	if size1 != size2 {
 		panic(fmt.Sprintf(
 			"Fortran binary header is %d, but footer is %d.", size1, size2,

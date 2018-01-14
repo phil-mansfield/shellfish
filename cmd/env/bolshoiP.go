@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func (cat *Catalogs) InitBolshoi(info *ParticleInfo, validate bool) error {
-	cat.CatalogType = Bolshoi
+func (cat *Catalogs) InitBolshoiP(info *ParticleInfo, validate bool) error {
+	cat.CatalogType = BolshoiP
 	cat.snapMin = int(info.SnapMin)
 
 	cols := make([][]interface{}, len(info.SnapshotFormatMeanings))

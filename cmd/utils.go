@@ -32,6 +32,8 @@ func getVectorBuffer(
 		return io.NewARTIOBuffer(fname)
 	case "Bolshoi":
 		return io.NewBolshoiBuffer(fname, config.Endianness, context)
+	case "BolshoiP":
+		return io.NewBolshoiPBuffer(fname, config.Endianness, context)
 	case "nil":
 		return io.NewNilBuffer(context)
 	}

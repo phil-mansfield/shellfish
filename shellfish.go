@@ -621,6 +621,8 @@ func initCatalogs(gConfig *cmd.GlobalConfig, e *env.Environment) error {
 		return e.InitARTIO(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	case "Bolshoi":
 		return e.InitBolshoi(&gConfig.ParticleInfo, gConfig.ValidateFormats)
+	case "BolshoiP":
+		return e.InitBolshoiP(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	case "nil":
 		return e.InitNil(&gConfig.ParticleInfo, gConfig.ValidateFormats)
 	}

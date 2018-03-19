@@ -18,10 +18,12 @@ var ModeNames map[string]Mode = map[string]Mode{
 	"id":    &IDConfig{},
 	"tree":  &TreeConfig{},
 	"coord": &CoordConfig{},
-	"prof": &ProfConfig{},
+	"prof":  &ProfConfig{},
 	"shell": &ShellConfig{},
 	"stats": &StatsConfig{},
+	"phase": &PhaseConfig{},
 	"check": &CheckConfig{},
+	"potential": &PotentialConfig{},
 }
 
 // Mode represents the interface used by the main binary when interacting with

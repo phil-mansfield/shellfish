@@ -243,6 +243,8 @@ Column 9 to 11 - A: The x, y, and z components of the major axis of the
 	"prof.config":  cmd.ModeNames["prof"].ExampleConfig(),
 	"shell.config": cmd.ModeNames["shell"].ExampleConfig(),
 	"stats.config": cmd.ModeNames["stats"].ExampleConfig(),
+	"phase.config": cmd.ModeNames["phase"].ExampleConfig(),
+	"potential.config": cmd.ModeNames["potential"].ExampleConfig(),
 	"check.config": cmd.ModeNames["check"].ExampleConfig(),
 }
 
@@ -253,13 +255,15 @@ although the formatting will be less pretty.)
 
 The different tools in the Shellfish toolchain are:
 
-    shellfish check  [____.check.config] [flags]
-    shellfish id     [____.id.config]    [flags]
-    shellfish tree   [____.tree.config]  [flags]
-    shellfish coord  [____.coord.config] [flags]
-    shellfish prof   [____.prof.config]  [flags]
-    shellfish shell  [____.shell.config] [flags]
-    shellfish stats  [____.stats.config] [flags]
+    shellfish check     [____.check.config]     [flags]
+    shellfish id        [____.id.config]        [flags]
+    shellfish tree      [____.tree.config]      [flags]
+    shellfish coord     [____.coord.config]     [flags]
+    shellfish prof      [____.prof.config]      [flags]
+    shellfish shell     [____.shell.config]     [flags]
+    shellfish stats     [____.stats.config]     [flags]
+    shellfish phase     [____.stats.config]     [flags]
+    shellfish potential [____.potential.config] [flags]
 
 (Arguments in brackets are optional.)
 
@@ -275,7 +279,8 @@ the same variable, the command line value will be used.
 For documented example config files, type any of:
 
     shellfish help [ check.config | id.config | prof.config |shell.config |
-                     stats.config | tree.config ]
+                     stats.config | tree.config | phase.config |
+                     potenial.config ]
 
 In addition to any arguments passed at the command line, before calling
 Shellfish rountines you will need to specify a "global" config file (it
@@ -294,7 +299,8 @@ shellfish as a series of piped commands. E.g:
 For more information on the input and output that a given tool expects, type
 any of:
 
-    shellfish help [ check | id | tree | coord | prof | shell | stats ]`
+    shellfish help [ check | id | tree | coord | prof | shell | stats | phase |
+                     potential ]`
 
 func main() {
 	args := os.Args
@@ -344,7 +350,7 @@ func main() {
 
 	var stdinData []byte
 	switch args[1] {
-	case "tree", "coord", "prof", "shell", "stats":
+	case "tree", "coord", "prof", "shell", "stats", "phase", "potential":
 		var err error
 		stdinData, err = ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -396,7 +402,7 @@ func main() {
 	}
 
 	switch args[1] {
-	case "shell", "stats", "prof", "check":
+	case "shell", "stats", "prof", "check", "phase", "potential":
 		if gConfig.SnapshotType == "nil" {
 			log.Printf("Cannot run mode %s with SnapshotType = nil", args[1])
 			fmt.Println("Shellfish terminating")
@@ -586,7 +592,7 @@ func initHalos(
 	mode string, gConfig *cmd.GlobalConfig, e *env.Environment,
 ) error {
 	switch mode {
-	case "shell", "stats", "prof", "check":
+	case "shell", "stats", "prof", "check", "phase", "potential":
 		return nil
 	}
 

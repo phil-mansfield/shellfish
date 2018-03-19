@@ -259,9 +259,11 @@ func (config *ProfConfig) Run(
 		intCols, fCols, err = catalog.Parse(
 			stdin, intColIdxs, floatColIdxs,
 		)
-		coords, scaleRs, masses, vCoords =
-			fCols[:4], fCols[4], fCols[5], fCols[6:9]
+		if err != nil { return nil, err }
 
+		coords, masses, scaleRs, vCoords =
+			fCols[:4], fCols[4], fCols[5], fCols[6:9]
+		
 		if err != nil {
 			return nil, err
 		}
@@ -333,7 +335,7 @@ func (config *ProfConfig) Run(
 			make([]float64, len(idxs)), make([]float64, len(idxs)),
 			make([]float64, len(idxs)), make([]float64, len(idxs)),
 			// scale radii
-			make([]float64, len(idxs)),
+			make([]float64, len(idxs)), make([]float64, len(idxs)),
 			// halo velocities
 			make([]float64, len(idxs)),  make([]float64, len(idxs)),
 			make([]float64, len(idxs)),
@@ -450,9 +452,9 @@ func insertPoints(
 
 	vVir := float32(508.0 * math.Sqrt(float64((s.M / 6e13) / (s.S.R / 1.0))))
 	cVir := s.S.R / s.Rs
-	phiPrefactor := float32(math.Log(1 + float64(cVir)) -
-		float64(cVir/(1 + cVir)))
-
+	phiPrefactor := 1/(float32(math.Log(1 + float64(cVir)) -
+		float64(cVir/(1+ cVir))))
+	
 	for i, vec := range xs {
 		x, y, z := vec[0], vec[1], vec[2]
 		dx, dy, dz := x - x0, y - y0, z - z0
@@ -483,9 +485,10 @@ func insertPoints(
 			dvz := vs[i][2] - s.Vz
 			dv2 := dvx*dvx + dvy*dvy + dvz*dvz
 
-			phi := vVir*vVir / phiPrefactor *
+			phi := vVir*vVir * phiPrefactor *
 				float32(math.Log(float64(1 + cVir*x)))/x
 			vesc2 := phi * 2.0
+			
 			if vesc2 > dv2 {
 				rhos[ir] += float64(ms[i])
 			}

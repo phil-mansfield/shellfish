@@ -20,6 +20,7 @@ type PhaseConfig struct {
 	rbins, vbins int64
 	rMaxMult, vMaxMult float64
 	pType phaseProfileType
+	subHub bool
 }
 
 type phaseProfileType int
@@ -48,6 +49,8 @@ ProfileType = radial
 # RMaxMult = 3.0
 # Mutliplies V200m:
 # VMaxMult = 3.0
+
+# SubtractHubble = false
 `
 }
 
@@ -58,8 +61,9 @@ func (config *PhaseConfig) ReadConfig(fname string, flags []string) error {
 	vars.Int(&config.rbins, "RBins", 100)
 	vars.Int(&config.vbins, "VBins", 100)
 	vars.Float(&config.rMaxMult, "RMaxMult", 3.0)
-	vars.Float(&config.rMaxMult, "VMaxMult", 3.0)
-
+	vars.Float(&config.vMaxMult, "VMaxMult", 3.0)
+	vars.Bool(&config.subHub, "SubtractHubble", false)
+	
 	var pType string
 	vars.String(&pType, "ProfileType", "")
 
@@ -129,9 +133,13 @@ func (config *PhaseConfig) Run(
 
 	ids, snaps := icols[0], icols[1]
 	hx := [3][]float64{ fcols[0], fcols[1], fcols[2] }
-	hr := fcols[3]
-	hvx := [3][]float64{ fcols[4], fcols[5], fcols[6] }
-	hvr := fcols[7]
+	hr, hm := fcols[3], fcols[4]
+	hvx := [3][]float64{ fcols[5], fcols[6], fcols[7] }
+
+	hvr := make([]float64, len(hr))
+	for i := range hvr {
+		hvr[i] = 508.0 * math.Sqrt((hm[i] / 6e13) / (hr[i] / 1.0))
+	}
 
 	if len(ids) == 0 { return nil, fmt.Errorf("No input halos.") }
 
@@ -141,10 +149,10 @@ func (config *PhaseConfig) Run(
 	rhoSets := make([][]float64, len(ids))
 	for i := range rSets {
 		rSets[i] = make([]float64, config.rbins)
-		vSets[i] = make([]float64, config.rbins)
+		vSets[i] = make([]float64, config.vbins)
 		rhoSets[i] = make([]float64, config.rbins*config.vbins)
 	}
-
+	
 	snapBins, idxBins := binBySnap(snaps, ids)
 
 	sortedSnaps := []int{}
@@ -246,7 +254,7 @@ func (config *PhaseConfig) Run(
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot", "R [cMpc/h]", "V [pkm/s]",
 			"Rho [h^2 Msun/cMpc^3/(pkm/s), V major]"},
-		[]string{}, []int{0, 1, 2, 3},
+		[]string{}, []int{0, 1, 2, 3, 4},
 		[]int{1, 1, int(config.vbins), int(config.rbins),
 			int(config.rbins)*int(config.vbins)},
 	)
@@ -276,7 +284,7 @@ func insertPhasePoints(
 	x0, y0, z0 := hx.C[0], hx.C[1], hx.C[2]
 	vx0, vy0, vz0 := hv.C[0], hv.C[1], hv.C[2]
 	tw2 := float32(hd.TotalWidth) / 2
-	
+
 	for i, vec := range xs {
 		x, y, z := vec[0], vec[1], vec[2]
 		dx, dy, dz := x - x0, y - y0, z - z0
@@ -293,38 +301,47 @@ func insertPhasePoints(
 		vx, vy, vz := vs[i][0] - vx0, vs[i][1] - vy0, vs[i][2] - vz0
 		if config.pType == radialPhaseProfile {
 			v = float64(vx*dx + vy*dy + vz*dz) / r
+			if config.subHub {
+				h0 := 70.0 // TODO: Fix this.
+				v -= r * h0
+			}
 		} else {
+			if config.subHub {
+				h0 := float32(70.0) // TODO: Fix this.
+				vxHub, vyHub, vzHub := h0*dx, h0*dy, h0*dz
+				vx, vy, vz = vx - vxHub, vy - vyHub, vz - vzHub
+			}
 			v = math.Sqrt(float64(vx*vx + vy*vy + vz*vz))
 		}
 
 		ir := int(r / dr)
 		if ir == int(config.rbins) { ir-- }
 		iv := int((v - vMin) / dv)
-		if iv == int(config.vbins) { iv-- }
+		if iv >= int(config.vbins) || iv < 0 { continue }
 
 		rhos[ir*int(config.vbins) + iv] += float64(ms[i])
 	}
 }
 func processPhaseProfile(
 	rs, vs, rhos []float64, rMax, vMax float64, pType phaseProfileType,
-) {
+) {	
 	vMin := 0.0
 	if pType == radialPhaseProfile { vMin = -vMax }
 
 	dv := (vMax - vMin) / float64(len(vs))
 	dr := rMax / float64(len(rs))
-
+	
 	for i := range vs {
-		vs[i] = vMin + dr*(float64(i) + 0.5)
+		vs[i] = vMin + dv*(float64(i) + 0.5)
 	}
-
+	
 	for j := range rs {
-		rs[j] = math.Exp(dr*(float64(j) + 0.5))
+		rs[j] = dr*(float64(j) + 0.5)
 
-		rLo := math.Exp(dr*float64(j))
-		rHi := math.Exp(dr*float64(j+1))
+		rLo := dr*float64(j)
+		rHi := dr*float64(j+1)
 		dV := (rHi*rHi*rHi - rLo*rLo*rLo) * 4 * math.Pi / 3
-
+		
 		for i := range vs {
 			rhos[j*len(vs) + i] = rhos[j*len(vs) + i] / (dV * dv)
 		}

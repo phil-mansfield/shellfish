@@ -26,7 +26,7 @@ var _ Mode = &PotentialConfig{}
 func (config *PotentialConfig) ExampleConfig() string {
 	return `[potential.config]
 NCells = 64
-GridRMult = 4
+GridRMult = 8
 # RMinMult is the radius particles muse
 RMinMult = 1
 # RMaxMult is the maximum radius inside which particles are used to calculate
@@ -39,8 +39,8 @@ RMaxMult = 50
 func (config *PotentialConfig) ReadConfig(fname string, flags []string) error {
 	vars := parse.NewConfigVars("prof.config")
 
-	vars.Int(&config.ncells, "RBins", 8)
-	vars.Float(&config.rGridMult, "GridRMult", 4)
+	vars.Int(&config.ncells, "RBins", 64)
+	vars.Float(&config.rGridMult, "GridRMult", 8)
 	vars.Float(&config.rMaxMult, "RMaxMult", 1.0)
 	vars.Float(&config.rMinMult, "RMinMult", 1.0)
 

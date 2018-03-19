@@ -36,6 +36,7 @@ const (
 	medianErrorProfile
 	containedDensityProfile
 	angularFractionProfile
+	boundDensityProfile
 )
 
 var _ Mode = &ProfConfig{}
@@ -58,6 +59,7 @@ func (config *ProfConfig) ExampleConfig() string {
 # contained-densiy -  A density profile which only uses particles.
 # angular-fraction -  The angular fraction at each radius which is contained
 #                     within the shell.
+# bound-density -     The density of bound matter, assuming an NFW profile.
 ProfileType = median-density
 
 # Order is the order of the Penna-Dines shell fit that Shellfish uses. This
@@ -142,6 +144,8 @@ func (config *ProfConfig) ReadConfig(fname string, flags []string) error {
 		config.pType = containedDensityProfile
 	case "angular-fraction":
 		config.pType = angularFractionProfile
+	case "bound-density":
+		config.pType = boundDensityProfile
 	default:
 		return fmt.Errorf("The varaiable 'ProfileType' was set to '%s'.", pType)
 	}
@@ -185,7 +189,10 @@ func (config *ProfConfig) Run(
 
 	var (
 		intCols [][]int
-		coords [][]float64
+		coords  [][]float64
+		vCoords [][]float64
+		scaleRs []float64
+		masses  []float64
 		shells []analyze.Shell
 		err error
 	)
@@ -204,6 +211,12 @@ func (config *ProfConfig) Run(
 		}
 
 		shells = make([]analyze.Shell, len(coords[0]))
+		vCoords = make([][]float64, 3)
+		masses = make([]float64, len(coords[0]))
+		scaleRs = make([]float64, len(coords[0]))
+		for i := range vCoords {
+			vCoords[i] = make([]float64, len(coords[0]))
+		}
 	case containedDensityProfile, angularFractionProfile:
 		intColIdxs := []int{0, 1}
 		floatColIdxs := make([]int, 4 + config.order*config.order*2)
@@ -231,6 +244,29 @@ func (config *ProfConfig) Run(
 			order := int(config.order)
 			shells[i] = analyze.PennaFunc(coeffVec, order, order, 2)
 		}
+
+		scaleRs = make([]float64, len(coords[0]))
+		masses = make([]float64, len(coords[0]))
+		vCoords = make([][]float64, 3)
+		for i := range vCoords {
+			vCoords[i] = make([]float64, len(coords[0]))
+		}
+	case boundDensityProfile:
+		intColIdxs := []int{0, 1}
+		floatColIdxs := []int{2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+		var fCols [][]float64
+		intCols, fCols, err = catalog.Parse(
+			stdin, intColIdxs, floatColIdxs,
+		)
+		coords, scaleRs, masses, vCoords =
+			fCols[:4], fCols[4], fCols[5], fCols[6:9]
+
+		if err != nil {
+			return nil, err
+		}
+
+		shells = make([]analyze.Shell, len(coords[0]))
 	}
 
 	if len(intCols) == 0 {
@@ -293,32 +329,45 @@ func (config *ProfConfig) Run(
 
 		idxs := idxBins[snap]
 		snapCoords := [][]float64{
+			// radii and positions
 			make([]float64, len(idxs)), make([]float64, len(idxs)),
 			make([]float64, len(idxs)), make([]float64, len(idxs)),
+			// scale radii
+			make([]float64, len(idxs)),
+			// halo velocities
+			make([]float64, len(idxs)),  make([]float64, len(idxs)),
+			make([]float64, len(idxs)),
 		}
 		for i, idx := range idxs {
 			snapCoords[0][i] = coords[0][idx]
 			snapCoords[1][i] = coords[1][idx]
 			snapCoords[2][i] = coords[2][idx]
 			snapCoords[3][i] = coords[3][idx]
+
+			snapCoords[4][i] = masses[idx]
+			snapCoords[5][i] = scaleRs[idx]
+
+			snapCoords[6][i] = vCoords[0][idx]
+			snapCoords[7][i] = vCoords[1][idx]
+			snapCoords[8][i] = vCoords[2][idx]
 		}
 
 		hds, files, err := memo.ReadHeaders(snap, buf, e)
 		if err != nil {
 			return nil, err
 		}
-		hBounds, err := boundingSpheres(snapCoords, &hds[0], e)
+		hBounds, err := extendedBoundingSpheres(snapCoords, &hds[0], e)
 		if err != nil {
 			return nil, err
 		}
-		_, intrIdxs := binSphereIntersections(hds, hBounds)
+		_, intrIdxs := binExtendedSphereIntersections(hds, hBounds)
 
 		for i := range hds {
 			if len(intrIdxs[i]) == 0 {
 				continue
 			}
 
-			xs, _, ms, _, err := buf.Read(files[i])
+			xs, vs, ms, _, err := buf.Read(files[i])
 			if err != nil {
 				return nil, err
 			}
@@ -334,7 +383,7 @@ func (config *ProfConfig) Run(
 					insertMedianPoints(medRhos, s, xs, ms, config, &hds[i])
 				} else {
 					insertPoints(
-						rhos, s, xs, ms, shells[idxs[j]], config, &hds[i],
+						rhos, s, xs, vs, ms, shells[idxs[j]], config, &hds[i],
 					)
 				}
 			}
@@ -385,20 +434,25 @@ func (config *ProfConfig) Run(
 }
 
 func insertPoints(
-	rhos []float64, s geom.Sphere, xs [][3]float32,
+	rhos []float64, s ExtendedSphere, xs, vs [][3]float32,
 	ms []float32, shell analyze.Shell, config *ProfConfig, hd *io.Header,
 ) {
-	lrMax := math.Log(float64(s.R) * config.rMaxMult)
-	lrMin := math.Log(float64(s.R) * config.rMinMult)
+	lrMax := math.Log(float64(s.S.R) * config.rMaxMult)
+	lrMin := math.Log(float64(s.S.R) * config.rMinMult)
 	dlr := (lrMax - lrMin) / float64(config.bins)
-	rMax2 := s.R * float32(config.rMaxMult)
-	rMin2 := s.R * float32(config.rMinMult)
+	rMax2 := s.S.R * float32(config.rMaxMult)
+	rMin2 := s.S.R * float32(config.rMinMult)
 	rMax2 *= rMax2
 	rMin2 *= rMin2
 
-	x0, y0, z0 := s.C[0], s.C[1], s.C[2]
+	x0, y0, z0 := s.S.C[0], s.S.C[1], s.S.C[2]
 	tw2 := float32(hd.TotalWidth) / 2
-	
+
+	vVir := float32(508.0 * math.Sqrt(float64((s.M / 6e13) / (s.S.R / 1.0))))
+	cVir := s.S.R / s.Rs
+	phiPrefactor := float32(math.Log(1 + float64(cVir)) -
+		float64(cVir/(1 + cVir)))
+
 	for i, vec := range xs {
 		x, y, z := vec[0], vec[1], vec[2]
 		dx, dy, dz := x - x0, y - y0, z - z0
@@ -419,23 +473,41 @@ func insertPoints(
 		lr := math.Log(float64(r2)) / 2
 		ir := int(((lr) - lrMin) / dlr)
 		if ir == len(rhos) { ir-- }
-		rhos[ir] += float64(ms[i])
+
+		if config.pType == boundDensityProfile {
+			dr := float32(math.Sqrt(float64(r2)))
+			x := dr / s.S.R
+
+			dvx := vs[i][0] - s.Vx
+			dvy := vs[i][1] - s.Vy
+			dvz := vs[i][2] - s.Vz
+			dv2 := dvx*dvx + dvy*dvy + dvz*dvz
+
+			phi := vVir*vVir / phiPrefactor *
+				float32(math.Log(float64(1 + cVir*x)))/x
+			vesc2 := phi * 2.0
+			if vesc2 > dv2 {
+				rhos[ir] += float64(ms[i])
+			}
+		} else {
+			rhos[ir] += float64(ms[i])
+		}
 	}
 }
 
 func insertMedianPoints(
-	medRhos [][]float64, s geom.Sphere,  xs [][3]float32,
+	medRhos [][]float64, s ExtendedSphere,  xs [][3]float32,
 	ms []float32, config *ProfConfig, hd *io.Header,
 ) {
-	lrMax := math.Log(float64(s.R) * config.rMaxMult)
-	lrMin := math.Log(float64(s.R) * config.rMinMult)
+	lrMax := math.Log(float64(s.S.R) * config.rMaxMult)
+	lrMin := math.Log(float64(s.S.R) * config.rMinMult)
 	dlr := (lrMax - lrMin) / float64(config.bins)
-	rMax2 := s.R * float32(config.rMaxMult)
-	rMin2 := s.R * float32(config.rMinMult)
+	rMax2 := s.S.R * float32(config.rMaxMult)
+	rMin2 := s.S.R * float32(config.rMinMult)
 	rMax2 *= rMax2
 	rMin2 *= rMin2
 
-	x0, y0, z0 := s.C[0], s.C[1], s.C[2]
+	x0, y0, z0 := s.S.C[0], s.S.C[1], s.S.C[2]
 	tw2 := float32(hd.TotalWidth) / 2
 
 	pixelNum := geom.SpherePixelNum(int(config.medianPixelLevel))
@@ -585,4 +657,49 @@ func angularFractionMain(
 	)
 
 	return append([]string{cString}, lines...), nil
+}
+
+type ExtendedSphere struct {
+	S geom.Sphere
+	M, Rs float32
+	Vx, Vy, Vz float32
+}
+
+func extendedBoundingSpheres(
+	coords [][]float64, hd *io.Header, e *env.Environment,
+) ([]ExtendedSphere, error) {
+	xs, ys, zs, rs := coords[0], coords[1], coords[2], coords[3]
+	ms, Rs := coords[4], coords[5]
+	vx, vy, vz :=  coords[6], coords[7], coords[8]
+
+	spheres := make([]ExtendedSphere, len(coords[0]))
+	for i := range spheres {
+		spheres[i].S.C = [3]float32{
+			float32(xs[i]), float32(ys[i]), float32(zs[i]),
+		}
+		spheres[i].S.R = float32(rs[i])
+		spheres[i].M = float32(ms[i])
+		spheres[i].Rs = float32(Rs[i])
+		spheres[i].Vx = float32(vx[i])
+		spheres[i].Vy = float32(vy[i])
+		spheres[i].Vz = float32(vz[i])
+	}
+
+	return spheres, nil
+}
+
+func binExtendedSphereIntersections(
+	hds []io.Header, spheres []ExtendedSphere,
+) ([][]ExtendedSphere, [][]int) {
+	bins := make([][]ExtendedSphere, len(hds))
+	idxs := make([][]int, len(hds))
+	for i := range hds {
+		for si := range spheres {
+			if sphereSheetIntersect(spheres[si].S, &hds[i]) {
+				bins[i] = append(bins[i], spheres[si])
+				idxs[i] = append(idxs[i], si)
+			}
+		}
+	}
+	return bins, idxs
 }

@@ -362,7 +362,10 @@ func (config *ProfConfig) Run(
 		if err != nil {
 			return nil, err
 		}
+
+		for i := range hBounds { hBounds[i].S.R *= float32(config.rMaxMult) }
 		_, intrIdxs := binExtendedSphereIntersections(hds, hBounds)
+		for i := range hBounds { hBounds[i].S.R /= float32(config.rMaxMult) }
 
 		for i := range hds {
 			if len(intrIdxs[i]) == 0 {

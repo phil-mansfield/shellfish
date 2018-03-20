@@ -490,10 +490,10 @@ func insertPoints(
 			vesc2 := phi * 2.0
 			
 			if vesc2 > dv2 {
-				rhos[ir] += float64(ms[i])
+				rhos[ir] += 1//float64(ms[i])
 			}
 		} else {
-			rhos[ir] += float64(ms[i])
+			rhos[ir] += 1//float64(ms[i])
 		}
 	}
 }
@@ -555,7 +555,8 @@ func processProfile(rs, rhos []float64, rMin, rMax float64) {
 		rHi := math.Exp(dlr*float64(j+1) + lrMin)
 		dV := (rHi*rHi*rHi - rLo*rLo*rLo) * 4 * math.Pi / 3
 
-		rhos[j] = rhos[j] / dV
+		_ = dV
+		//rhos[j] = rhos[j] / dV
 	}
 }
 

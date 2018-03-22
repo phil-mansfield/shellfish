@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"math"
+	"math/rand"
 	"sort"
 	"time"
 
@@ -19,6 +21,7 @@ type PotentialConfig struct {
 	ncells int64
 	rGridMult float64
 	rMinMult, rMaxMult float64
+	frac float64
 }
 
 var _ Mode = &PotentialConfig{}
@@ -27,11 +30,14 @@ func (config *PotentialConfig) ExampleConfig() string {
 	return `[potential.config]
 NCells = 64
 GridRMult = 8
-# RMinMult is the radius particles muse
+# RMinMult is the minimum radius inside which particles are used to calculate
+# the potential.
 RMinMult = 1
 # RMaxMult is the maximum radius inside which particles are used to calculate
 # the potential.
 RMaxMult = 50
+# Percentage of particles that will be used to compute the potential.
+ParticleFraction = 0.01
 `
 }
 
@@ -43,6 +49,7 @@ func (config *PotentialConfig) ReadConfig(fname string, flags []string) error {
 	vars.Float(&config.rGridMult, "GridRMult", 8)
 	vars.Float(&config.rMaxMult, "RMaxMult", 1.0)
 	vars.Float(&config.rMinMult, "RMinMult", 1.0)
+	vars.Float(&config.frac, "ParticleFraction", 1.0)
 
 	if fname == "" {
 		if len(flags) == 0 { return nil }
@@ -174,10 +181,10 @@ func (config *PotentialConfig) Run(
 			for _, j := range intrIdxs[i] {
 				phisXY := phiSets[0][idxs[j]]
 				phisYZ := phiSets[1][idxs[j]]
-				phisZX := phiSets[2][idxs[j]]
+				phisXZ := phiSets[2][idxs[j]]
 
 				insertPotentialPoints(
-					phisXY, phisYZ, phisZX,
+					phisXY, phisYZ, phisXZ,
 					hxBounds[j],
 					xs, ms,
 					config, &hds[i],
@@ -214,9 +221,9 @@ func (config *PotentialConfig) Run(
 	
 	cString := catalog.CommentString(
 		[]string{"ID", "Snapshot", "R [cMpc/h]",
-			"Phi_xy/(Rvir/(G Mvir m))",
-			"Phi_yz/(Rvir/(G Mvir m))",
-			"Phi_zx/(Rvir/(G Mvir m))"},
+			"Phi_xy/(G Mvir / Rvir)",
+			"Phi_yz/(G Mvir / Rvir)",
+			"Phi_xz/(G Mvir / Rvir)"},
 		[]string{}, []int{0, 1, 2, 3, 4, 5},
 		[]int{1, 1, int(config.ncells),
 			int(config.ncells*config.ncells),
@@ -233,18 +240,72 @@ func (config *PotentialConfig) Run(
 }
 
 func insertPotentialPoints(
-	phisXY, phisYZ, phisZX []float64,
+	phisXY, phisYZ, phisXZ []float64,
 	hx geom.Sphere,
 	xs [][3]float32,
 	ms []float32,
 	config *PotentialConfig, hd *io.Header,
 ) {
-	panic("NYI")
+	rmax2 := (config.rMaxMult*config.rMaxMult) * float64(hx.R*hx.R)
+	rmin2 := (config.rMinMult*config.rMinMult) * float64(hx.R*hx.R)
+
+	delta := float64(hx.R) * config.rGridMult * 2 / float64(config.ncells)
+	nc := int(config.ncells)
+
+	for i := range xs {
+		if rand.Float64() > config.frac { continue }
+
+		dx0 := float64(xs[i][0] - hx.C[0])
+		dy0 := float64(xs[i][1] - hx.C[1])
+		dz0 := float64(xs[i][2] - hx.C[2])
+
+		dr02 := dx0*dx0 + dy0*dy0 + dz0*dz0
+		pm := float64(ms[i])
+
+		if dr02 > rmax2 || dr02 < rmin2 { continue }
+
+		for iz := 0; iz < nc; iz++ {
+			dz := dz0 + delta*float64(iz) - float64(hx.R)*config.rGridMult
+			for iy := 0; iy < nc; iy++ {
+				dy := dy0 + delta*float64(iy) - float64(hx.R)*config.rGridMult
+
+				dryz := math.Sqrt(dx0*dx0 + dy*dy + dz*dz)
+				phisYZ[iy + iz*nc] -= pm / dryz
+
+				if iz != 0 && iy != 0 { continue }
+
+				for ix := 0; ix < nc; ix++ {
+					dx := dx0 + delta*float64(ix) -
+						float64(hx.R)*config.rGridMult
+
+
+					if iz == 0 {
+						drxy := math.Sqrt(dx*dx + dy*dy + dz0*dz0)
+						phisXY[ix + iy*nc] -= pm / drxy
+					}
+
+					if iy == 0 {
+						drxz := math.Sqrt(dx*dx + dy0*dy0 + dz*dz)
+						phisXZ[ix + iz*nc] -= pm / drxz
+					}
+				}
+			}
+		}
+	}
 }
 
 func processPotential(
-	rs, phisXY, phisYZ, phisZX []float64,
+	rs, phisXY, phisYZ, phisXZ []float64,
 	hr, hm float64, config *PotentialConfig,
 ) {
-	panic("NYI")
+	for i := range phisXY {
+		phisXY[i] /= config.frac * hm/hr
+		phisXZ[i] /= config.frac * hm/hr
+		phisYZ[i] /= config.frac * hm/hr
+	}
+
+	delta := hr * config.rGridMult * 2 / float64(config.ncells)
+	for i := range rs {
+		rs[i] = delta*float64(i) - hr*config.rGridMult
+	}
 }

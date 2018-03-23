@@ -118,7 +118,7 @@ func (config *PotentialConfig) Run(
 	}
 
 	for i := range rSets {
-		rSets[i] = make([]float64, 2*config.ncells)
+		rSets[i] = make([]float64, config.ncells)
 		phiSets[0][i] = make([]float64, config.ncells*config.ncells)
 		phiSets[1][i] = make([]float64, config.ncells*config.ncells)
 		phiSets[2][i] = make([]float64, config.ncells*config.ncells)

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"sort"
 	"time"
+	"runtime"
 
 	"github.com/phil-mansfield/shellfish/los/geom"
 	"github.com/phil-mansfield/shellfish/cmd/catalog"
@@ -139,6 +140,12 @@ func (config *PotentialConfig) Run(
 		return nil, err
 	}
 
+	// Count number of workers
+
+	workers := runtime.NumCPU()
+	if gConfig.Threads > 0 { workers = int(gConfig.Threads) }
+	runtime.GOMAXPROCS(workers)
+
 	for _, snap := range sortedSnaps {
 		if snap == -1 {
 			continue
@@ -183,12 +190,19 @@ func (config *PotentialConfig) Run(
 				phisYZ := phiSets[1][idxs[j]]
 				phisXZ := phiSets[2][idxs[j]]
 
-				insertPotentialPoints(
-					phisXY, phisYZ, phisXZ,
-					hxBounds[j],
-					xs, ms,
-					config, &hds[i],
-				)
+				lg := NewLockGroup(workers)
+
+				for k := 0; k < workers; k++ {
+					insertPotentialPoints(
+						phisXY, phisYZ, phisXZ,
+						hxBounds[j],
+						xs, ms,
+						config, &hds[i],
+						lg.Lock(k),
+					)
+				}
+
+				lg.Synchronize()
 			}
 
 			buf.Close()
@@ -245,14 +259,18 @@ func insertPotentialPoints(
 	xs [][3]float32,
 	ms []float32,
 	config *PotentialConfig, hd *io.Header,
+	lock *Lock,
 ) {
 	rmax2 := (config.rMaxMult*config.rMaxMult) * float64(hx.R*hx.R)
 	rmin2 := (config.rMinMult*config.rMinMult) * float64(hx.R*hx.R)
 
-	delta := float64(hx.R) * config.rGridMult * 2 / float64(config.ncells)
+	gridR := float64(hx.R) * config.rGridMult
+	delta := gridR * 2 / float64(config.ncells)
 	nc := int(config.ncells)
 
 	for i := range xs {
+		// Think carefully about this bit. (although it actually makes
+		// convergence tests easier to evaluate.)
 		if rand.Float64() > config.frac { continue }
 
 		dx0 := float64(xs[i][0] - hx.C[0])
@@ -264,34 +282,36 @@ func insertPotentialPoints(
 
 		if dr02 > rmax2 || dr02 < rmin2 { continue }
 
-		for iz := 0; iz < nc; iz++ {
-			dz := dz0 + delta*float64(iz) - float64(hx.R)*config.rGridMult
-			for iy := 0; iy < nc; iy++ {
-				dy := dy0 + delta*float64(iy) - float64(hx.R)*config.rGridMult
+		for i := lock.Idx; i < len(phisXY); i += lock.Workers {
+			var (
+				ix, iy, iz int
+				dx, dy, dz, dr float64
+			)
 
-				dryz := math.Sqrt(dx0*dx0 + dy*dy + dz*dz)
-				phisYZ[iy + iz*nc] -= pm / dryz
+			// phiXY
+			ix, iy = i % nc, i / nc
+			dx = dx0 - gridR + delta*float64(ix)
+			dy = dy0 - gridR + delta*float64(iy)
+			dr = math.Sqrt(dx*dx + dy*dy + dz0*dz0)
+			phisXY[i] -= pm/dr
 
-				if iz != 0 && iy != 0 { continue }
+			// phiXZ
+			ix, iz = i % nc, i / nc
+			dx = dx0 - gridR + delta*float64(ix)
+			dz = dz0 - gridR + delta*float64(iz)
+			dr = math.Sqrt(dx*dx + dy0*dy0 + dz*dz)
+			phisXZ[i] -= pm/dr
 
-				for ix := 0; ix < nc; ix++ {
-					dx := dx0 + delta*float64(ix) -
-						float64(hx.R)*config.rGridMult
-
-
-					if iz == 0 {
-						drxy := math.Sqrt(dx*dx + dy*dy + dz0*dz0)
-						phisXY[ix + iy*nc] -= pm / drxy
-					}
-
-					if iy == 0 {
-						drxz := math.Sqrt(dx*dx + dy0*dy0 + dz*dz)
-						phisXZ[ix + iz*nc] -= pm / drxz
-					}
-				}
-			}
+			// phiYZ
+			iy, iz = i % nc, i / nc
+			dy = dy0 - gridR + delta*float64(iy)
+			dz = dz0 - gridR + delta*float64(iz)
+			dr = math.Sqrt(dx0*dx0 + dy*dy + dz*dz)
+			phisYZ[i] -= pm/dr
 		}
 	}
+
+	lock.Unlock()
 }
 
 func processPotential(

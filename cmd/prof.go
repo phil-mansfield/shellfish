@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 	"math/rand"
+	"runtime"
 
 	msort "github.com/phil-mansfield/shellfish/math/sort"
 	"github.com/phil-mansfield/shellfish/los/geom"
@@ -324,6 +325,15 @@ func (config *ProfConfig) Run(
 		return nil, err
 	}
 
+	// Count number of workers
+
+	workers := runtime.NumCPU()
+	if gConfig.Threads > 0 { workers = int(gConfig.Threads) }
+	runtime.GOMAXPROCS(workers)
+
+	rhoBufs := make([][]float64, workers)
+	for i := range rhoBufs { rhoBufs[i] = make([]float64, config.bins) }
+
 	for _, snap := range sortedSnaps {
 		if snap == -1 {
 			continue
@@ -387,9 +397,19 @@ func (config *ProfConfig) Run(
 					medRhos := medRhoSets[idxs[j]]
 					insertMedianPoints(medRhos, s, xs, ms, config, &hds[i])
 				} else {
-					insertPoints(
-						rhos, s, xs, vs, ms, shells[idxs[j]], config, &hds[i],
-					)
+					lg := NewLockGroup(workers)
+					for k := 0; k < workers; k++ {
+						lock := lg.Lock(k)
+						insertPoints(
+							rhoBufs[lock.Idx], s, xs, vs, ms,
+							shells[idxs[j]], config, &hds[i], lock,
+						)
+					}
+					lg.Synchronize()
+
+					for k := 0; k < workers; k++ {
+						for kk := range rhos { rhos[kk] += rhoBufs[k][kk] }
+					}
 				}
 			}
 
@@ -438,10 +458,14 @@ func (config *ProfConfig) Run(
 	return append([]string{cString}, lines...), nil
 }
 
+// rhos is a buffer and will be cleared before use
 func insertPoints(
 	rhos []float64, s ExtendedSphere, xs, vs [][3]float32,
 	ms []float32, shell analyze.Shell, config *ProfConfig, hd *io.Header,
+	lock *Lock,
 ) {
+	for i := range rhos { rhos[i] = 0 }
+
 	lrMax := math.Log(float64(s.S.R) * config.rMaxMult)
 	lrMin := math.Log(float64(s.S.R) * config.rMinMult)
 	dlr := (lrMax - lrMin) / float64(config.bins)
@@ -458,8 +482,8 @@ func insertPoints(
 	phiPrefactor := 1/(float32(math.Log(1 + float64(cVir)) -
 		float64(cVir/(1+ cVir))))
 	
-	for i, vec := range xs {
-		x, y, z := vec[0], vec[1], vec[2]
+	for i := lock.Idx; i < len(xs); i += lock.Workers {
+		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		dx, dy, dz := x - x0, y - y0, z - z0
 		dx = wrap(dx, tw2)
 		dy = wrap(dy, tw2)
@@ -499,6 +523,8 @@ func insertPoints(
 			rhos[ir] += float64(ms[i])
 		}
 	}
+
+	lock.Unlock()
 }
 
 func insertMedianPoints(

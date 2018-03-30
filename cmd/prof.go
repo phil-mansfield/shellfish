@@ -331,9 +331,6 @@ func (config *ProfConfig) Run(
 	if gConfig.Threads > 0 { workers = int(gConfig.Threads) }
 	runtime.GOMAXPROCS(workers)
 
-	rhoBufs := make([][]float64, workers)
-	for i := range rhoBufs { rhoBufs[i] = make([]float64, config.bins) }
-
 	for _, snap := range sortedSnaps {
 		if snap == -1 {
 			continue
@@ -363,7 +360,6 @@ func (config *ProfConfig) Run(
 			snapCoords[7][i] = vCoords[1][idx]
 			snapCoords[8][i] = vCoords[2][idx]
 		}
-
 		hds, files, err := memo.ReadHeaders(snap, buf, e)
 		if err != nil {
 			return nil, err
@@ -376,44 +372,49 @@ func (config *ProfConfig) Run(
 		for i := range hBounds { hBounds[i].S.R *= float32(config.rMaxMult) }
 		_, intrIdxs := binExtendedSphereIntersections(hds, hBounds)
 		for i := range hBounds { hBounds[i].S.R /= float32(config.rMaxMult) }
-
+		
 		for i := range hds {
 			if len(intrIdxs[i]) == 0 {
 				continue
 			}
 
 			xs, vs, ms, _, err := buf.Read(files[i])
-			if err != nil {
-				return nil, err
-			}
+			if err != nil { return nil, err }
+			
+			lg := NewLockGroup(workers)
 
-			// Waarrrgggble
-			for _, j := range intrIdxs[i] {
-				rhos := rhoSets[idxs[j]]
-				s := hBounds[j]
-				
-				if config.pType == medianDensityProfile ||
-					config.pType == medianErrorProfile {
-					medRhos := medRhoSets[idxs[j]]
-					insertMedianPoints(medRhos, s, xs, ms, config, &hds[i])
-				} else {
-					lg := NewLockGroup(workers)
-					for k := 0; k < workers; k++ {
-						lock := lg.Lock(k)
-						insertPoints(
-							rhoBufs[lock.Idx], s, xs, vs, ms,
-							shells[idxs[j]], config, &hds[i], lock,
-						)
+			for w := 0; w < workers; w++ {
+				go func(w int, lock *Lock) {
+					// Waarrrgggble
+					for jj := lock.Idx; jj < len(intrIdxs[i]); jj += workers {
+						j := intrIdxs[i][jj]
+						
+						rhos := rhoSets[idxs[j]]
+						s := hBounds[j]
+						
+						if config.pType == medianDensityProfile ||
+							config.pType == medianErrorProfile {
+							medRhos := medRhoSets[idxs[j]]
+							insertMedianPoints(
+								medRhos, s, xs, ms, config, &hds[i],
+							)
+						} else {
+							insertPoints(
+								rhos, s, xs, vs, ms,
+								shells[idxs[j]], config, &hds[i],
+							)
+						}
 					}
-					lg.Synchronize()
 
-					for k := 0; k < workers; k++ {
-						for kk := range rhos { rhos[kk] += rhoBufs[k][kk] }
-					}
-				}
+					lock.Unlock()
+				}(w, lg.Lock(w))
 			}
-
+			
+			lg.Synchronize()
+			
 			buf.Close()
+
+			return nil, nil
 		}
 	}
 	
@@ -462,10 +463,7 @@ func (config *ProfConfig) Run(
 func insertPoints(
 	rhos []float64, s ExtendedSphere, xs, vs [][3]float32,
 	ms []float32, shell analyze.Shell, config *ProfConfig, hd *io.Header,
-	lock *Lock,
 ) {
-	for i := range rhos { rhos[i] = 0 }
-
 	lrMax := math.Log(float64(s.S.R) * config.rMaxMult)
 	lrMin := math.Log(float64(s.S.R) * config.rMinMult)
 	dlr := (lrMax - lrMin) / float64(config.bins)
@@ -482,7 +480,7 @@ func insertPoints(
 	phiPrefactor := 1/(float32(math.Log(1 + float64(cVir)) -
 		float64(cVir/(1+ cVir))))
 	
-	for i := lock.Idx; i < len(xs); i += lock.Workers {
+	for i := range xs {
 		x, y, z := xs[i][0], xs[i][1], xs[i][2]
 		dx, dy, dz := x - x0, y - y0, z - z0
 		dx = wrap(dx, tw2)
@@ -490,9 +488,7 @@ func insertPoints(
 		dz = wrap(dz, tw2)
 
 		r2 := dx*dx + dy*dy + dz*dz
-		if r2 <= rMin2 || r2 >= rMax2 {
-			continue
-		}
+		if r2 <= rMin2 || r2 >= rMax2 { continue }
 
 		if config.pType == containedDensityProfile &&
 			!shell.Contains(float64(dx), float64(dy), float64(dz)) {
@@ -523,8 +519,6 @@ func insertPoints(
 			rhos[ir] += float64(ms[i])
 		}
 	}
-
-	lock.Unlock()
 }
 
 func insertMedianPoints(

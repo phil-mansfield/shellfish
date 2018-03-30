@@ -92,7 +92,5 @@ func (lg *LockGroup) Lock(i int) *Lock {
 }
 
 func (lg * LockGroup) Synchronize() {
-	for _ = range lg.locks {
-		<- lg.C
-	}
+	for _ = range lg.locks { <- lg.C }
 }

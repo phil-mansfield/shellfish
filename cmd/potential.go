@@ -145,7 +145,7 @@ func (config *PotentialConfig) Run(
 	workers := runtime.NumCPU()
 	if gConfig.Threads > 0 { workers = int(gConfig.Threads) }
 	runtime.GOMAXPROCS(workers)
-
+	
 	for _, snap := range sortedSnaps {
 		if snap == -1 {
 			continue
@@ -165,24 +165,22 @@ func (config *PotentialConfig) Run(
 		}
 
 		hds, files, err := memo.ReadHeaders(snap, buf, e)
-		if err != nil {
-			return nil, err
-		}
+		if err != nil { return nil, err }
 		hxBounds, err := boundingSpheres(snapCoords, &hds[0], e)
-		if err != nil {
-			return nil, err
-		}
+		if err != nil { return nil, err }
 		_, intrIdxs := binSphereIntersections(hds, hxBounds)
 
+		for i := range hxBounds { hxBounds[i].R /= float32(config.rMaxMult) }
+		
 		for i := range hds {
-			if len(intrIdxs[i]) == 0 {
-				continue
-			}
+			if len(intrIdxs[i]) == 0 { continue }
 
 			xs, _, ms, _, err := buf.Read(files[i])
 			if err != nil {
 				return nil, err
 			}
+
+			table := make([]bool, len(xs))
 
 			// Waarrrgggble
 			for _, j := range intrIdxs[i] {
@@ -191,17 +189,18 @@ func (config *PotentialConfig) Run(
 				phisXZ := phiSets[2][idxs[j]]
 
 				lg := NewLockGroup(workers)
-
+				for i := range table { table[i] = rand.Float64() <= config.frac }
+				
 				for k := 0; k < workers; k++ {
-					insertPotentialPoints(
+					go insertPotentialPoints(
 						phisXY, phisYZ, phisXZ,
 						hxBounds[j],
-						xs, ms,
+						xs, ms, table,
 						config, &hds[i],
 						lg.Lock(k),
 					)
 				}
-
+				
 				lg.Synchronize()
 			}
 
@@ -258,30 +257,29 @@ func insertPotentialPoints(
 	hx geom.Sphere,
 	xs [][3]float32,
 	ms []float32,
+	skipTable []bool,
 	config *PotentialConfig, hd *io.Header,
 	lock *Lock,
 ) {
 	rmax2 := (config.rMaxMult*config.rMaxMult) * float64(hx.R*hx.R)
 	rmin2 := (config.rMinMult*config.rMinMult) * float64(hx.R*hx.R)
-
+	
 	gridR := float64(hx.R) * config.rGridMult
-	delta := gridR * 2 / float64(config.ncells)
+	delta := gridR * 2 / float64(config.ncells - 1)
 	nc := int(config.ncells)
-
-	for i := range xs {
-		// Think carefully about this bit. (although it actually makes
-		// convergence tests easier to evaluate.)
-		if rand.Float64() > config.frac { continue }
-
+	
+	for i := 0; i < len(xs); i++ {
+		if !skipTable[i] { continue }
+		
 		dx0 := float64(xs[i][0] - hx.C[0])
 		dy0 := float64(xs[i][1] - hx.C[1])
 		dz0 := float64(xs[i][2] - hx.C[2])
-
+		
 		dr02 := dx0*dx0 + dy0*dy0 + dz0*dz0
 		pm := float64(ms[i])
 
 		if dr02 > rmax2 || dr02 < rmin2 { continue }
-
+		
 		for i := lock.Idx; i < len(phisXY); i += lock.Workers {
 			var (
 				ix, iy, iz int
@@ -310,7 +308,7 @@ func insertPotentialPoints(
 			phisYZ[i] -= pm/dr
 		}
 	}
-
+	
 	lock.Unlock()
 }
 

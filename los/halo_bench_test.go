@@ -6,41 +6,7 @@ import (
 	"testing"
 
 	"github.com/phil-mansfield/shellfish/los/geom"
-	rgeom "github.com/phil-mansfield/shellfish/render/geom"
 )
-
-func BenchmarkTransform10000000(b *testing.B) {
-	vecs := make([]rgeom.Vec, 10*1000*1000)
-	for i := range vecs {
-		vecs[i][0] = float32(rand.Float64())
-		vecs[i][1] = float32(rand.Float64())
-		vecs[i][2] = float32(rand.Float64())
-	}
-
-	h := Halo{}
-	h.Init(nil, [3]float64{0.25, 0.25, 0.25}, 0, 0, 0, 0, 0)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Transform(vecs, 0.5)
-	}
-}
-
-func BenchmarkIntersect10000000(b *testing.B) {
-	vecs := make([]rgeom.Vec, 10*1000*1000)
-	intr := make([]bool, 10*1000*1000)
-	for i := range vecs {
-		vecs[i][0] = float32(rand.Float64())
-		vecs[i][1] = float32(rand.Float64())
-		vecs[i][2] = float32(rand.Float64())
-	}
-
-	h := Halo{}
-	h.Init(nil, [3]float64{0.5, 0.5, 0.5}, 0.25, 0.5, 0, 0, 0)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Intersect(vecs, 0.1, intr)
-	}
-}
 
 func BenchmarkSplitJoin16(b *testing.B) {
 	norms := make([]geom.Vec, 100)

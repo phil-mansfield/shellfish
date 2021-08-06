@@ -12,6 +12,5 @@ github.com/phil-mansfield/consistent_trees v0.1.0 h1:h0fbD7zl5mw6E7p9xXfxlAAd6Gd
 github.com/phil-mansfield/consistent_trees v0.1.0/go.mod h1:rQFSksClhN8m5R3AFQmDeaxxWqY/gxQvZOpo64pFRsA=
 github.com/phil-mansfield/go-artio v0.1.1 h1:eaisq+i+x4ah7OM//T6u4iLsPVugIIpUl9IrAO+pHTQ=
 github.com/phil-mansfield/go-artio v0.1.1/go.mod h1:K7XFnQF0KH65PGUJM/XdwebrhhKLGmaXtgrylFdQ9HY=
-github.com/phil-mansfield/pyplot v0.0.0-20210804184052-b6fa1feebefa/go.mod h1:/y/py7a9DOyShm4lzmhNJoUO8IoJ+R4URbs87bTfWFI=
 github.com/phil-mansfield/pyplot v0.1.0 h1:+gwXoBzBQhOB5xsTDbCzPVwVFL7BR0czkA9IekVLMgE=
 github.com/phil-mansfield/pyplot v0.1.0/go.mod h1:/y/py7a9DOyShm4lzmhNJoUO8IoJ+R4URbs87bTfWFI=

@@ -25,16 +25,16 @@ If you encounter cases where
 significantly more than 57 MB are being used per halo for a large number of halos,
 [submit a bug report](https://github.com/phil-mansfield/shellfish/issues).
 
-In version 1.1.0 of Shellfish, you will be able to specify a maximum memory limit for Shellfish,
+In later versions of Shellfish, you will be able to specify a maximum memory limit for Shellfish,
 and it will do all its analysis without exceeding this limit, regardless of halo count.
-If you need to analyze a large number of halos in version 1.0.0, you will need to manually
+For the time being, if you need to analyze a large number of haloes, you will need to manually
 split up the input catalogs.
 
 ### CPU Time
 
-Rigorous benchmarks coming soon!
+Rigorous benchmarks are coming soon.
 
-(On my machine with the default `shell.config` parameters, in one hour Shellfish can
+(On my machine with the default `shell.config` parameters, in one hour Shellfish can analyze
 a colleciton of halos which together contain 7 million particles within their R200m
 spheres, regarless of their size. Parallelization is good, meaning that you can speed this
 up by a factor of 16 by running Shellfish on a node with 16 cores available.
@@ -45,5 +45,4 @@ Shellfish does not currently support MPI. Are parallelism is thread-based and do
 on a single node. In fact, due to the way that caching works,
 you can't even run two Shellfish processes using the same configuration file on
 two different nodes simulataneously (unless you're sure caching is finished, which you
-might be.) There are plans to [add MPI support](https://github.com/phil-mansfield/shellfish/issues/128)
-by version 1.1.0.
+might be.)

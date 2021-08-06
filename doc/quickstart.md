@@ -27,6 +27,7 @@ into two hundred files called `particles_<block index>.dat`.  An example file in
 structure would be `path/to/sim/snapshot_11/particles_66.dat`. You would set the
 relevant variables in your config file the following:
 ```
+SnapshotType = "Gadget-2"
 SnapshotFormat = path/to/sim/snapshot_%d/particles_%d.dat
 SnapshotFormatMeaning = Snapshot, Block
 SnapMin = 1 # These bounds are inclusive
@@ -39,6 +40,7 @@ You can also handle more complicated file layouts. Say your files looked like
 zero-padding, and multiple block variables (maybe this file name is specifying a
 location in Lagrangian space). This is what your configuration variables would look like
 ```
+SnapshotType = "Gadget-2"
 SnapshotFormat = path/to/sim/snapdir_%03d/particles_%03d.%d.%d.%ddat
 SnapshotFormatMeaning = Snapshot, Snapshot Block0, Block1, Block2
 SnapMin = 1 

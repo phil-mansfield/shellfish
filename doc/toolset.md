@@ -19,8 +19,7 @@ cat my_halo_catalog.txt | shellfish shell | shellfish stats > my_splashback_cata
 While this works, it can be a bit annoying for five reasons: first, whatever halo catalogs
 you are using probably don't come in this column order naturally; second, Shellfish's
 [memory constraints](https://github.com/phil-mansfield/shellfish/blob/master/doc/resources.md)
-as of version 1.0.0 will force you to run it on no more than a few thousand halos at a time
-(an issue which is [currently being worked on for version 1.1.0](https://github.com/phil-mansfield/shellfish/issues/127));
+as of version 1.3.0 will force you to run it on no more than a few thousand halos at a time
 third, Shellfish's [convergence limits](https://github.com/phil-mansfield/shellfish/blob/master/doc/convergence.md);
 fourth, if you want to look at the accretion history of a halo, you'll need to read
 the main progenitor line from a halo merger tree, which can be an involved task; and
@@ -55,9 +54,7 @@ shellfish id --M200mMin 1e14 --M200mMax 2.5e15 --Snap 100 |
 That first line will parse the 100th snapshot in your simulation, and extract
 all the halos with 1e14 M_sun/h < M200m < 2.5e15 M_sun/h. It will also remove halos
 which are highly likely to be within the splashback shell of a larger halo. (Since
-shells haven't been calculated yet, this is done heuristically. Support for identifying
-subhalos correctly is an open issue for Shellfish 
-version 1.1.0). The remaining lines pass those IDs through the rest of the pipeline.
+shells haven't been calculated yet, this is done heuristically.) The remaining lines pass those IDs through the rest of the pipeline.
 
 If you want to track every halo back in time, fill out the variables that start with 
 `Tree` in the file `$SHELLFISH_GLOBAL_CONFIG` points to.

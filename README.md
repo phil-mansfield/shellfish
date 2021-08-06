@@ -10,9 +10,8 @@ After configuration, generating halo catalogs with shellfish can be as easy as t
 cat my_halo_catalog.txt | shellfish shell | shellfish stats > my_splashback_catalog.txt
 ```
 
-Shellfish is currently in version 1.0.0. All future versions are garuanteed to be backwards compatible with any config files or shell scripts that work on version 1.0.0. The current maintainer is
-[Phil Mansfield](http://astro.uchicago.edu/people/philip-mansfield.php) at the
-University of Chicago. Shellfish is written in the programming langue [Go](https://golang.org/).
+Shellfish is currently in version 1.3.1. All future versions are garuanteed to be backwards compatible with any config files or shell scripts that work on version 1.0.0. The current maintainer is
+[Phil Mansfield](https://kipac.stanford.edu/people/philip-mansfield) at Stanford University. Shellfish is written in the programming langue [Go](https://golang.org/).
 
 [![DOI](https://zenodo.org/badge/55451007.svg)](https://zenodo.org/badge/latestdoi/55451007)
 

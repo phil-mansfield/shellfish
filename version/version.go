@@ -9,7 +9,7 @@ import (
 
 // SourceVersion is the version string representing the semantic version number
 // of the source code.
-const SourceVersion = "1.0.3"
+const SourceVersion = "1.3.1"
 
 // Parse parses a semantic version number string and returns an error if
 // the string is invalid.
